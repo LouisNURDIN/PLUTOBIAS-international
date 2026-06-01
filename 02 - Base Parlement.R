@@ -113,7 +113,7 @@ base_vote_parlement_legislatives <- Base_legislatives_deciles %>%
   )
 
 ###Traitement pour avoir le taux de députés par partis sur l'ensemble des députés
-unique(Base)
+
 
 base_vote_parlement_legislatives <- base_vote_parlement_legislatives  %>% 
   group_by(isoname,year,election_date,decile)%>%

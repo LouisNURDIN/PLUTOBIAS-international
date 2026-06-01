@@ -105,9 +105,15 @@ Base_elections_legislatives <- Base_elections_legislatives %>%
       partyfacts_id == "4785" & isoname == "France" ~ "1478" ,
       partyfacts_id == "5514" & isoname == "France" ~ "1083" ,
       partyfacts_id == "8041" & isoname == "France" ~ "1083" ,
+      partyfacts_id == "Other" & isoname == "India" & year == 1977  ~ "4788" ,
+      partyfacts_id == "1332" & isoname == "Canada" & year == 2000 ~ "1757",
+      vote == "BW-Umbrella for Democratic Change" & isoname == "Botswana" & year == 2014 ~ "4832",
+      partyfacts_id == "604" & isoname == "Belgium" & year == 2007 ~ "756",
+      partyfacts_id == "500" & isoname == "Belgium" ~ "480",
       TRUE ~ partyfacts_id
     )
   )
+
 
 #Export Base globale et Base législatives
 write.csv(
