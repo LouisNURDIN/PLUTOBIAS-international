@@ -69,16 +69,20 @@ Elections_global <- Elections_global %>%
 
 Elections_global <- Elections_global %>%
   semi_join(
-    base_gmp_inc_deciles_legislatives_2 %>%
+    Base_legislatives_deciles %>%
       distinct(isoname, year),
     by = c("isoname", "year")
   )
 
 ##Traitement sur données manquantes ----
 Elections_global <- Elections_global %>%
-  mutate(seats = coalesce(seats, alliance_seats)) %>%
   group_by(isoname, year, election_date) %>%
   mutate(
+    seats = if_else(
+      !is.na(alliance_seats),
+      alliance_seats / sum(!is.na(alliance_seats)),
+      seats
+    ),
     seats_total = first(seats_total)
   ) %>%
   ungroup()
