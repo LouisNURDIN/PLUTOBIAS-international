@@ -28,6 +28,7 @@ check_electionsglobal_wpid_legislatives <- elections_legislatives_valides %>%
 check_electionsglobal_wpid_legislatives <- check_electionsglobal_wpid_legislatives %>%
   filter(check_electionsglobal_wpid_legislatives$year <= 2015)
 
+
 #Vérifier le nombre d'élections compatibles entre les deux groupes
 intersect(
   paste(elections_legislatives_valides$isoname, elections_legislatives_valides$year),
