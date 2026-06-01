@@ -1,4 +1,8 @@
 #Base parlement 
+library(dplyr)
+library(tidyr)
+library(purrr)
+library(stringr)
 #Import base élections législatives
 Base_legislatives_deciles <- read.csv("data/intermediary/elections/legislative elections with decile dataset.csv", sep = ",")
 elections_legislatives_valides <- read.csv("data/intermediary/elections/valid legislative elections.csv", sep = ",")
@@ -89,27 +93,11 @@ Elections_global <- Elections_global %>%
     )
   )
 
-base_gmp_inc_deciles_legislatives_2 <- base_gmp_inc_deciles_legislatives_2 %>%
-  mutate(
-    partyfacts_id = case_when(
-      partyfacts_id == "1388" & isoname == "United Kingdom" ~ "540",
-      partyfacts_id == "1231" & isoname == "Switzerland" ~ "360",
-      partyfacts_id == "7415" & isoname == "Sweden" ~ "199",
-      partyfacts_id == "5750" & isoname == "Spain" ~ "441",
-      partyfacts_id == "8814" & isoname == "Spain" ~ "441",
-      partyfacts_id == "1004" & isoname == "Canada" & year <= 2003 ~ "232",
-      partyfacts_id == "1004" & isoname == "Canada" & year >= 2003 ~ "1004" ,
-      partyfacts_id == "1044" & isoname == "Finland" ~ "1096" ,
-      partyfacts_id == "4785" & isoname == "France" ~ "1478" ,
-      partyfacts_id == "5514" & isoname == "France" ~ "1083" ,
-      partyfacts_id == "8041" & isoname == "France" ~ "1083" ,
-      TRUE ~ partyfacts_id
-    )
-  )
+
 Elections_global <- Elections_global  %>% 
   mutate(seats_share = seats / seats_total)
 ## Join entre les bases ----
-base_vote_parlement_legislatives <- base_gmp_inc_deciles_legislatives_2 %>%
+base_vote_parlement_legislatives <- Base_legislatives_deciles %>%
   left_join(
     Elections_global %>%
       select(isoname, year,partyfacts_id,election_date,seats,seats_total,seats_share),

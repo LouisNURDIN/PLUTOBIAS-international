@@ -12,6 +12,7 @@ build_gmp_inc_base_long_2 <- function(df, annee, country){
   
   # sécurité
   year <- unique(df$year)[1]
+  survey <- unique(df$survey)[1]
   
   
   # 1. distribution revenu (par pays + année)
@@ -90,9 +91,10 @@ build_gmp_inc_base_long_2 <- function(df, annee, country){
     mutate(
       annee = annee,
       year = year,
-      isoname = country
+      isoname = country,
+      survey = survey
     ) %>%
-    relocate(isoname, annee, year, vote, decile)
+    relocate(isoname, annee, year, vote, decile, survey)
 }
 
 
