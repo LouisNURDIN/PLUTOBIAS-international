@@ -3,9 +3,12 @@ library(dplyr)
 library(tidyr)
 library(purrr)
 library(stringr)
+
 #Import base élections législatives
 Base_legislatives_deciles <- read.csv("data/intermediary/elections/legislative elections with decile dataset.csv", sep = ",")
 elections_legislatives_valides <- read.csv("data/intermediary/elections/valid legislative elections.csv", sep = ",")
+
+Base_legislatives_deciles2 <- read.csv("data/intermediary/elections/legislative elections with dinc dataset.csv", sep = ",")
 
 #Elections global ----
 Data_elections_global <- read.csv ("data/raw/elections global/elections-global-release.csv" , sep = ";")
@@ -110,7 +113,7 @@ base_vote_parlement_legislatives <- Base_legislatives_deciles %>%
   )
 
 ###Traitement pour avoir le taux de députés par partis sur l'ensemble des députés
-
+unique(Base)
 
 base_vote_parlement_legislatives <- base_vote_parlement_legislatives  %>% 
   group_by(isoname,year,election_date,decile)%>%
@@ -156,8 +159,7 @@ View(
     )
 )
 
-table(GMP_inc$religion[GMP_inc$isoname == "France"])
-table(GMP_inc$religious)
+
 
 #Partis présents dans base élections mais pas Parlement
 View(

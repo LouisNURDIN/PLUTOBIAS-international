@@ -122,3 +122,6 @@ write.csv(
   row.names = FALSE
 )
 
+unique(GMP_inc$type[GMP_inc$isoname == "Italy"])
+
+unique(GMP_inc_2$type[GMP_inc_2$isoname == "Italy"])
