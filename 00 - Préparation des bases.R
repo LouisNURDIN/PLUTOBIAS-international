@@ -86,7 +86,7 @@ Base_all_elections <- Base_all_elections %>%
 
 
 ## Filtre législatives dans deuxième méthode ----
-Base_elections_legislatives <- GMP_inc_2 %>%
+Base_elections_legislatives <- Base_all_elections %>%
   filter(type == "Lower house")
 unique(GMP_inc$dinc)
 
