@@ -2,7 +2,6 @@ library(haven)
 library(dplyr)
 library(tidyr)
 #Ouverture de la base ----
-GMP_DATA <- read_dta("data/raw/wpid/gmp.dta")
 GMP_inc <- read_dta("data/raw/wpid/gmp-inc.dta")
 
 GMP_inc <- GMP_inc %>%
@@ -67,7 +66,7 @@ GMP_inc_2 <- GMP_inc_2 %>%
   )
 
 ##Join Partyfacts dans GMP inc ----
-GMP_inc_2 <- GMP_inc_2 %>%
+Base_all_elections <- GMP_inc_2 %>%
   left_join(
     Partyfacts_id_wpidmicro %>%
       dplyr::select(dataset_party_id,partyfacts_id),
@@ -75,7 +74,7 @@ GMP_inc_2 <- GMP_inc_2 %>%
   )
 
 library(stringr)
-GMP_inc_2 <- GMP_inc_2 %>%
+Base_all_elections <- Base_all_elections %>%
   mutate(
     partyfacts_id = as.character(partyfacts_id),
     partyfacts_id = case_when(
@@ -111,4 +110,15 @@ Base_elections_legislatives <- Base_elections_legislatives %>%
   )
 
 #Export Base globale et Base législatives
+write.csv(
+  Base_elections_legislatives,
+  "data/intermediary/elections/legislative elections dataset.csv",
+  row.names = FALSE
+)
+
+write.csv(
+  Base_all_elections,
+  "data/intermediary/elections/all elections dataset.csv",
+  row.names = FALSE
+)
 
