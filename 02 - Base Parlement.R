@@ -197,5 +197,12 @@ View(
     )
 )
 
+#Export de la base vote-parlement
+write.csv(
+  base_vote_parlement_legislatives,
+  "data/intermediary/parliament/elections and parliament dataset.csv",
+  row.names = FALSE
+)
 
+#Avec méthode dinc ----
 
