@@ -1,11 +1,12 @@
 #Calcul fonction déciles
-Base_elections_legislatives <- read.csv("data/raw/intermediary/elections/legislative elections dataset.csv", sep = ";")
+Base_elections_legislatives <- read.csv("data/intermediary/elections/legislative elections dataset.csv", sep = ",")
 
 ##Test pour recalculer les déciles ----
 #Fonction pour calculer vote par décile
 library(dplyr)
 library(tidyr)
 library(purrr)
+library(stringr)
 
 build_gmp_inc_base_long_2 <- function(df, annee, country){
   
@@ -105,57 +106,46 @@ Base_legislatives_deciles <- Base_elections_legislatives %>%
 
 
 
-Base_global_deciles <- GMP_inc_2 %>%
-  group_by(isoname, year) %>%
-  group_split() %>%
-  map_dfr(~ build_gmp_inc_base_long_2(.x, unique(.x$year), unique(.x$isoname)))
-
-
 #Voir PF manquants dans ma base législatives avec 
 View(
-  base_gmp_inc_deciles_legislatives_2 %>%
+  Base_legislatives_deciles %>%
     filter(is.na(partyfacts_id) & pct_votes >= 5 & vote != "")& vote %>%
     distinct(isoname,vote,year, pct_votes)
 )
 
 unique(
-  base_gmp_inc_deciles_legislatives_2$vote[
-    base_gmp_inc_deciles_legislatives_2$partyfacts_id %>% is.na() &
-      base_gmp_inc_deciles_legislatives_2$pct_votes >= 5 &
-      base_gmp_inc_deciles_legislatives_2$vote != ""])
+  Base_legislatives_deciles$vote[
+    Base_legislatives_deciles$partyfacts_id %>% is.na() &
+      Base_legislatives_deciles$pct_votes >= 5 &
+      Base_legislatives_deciles$vote != ""])
 
 
 #Elections problématiques liste ----
 #voir élections  où taux participation = 100
-elections_globales_problematiques <- base_gmp_inc_deciles_global_2 %>%
+elections_legislatives_problematiques <- Base_legislatives_deciles %>%
   filter(taux_participation == 100) %>%
   ungroup() %>%
   group_by(isoname, year) %>%
   summarise(.groups = "drop")
 
-elections_legislatives_problematiques <- base_gmp_inc_deciles_legislatives_2 %>%
-  filter(taux_participation == 100) %>%
-  ungroup() %>%
-  group_by(isoname, year) %>%
-  summarise(.groups = "drop")
-
-sum(base_gmp_inc_deciles_legislatives_2$taux_participation == 100)
+sum(Base_legislatives_deciles$taux_participation == 100)
 
 
-View(
-  base_gmp_inc_deciles_global_2 %>%
-    filter(is.na(partyfacts_id) & pct_votes >= 5 & vote != "") %>%
-    distinct(isoname,vote,year, pct_votes)
-)
 
 #Bases sans élections problématiques ----
-base_gmp_inc_deciles_legislatives_2 <- base_gmp_inc_deciles_legislatives_2 %>%
+Base_legislatives_deciles <- Base_legislatives_deciles %>%
   filter(taux_participation != 100)
 
-base_gmp_inc_deciles_global_2 <- base_gmp_inc_deciles_global_2 %>%
-  filter(taux_participation != 100)
 
 #Liste des élections législatives valides
-elections_legislatives_valides <- base_gmp_inc_deciles_legislatives_2 %>%
+elections_legislatives_valides <- Base_legislatives_deciles %>%
   group_by(isoname,year) %>%
   summarise(.groups = "drop")
+
+#Export de la base avec les déciles
+write.csv(
+  Base_legislatives_deciles,
+  "data/intermediary/elections/legislative elections with decile dataset.csv",
+  row.names = FALSE
+)
+
