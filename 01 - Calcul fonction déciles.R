@@ -134,7 +134,6 @@ elections_legislatives_problematiques <- Base_legislatives_deciles %>%
 
 sum(Base_legislatives_deciles$taux_participation == 100)
 
-unique(Base)
 
 #Bases sans élections problématiques ----
 Base_legislatives_deciles <- Base_legislatives_deciles %>%

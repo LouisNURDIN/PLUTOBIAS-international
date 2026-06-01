@@ -115,13 +115,33 @@ base_vote_parlement_legislatives <- Base_legislatives_deciles %>%
 ###Traitement pour avoir le taux de députés par partis sur l'ensemble des députés
 
 
-base_vote_parlement_legislatives <- base_vote_parlement_legislatives  %>% 
-  group_by(isoname,year,election_date,decile)%>%
-  mutate(election_couverture_seats = sum(seats_share))
+
 
 base_vote_parlement_legislatives <- base_vote_parlement_legislatives %>%
   filter(year <= 2015)
 
+
+base_vote_parlement_legislatives <- base_vote_parlement_legislatives %>%
+  mutate(
+    seats_share = case_when(
+      partyfacts_id == "1691" & year == 2002 ~ 0.487,
+      partyfacts_id == "1408" & year == 2002 ~ 0.51295,
+      TRUE ~ seats_share
+    )
+  )
+
+base_vote_parlement_legislatives <- base_vote_parlement_legislatives %>%
+  mutate(
+    seats = case_when(
+      partyfacts_id == "1691" & year == 2002 ~ 188,
+      partyfacts_id == "1408" & year == 2002 ~ 198,
+      TRUE ~ seats_share
+    )
+  )
+
+base_vote_parlement_legislatives <- base_vote_parlement_legislatives  %>% 
+  group_by(isoname,year,election_date,decile)%>%
+  mutate(election_couverture_seats = sum(seats_share))
 #Lister les partis sans données sur les sièges au parlement ----
 unique(base_vote_parlement_legislatives$vote[is.na(base_vote_parlement_legislatives$seats)])
 
@@ -136,7 +156,7 @@ View(
 View(
   base_vote_parlement_legislatives %>%
     ungroup() %>%
-    filter(election_couverture_seats < 1) %>%
+    filter(election_couverture_seats < 0.8) %>%
     distinct(year,isoname,election_couverture_seats)
 )   
 
