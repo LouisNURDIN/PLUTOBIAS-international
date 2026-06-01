@@ -1,12 +1,13 @@
 #Base parlement 
 #Import base élections législatives
-
+Base_legislatives_deciles <- read.csv("data/intermediary/elections/legislative elections with decile dataset.csv", sep = ",")
+elections_legislatives_valides <- read.csv("data/intermediary/elections/valid legislative elections.csv", sep = ",")
 
 #Elections global ----
 Data_elections_global <- read.csv ("data/raw/elections global/elections-global-release.csv" , sep = ";")
 
-pays_gmp_legislatives <- unique(base_gmp_inc_deciles_legislatives_2$isoname)
-annees_gmp_legislatives <- unique(base_gmp_inc_deciles_legislatives_2$year)
+pays_gmp_legislatives <- unique(Base_legislatives_deciles$isoname)
+annees_gmp_legislatives <- unique(Base_legislatives_deciles$year)
 
 #filtrer pour avoir que les pays dans WPID
 Data_elections_global_group <- Data_elections_global %>%

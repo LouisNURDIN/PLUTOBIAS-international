@@ -149,3 +149,10 @@ write.csv(
   row.names = FALSE
 )
 
+write.csv(
+  elections_legislatives_valides,
+  "data/intermediary/elections/valid legislative elections.csv",
+  row.names = FALSE
+)
+
+
