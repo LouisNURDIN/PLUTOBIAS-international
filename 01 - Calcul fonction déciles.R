@@ -1,12 +1,14 @@
 #Calcul fonction déciles
 Base_elections_legislatives <- read.csv("data/intermediary/elections/legislative elections dataset.csv", sep = ",")
-
+unique(Base_elections_legislatives$weight)
+sum(is.na(Base_elections_legislatives$weight))
 ##Test pour recalculer les déciles ----
 #Fonction pour calculer vote par décile
 library(dplyr)
 library(tidyr)
 library(purrr)
 library(stringr)
+
 
 build_gmp_inc_base_long_2 <- function(df, annee, country){
   
