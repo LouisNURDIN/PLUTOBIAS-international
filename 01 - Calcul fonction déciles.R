@@ -1,5 +1,5 @@
 #Calcul fonction déciles
-Base_elections_legislatives <- read.csv("data/raw/intermediary/legislative elections dataset.csv", sep = ";")
+Base_elections_legislatives <- read.csv("data/raw/intermediary/elections/legislative elections dataset.csv", sep = ";")
 
 ##Test pour recalculer les déciles ----
 #Fonction pour calculer vote par décile
