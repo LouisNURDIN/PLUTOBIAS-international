@@ -159,4 +159,66 @@ write.csv(
   row.names = FALSE
 )
 
+sum(is.na(Base_elections_legislatives$inc))
+
+#Deuxième méthode de calcul avec dinc ----
+build_votes_by_decile <- function(df){
+  
+  df <- df %>%
+    mutate(
+      vote = case_when(
+        is.na(dataset_party_id) ~ NA_character_,
+        str_detect(dataset_party_id, "Abstention$") ~ "Abstention",
+        TRUE ~ dataset_party_id
+      )
+    )
+  
+  # 1. Votes par décile × parti (comptage simple)
+  votes <- df %>%
+    group_by(dinc, vote, partyfacts_id, isoname, year) %>%
+    summarise(
+      votes = n(),
+      .groups = "drop"
+    ) %>%
+    group_by(dinc) %>%
+    mutate(
+      pct_votes = votes / sum(votes) * 100
+    ) %>%
+    ungroup()
+  
+  # 2. Participation par décile
+  participation <- df %>%
+    group_by(dinc) %>%
+    summarise(
+      nbr_obs = n(),
+      votes_valides = sum(!str_detect(dataset_party_id, "Abstention$"), na.rm = TRUE),
+      taux_participation = votes_valides / nbr_obs * 100,
+      .groups = "drop"
+    )
+  
+  # 3. Output final
+  result <- votes %>%
+    left_join(participation, by = "dinc")
+  
+  return(result)
+}
+
+Base_legislatives_deciles2 <- Base_elections_legislatives %>%
+  group_by(isoname, year) %>%
+  group_split() %>%
+  map_dfr(~ build_votes_by_decile(.x))
+
+Base_legislatives_deciles2 <- Base_legislatives_deciles2 %>%
+  filter(taux_participation != 100)
+
+#Liste des élections législatives valides
+elections_legislatives_valides2 <- Base_legislatives_deciles2 %>%
+  group_by(isoname,year) %>%
+  summarise(.groups = "drop")
+
+write.csv(
+  Base_legislatives_deciles2,
+  "data/intermediary/elections/legislative elections with dinc dataset.csv",
+  row.names = FALSE
+)
 
