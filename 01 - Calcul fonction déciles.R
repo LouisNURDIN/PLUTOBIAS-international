@@ -2,6 +2,7 @@
 Base_elections_legislatives <- read.csv("data/intermediary/elections/legislative elections dataset.csv", sep = ",")
 unique(Base_elections_legislatives$weight)
 sum(is.na(Base_elections_legislatives$weight))
+
 ##Test pour recalculer les déciles ----
 #Fonction pour calculer vote par décile
 library(dplyr)
@@ -224,4 +225,6 @@ write.csv(
   "data/intermediary/elections/legislative elections with dinc dataset.csv",
   row.names = FALSE
 )
+
+
 
