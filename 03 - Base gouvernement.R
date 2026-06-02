@@ -60,33 +60,65 @@ whogov_parties <- whogov_parties %>%
   mutate(
     year = as.integer(year)
   )
-tmp <- whogov_parties %>%
+
+tmp <- base_vote_parlement_legislatives2 %>%
   left_join(
-    base_vote_parlement_legislatives2,
-    by = c("isoname", "partyfacts_id"),
+    whogov_parties,
+    by = c("isoname","year","partyfacts_id"),
     relationship = "many-to-many"
   )
+
 base_complete <- tmp %>%
   mutate(
     join_year = as.integer(join_year),
-    .year = as.integer(.data$year.x)
+    year = as.integer(.data$year)
   ) %>%
-  filter(join_year <= .year | is.na(join_year)) %>%
-  group_by(isoname, .year, decile,partyfacts_id) %>%
+  filter(join_year <= year | is.na(join_year)) %>%
+  group_by(isoname, year, decile,partyfacts_id) %>%
   slice_max(join_year, n = 1, with_ties = FALSE) %>%
   ungroup()
 
 
 ###mise au propre de la base ----
-base_complete <- base_complete %>%
-  rename(year = year.x)
-  
 base_complete <- base_complete[!is.na(base_complete$year),]
 
 base_complete <- base_complete %>%
   select(isoname, year, election_date,join_year, survey, decile, partyfacts_id, votes, pct_votes,
          votes_valides, taux_participation, seats, seats_total, seats_share, ministers_party, total_ministers, ministers_share, election_couverture_seats
          )
+
+###Rajouter les années manquantes ----
+base_complete_full <- base_complete %>%
+  group_by(isoname) %>%
+  complete(
+    year = seq(min(year, na.rm = TRUE),
+               max(year, na.rm = TRUE),
+               by = 1),
+    decile = 1:10
+  ) %>%
+  ungroup()
+
+base_complete_full <- base_complete_full %>%
+  arrange(isoname, year) %>%
+  group_by(isoname) %>%
+  mutate(
+    election_date = zoo::na.locf(election_date, na.rm = FALSE),
+    election_id = zoo::na.locf(election_id, na.rm = FALSE)
+  ) %>%
+  ungroup()
+
+base_complete_full <- base_complete_full %>%
+  group_by(isoname, decile) %>%
+  arrange(year) %>%
+  fill(
+    election_date,
+    pct_votes,
+    seats_share,
+    ministers_share,
+    .direction = "down"
+  ) %>%
+  ungroup()
+
 
 #####verif nombre de ministres couverts par élection ----
 base_complete <- base_complete %>%

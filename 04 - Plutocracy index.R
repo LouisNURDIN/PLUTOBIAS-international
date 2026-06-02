@@ -2,6 +2,16 @@
 base_complete_legislative <-  read.csv("data/final/final dataset legislative elections.csv", sep = ",")
 base_complete_legislative_dinc <-  read.csv("data/final/final dataset legislative elections dinc method.csv", sep = ",")
 
+base_complete_legislative <- base_complete_legislative[!is.na(base_complete_legislative$decile),]
+base_complete_legislative_dinc <- base_complete_legislative_dinc[!is.na(base_complete_legislative_dinc$decile),]
+
+#Pour le moment filtre sur l'année 2015 mais on pourraz le modifier quand on aura des données d'enquêtes plus récentes
+base_complete_legislative <- base_complete_legislative %>%
+  filter(year <= 2015)
+
+base_complete_legislative_dinc <- base_complete_legislative %>%
+  filter(year <= 2015)
+
 #Calcul des indices pour la ploutocratie ---- 
 library(dplyr)
 base_complete_legislative <- base_complete_legislative %>%
@@ -158,6 +168,8 @@ base_complete_legislative_index <- base_complete_legislative_index %>%
     
     .groups = "drop"
   )
+
+
 
 #DINC ----
 library(dplyr)
