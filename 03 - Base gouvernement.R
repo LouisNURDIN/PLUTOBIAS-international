@@ -8,6 +8,7 @@ whogov <- read.csv("data/raw/whogov/WhoGov_within_V3.1.csv", sep = ";")
 elections_legislatives_valides <- read.csv("data/intermediary/elections/valid legislative elections.csv", sep = ",")
 pays_gmp_legislatives <- unique(elections_legislatives_valides$isoname)
 annees_gmp_legislatives <- unique(elections_legislatives_valides$year)
+
 #Calcul nombre de ministres par année
 whogov <- whogov %>%
   rename(isoname = country_name)
@@ -24,31 +25,70 @@ whogov_parties <- whogov %>%
   ) %>%
   ungroup()
 
-#Join whogov dans ma base vote-parlement
+#Join whogov dans ma base vote-parlement ----
 whogov_parties <- whogov_parties %>%
   mutate(year = as.integer(year))
 whogov_parties <- whogov_parties %>%
   mutate(partyfacts_id = as.character(partyfacts_id))
 
-
-base_complete <- whogov_parties %>%
-  left_join(
-    base_vote_parlement_legislatives,
-    by = c("isoname", "year", "partyfacts_id")
+##calcul bonne date pour le join ----
+library(lubridate)
+library(stringr)
+base_vote_parlement_legislatives2 <- base_vote_parlement_legislatives %>%
+  group_by(isoname, year) %>%
+  mutate(
+    election_date = na_if(election_date, ""),
+    election_date = first(na.omit(election_date))
+  ) %>%
+  ungroup() %>%
+  mutate(
+    election_date_date = as.Date(str_replace_all(election_date, "\\.", "-")),
+    join_year = case_when(
+      is.na(election_date_date) ~ year,
+      month(election_date_date) < 7 ~ year(election_date_date),
+      TRUE ~ year(election_date_date) + 1
+    )
   )
 
+###join whogov avec ma base élections/législatives ----
+base_vote_parlement_legislatives2 <- base_vote_parlement_legislatives2 %>%
+  mutate(
+    join_year = as.integer(join_year)
+  )
+
+whogov_parties <- whogov_parties %>%
+  mutate(
+    year = as.integer(year)
+  )
+tmp <- whogov_parties %>%
+  left_join(
+    base_vote_parlement_legislatives2,
+    by = c("isoname", "partyfacts_id"),
+    relationship = "many-to-many"
+  )
+base_complete <- tmp %>%
+  mutate(
+    join_year = as.integer(join_year),
+    .year = as.integer(.data$year.x)
+  ) %>%
+  filter(join_year <= .year | is.na(join_year)) %>%
+  group_by(isoname, .year, decile,partyfacts_id) %>%
+  slice_max(join_year, n = 1, with_ties = FALSE) %>%
+  ungroup()
+
+
+###mise au propre de la base ----
+base_complete <- base_complete %>%
+  rename(year = year.x)
+  
 base_complete <- base_complete[!is.na(base_complete$year),]
 
 base_complete <- base_complete %>%
-  select(isoname, year, election_date, survey, decile, partyfacts_id, votes, pct_votes,
+  select(isoname, year, election_date,join_year, survey, decile, partyfacts_id, votes, pct_votes,
          votes_valides, taux_participation, seats, seats_total, seats_share, ministers_party, total_ministers, ministers_share, election_couverture_seats
          )
 
-
-
-
-
-#verif nombre de ministres couverts par élection
+#####verif nombre de ministres couverts par élection ----
 base_complete <- base_complete %>%
   mutate(
     ministers_party = coalesce(ministers_party, 0),
@@ -65,10 +105,14 @@ base_complete <- base_complete %>%
 base_complete_legislatives <- base_complete %>%
   filter(isoname%in% pays_gmp_legislatives)
 
+##Pour le moment filtre sur l'année mais on pourra modifier plus tard quand on aura des élections plus récentes ----
+base_complete_legislatives_before_2015 <- base_complete_legislatives %>%
+  filter(base_complete_legislatives$year <= 2015)
+
 
 #Liste des pays/années avec données incohérentes ----
 View(
-  base_complete %>%
+  base_complete_legislatives %>%
     ungroup() %>%
     filter(election_couverture_ministers > 1) %>%
     distinct(year,isoname,election_couverture_ministers)
@@ -76,11 +120,12 @@ View(
 
 ##Liste des pays/années où tous les ministres ne sont pas couverts ----
 View(
-  base_complete %>%
+  base_complete_legislatives %>%
     ungroup() %>%
     filter(election_couverture_ministers < 1) %>%
-    distinct(year,isoname,election_couverture_ministers)
+    distinct(year,isoname,election_couverture_seats,election_couverture_ministers)
 )
+
 
 
 
