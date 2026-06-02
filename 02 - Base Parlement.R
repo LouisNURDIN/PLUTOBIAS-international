@@ -204,5 +204,86 @@ write.csv(
   row.names = FALSE
 )
 
-#Avec méthode dinc ----
+
+#DINC ----
+Base_legislatives_deciles2 <- Base_legislatives_deciles2 %>%
+  rename(decile = dinc)
+
+Base_legislatives_deciles2 <- Base_legislatives_deciles2[!is.na(Base_legislatives_deciles2$decile),]
+  
+Elections_global2 <- Elections_global %>%
+  semi_join(
+    Base_legislatives_deciles2 %>%
+      distinct(isoname, year),
+    by = c("isoname", "year")
+  )
+
+##Traitement sur données manquantes ----
+Elections_global2 <- Elections_global2 %>%
+  group_by(isoname, year, election_date) %>%
+  mutate(
+    seats = if_else(
+      !is.na(alliance_seats),
+      alliance_seats / sum(!is.na(alliance_seats)),
+      seats
+    ),
+    seats_total = first(seats_total)
+  ) %>%
+  ungroup()
+
+#Correctifs sur mes bases votes et parlement pour faire join les partis ----
+Elections_global2 <- Elections_global2 %>%
+  mutate(
+    partyfacts_id = case_when(
+      party == "other (other-script)" ~ "Other",
+      partyfacts_id == "1246" & isoname == "France" ~ "1083",
+      TRUE ~ partyfacts_id
+    )
+  )
+
+
+Elections_global2 <- Elections_global2  %>% 
+  mutate(seats_share = seats / seats_total)
+## Join entre les bases ----
+base_vote_parlement_legislatives2 <- Base_legislatives_deciles2 %>%
+  left_join(
+    Elections_global2 %>%
+      select(isoname, year,partyfacts_id,election_date,seats,seats_total,seats_share),
+    distinct(isoname, year,partyfacts_id),
+    by = c("isoname", "year","partyfacts_id")
+  )
+
+###Traitement pour avoir le taux de députés par partis sur l'ensemble des députés
+base_vote_parlement_legislatives2 <- base_vote_parlement_legislatives2 %>%
+  filter(year <= 2015)
+
+
+base_vote_parlement_legislatives2 <- base_vote_parlement_legislatives2 %>%
+  mutate(
+    seats_share = case_when(
+      partyfacts_id == "1691" & year == 2002 ~ 0.487,
+      partyfacts_id == "1408" & year == 2002 ~ 0.51295,
+      TRUE ~ seats_share
+    )
+  )
+
+base_vote_parlement_legislatives2 <- base_vote_parlement_legislatives2 %>%
+  mutate(
+    seats = case_when(
+      partyfacts_id == "1691" & year == 2002 ~ 188,
+      partyfacts_id == "1408" & year == 2002 ~ 198,
+      TRUE ~ seats_share
+    )
+  )
+
+base_vote_parlement_legislatives2 <- base_vote_parlement_legislatives2  %>% 
+  group_by(isoname,year,election_date,decile)%>%
+  mutate(election_couverture_seats = sum(seats_share))
+
+#Export base avec méthode dinc
+write.csv(
+  base_vote_parlement_legislatives2,
+  "data/intermediary/parliament/elections and parliament dataset with dinc.csv",
+  row.names = FALSE
+)
 

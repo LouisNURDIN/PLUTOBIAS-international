@@ -130,3 +130,4 @@ View(
 
 
 #Avec méthode dinc ----
+base_vote_parlement_legislatives2 <- read.csv("data/intermediary/parliament/elections and parliament dataset with dinc.csv", sep = ",")
