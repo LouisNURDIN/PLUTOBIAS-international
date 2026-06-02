@@ -174,7 +174,7 @@ build_votes_by_decile <- function(df){
   
   # 1. Votes par décile × parti (comptage simple)
   votes <- df %>%
-    group_by(dinc, vote, partyfacts_id, isoname, year) %>%
+    group_by(dinc, vote, partyfacts_id, isoname, year,survey) %>%
     summarise(
       votes = n(),
       .groups = "drop"
@@ -209,6 +209,10 @@ Base_legislatives_deciles2 <- Base_elections_legislatives %>%
 
 Base_legislatives_deciles2 <- Base_legislatives_deciles2 %>%
   filter(taux_participation != 100)
+Base_legislatives_deciles2 <- Base_legislatives_deciles2 %>%
+  rename(decile = dinc)
+
+Base_legislatives_deciles2 <- Base_legislatives_deciles2[!is.na(Base_legislatives_deciles2$decile),]
 
 #Liste des élections législatives valides
 elections_legislatives_valides2 <- Base_legislatives_deciles2 %>%

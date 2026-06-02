@@ -206,11 +206,6 @@ write.csv(
 
 
 #DINC ----
-Base_legislatives_deciles2 <- Base_legislatives_deciles2 %>%
-  rename(decile = dinc)
-
-Base_legislatives_deciles2 <- Base_legislatives_deciles2[!is.na(Base_legislatives_deciles2$decile),]
-  
 Elections_global2 <- Elections_global %>%
   semi_join(
     Base_legislatives_deciles2 %>%
