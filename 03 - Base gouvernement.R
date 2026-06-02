@@ -240,7 +240,7 @@ write.csv(
 
 write.csv(
   base_complete,
-  "data/final/final dataset all elections.csv",
+  "data/final/final dataset all countries.csv",
   row.names = FALSE
 )
 #avec dinc
@@ -252,7 +252,7 @@ write.csv(
 
 write.csv(
   base_complete2,
-  "data/final/final dataset all elections dinc method.csv",
+  "data/final/final dataset all countries dinc method.csv",
   row.names = FALSE
 )
 
