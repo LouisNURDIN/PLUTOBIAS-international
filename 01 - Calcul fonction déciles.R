@@ -3,6 +3,8 @@ Base_elections_legislatives <- read.csv("data/intermediary/elections/legislative
 unique(Base_elections_legislatives$weight)
 sum(is.na(Base_elections_legislatives$weight))
 
+Base_elections_legislatives <- Base_elections_legislatives %>%
+  filter(Base_elections_legislatives$partyfacts_id != "Other")
 ##Test pour recalculer les déciles ----
 #Fonction pour calculer vote par décile
 library(dplyr)

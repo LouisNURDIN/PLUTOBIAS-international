@@ -150,6 +150,12 @@ View(
     distinct(year,isoname,election_couverture_ministers)
 )
 
+View(
+  base_complete_legislatives %>%
+    ungroup() %>%
+    filter(election_couverture_seats > 100) %>%
+    distinct(year,isoname,election_couverture_seats)
+)
 ##Liste des pays/années où tous les ministres ne sont pas couverts ----
 View(
   base_complete_legislatives %>%
@@ -281,6 +287,12 @@ View(
     distinct(year,isoname,election_couverture_ministers)
 )
 
+View(
+  base_complete_legislatives_dinc %>%
+    ungroup() %>%
+    filter(election_couverture_seats > 1) %>%
+    distinct(year,isoname,election_couverture_seats)
+)
 ##Liste des pays/années où tous les ministres ne sont pas couverts ----
 View(
   base_complete_legislatives_dinc %>%
