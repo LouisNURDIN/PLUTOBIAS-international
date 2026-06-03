@@ -29,6 +29,7 @@ Partyfacts_id_parlgov <- Partyfacts_id %>%
   filter(dataset_key == "parlgov")
 
 
+
 #2ème méthode = on enlève les élections où turnout = NA + les élections où Turnout = NA et/ou toujours la même valeur----
 GMP_inc_2 <- GMP_inc %>%
   group_by(isoname, year,type) %>%
@@ -38,6 +39,8 @@ GMP_inc_2 <- GMP_inc %>%
   ) %>%
   ungroup()
 
+GMP_inc_2 <- GMP_inc_2 %>%
+  mutate(source_recode = "WPID")
 #On supprime les électeurs où vote = "vide" et turnout = NA ou 1
 GMP_inc_2 <- GMP_inc_2 %>%
   filter(
