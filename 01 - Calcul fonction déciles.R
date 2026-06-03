@@ -166,6 +166,9 @@ write.csv(
 sum(is.na(Base_elections_legislatives$inc))
 
 #Deuxième méthode de calcul avec dinc ----
+
+meta_info <- Base_elections_legislatives %>%
+  distinct(isoname, year, survey, source, source_recode)
 build_votes_by_decile <- function(df){
   
   df <- df %>%
@@ -179,7 +182,7 @@ build_votes_by_decile <- function(df){
   
   # 1. Votes par décile × parti (comptage simple)
   votes <- df %>%
-    group_by(dinc, vote, partyfacts_id, isoname, year,survey,source, source_recode) %>%
+    group_by(isoname, year,dinc, vote, partyfacts_id) %>%
     summarise(
       votes = n(),
       .groups = "drop"
@@ -210,7 +213,8 @@ build_votes_by_decile <- function(df){
 Base_legislatives_deciles2 <- Base_elections_legislatives %>%
   group_by(isoname, year) %>%
   group_split() %>%
-  map_dfr(~ build_votes_by_decile(.x))
+  map_dfr(~ build_votes_by_decile(.x)) %>%
+  left_join(meta_info, by = c("isoname", "year"))
 
 Base_legislatives_deciles2 <- Base_legislatives_deciles2 %>%
   filter(taux_participation != 100)
@@ -218,6 +222,11 @@ Base_legislatives_deciles2 <- Base_legislatives_deciles2 %>%
   rename(decile = dinc)
 
 Base_legislatives_deciles2 <- Base_legislatives_deciles2[!is.na(Base_legislatives_deciles2$decile),]
+
+Base_legislatives_deciles2 <- Base_legislatives_deciles2 %>%
+  group_by(isoname, year, decile, partyfacts_id) %>%
+  slice(1) %>%
+  ungroup()
 
 #Liste des élections législatives valides
 elections_legislatives_valides2 <- Base_legislatives_deciles2 %>%
@@ -231,4 +240,6 @@ write.csv(
 )
 
 
-
+Base_legislatives_deciles2 %>%
+  count(isoname, year, decile, partyfacts_id) %>%
+  filter(n > 1)

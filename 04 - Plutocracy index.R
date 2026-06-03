@@ -4,9 +4,15 @@ base_complete_legislative_dinc <-  read.csv("data/final/final dataset legislativ
 
 base_complete_legislative <- base_complete_legislative[!is.na(base_complete_legislative$decile),]
 base_complete_legislative <- base_complete_legislative[!is.na(base_complete_legislative$partyfacts_id),]
+base_complete_legislative <- base_complete_legislative %>%
+  filter(base_complete_legislative$partyfacts_id != "Other")
 
 base_complete_legislative_dinc <- base_complete_legislative_dinc[!is.na(base_complete_legislative_dinc$decile),]
 base_complete_legislative_dinc <- base_complete_legislative_dinc[!is.na(base_complete_legislative_dinc$partyfacts_id),]
+base_complete_legislative_dinc <- base_complete_legislative_dinc %>%
+  filter(base_complete_legislative_dinc$partyfacts_id != "Other")
+
+
 
 #Pour le moment filtre sur l'année 2015 mais on pourraz le modifier quand on aura des données d'enquêtes plus récentes
 base_complete_legislative <- base_complete_legislative %>%
@@ -298,7 +304,7 @@ base_complete_legislative_dinc <- base_complete_legislative_dinc %>%
     
   ) %>%
   select(
-    isoname,join_year,year,
+    isoname,year,
     election_date_date,decile,
     partyfacts_id,
     pct_votes, taux_participation,
@@ -343,7 +349,8 @@ base_complete_legislative_dinc_index <- base_complete_legislative_dinc %>%
     ratio_sieges_ministres_50_50 = mean(ratio_sieges_ministres_50_50, na.rm = TRUE),
     ratio_gouvernement_50_50 = mean(ratio_gouvernement_50_50, na.rm = TRUE),
     verif_ratio_50_50 = mean(verif_ratio_50_50, na.rm = TRUE),
-    
+    election_couverture_seats = mean(election_couverture_seats, na.rm = TRUE),
+    election_couverture_ministers = mean(election_couverture_ministers, na.rm = TRUE),
     # sécurité diagnostic
     
     
@@ -351,7 +358,13 @@ base_complete_legislative_dinc_index <- base_complete_legislative_dinc %>%
   )
 
 
-
+##Liste des pays/années où tous les ministres ne sont pas couverts ----
+View(
+  base_complete_legislative_dinc_index %>%
+    ungroup() %>%
+    filter(election_couverture_ministers < 1) %>%
+    distinct(year,isoname,election_couverture_seats,election_couverture_ministers)
+)
 
 cor(base_complete_legislative_dinc_index$ratio_gouvernement_1_10, base_complete_legislative_dinc_index$verif_ratio_10_10, 
     use = "complete.obs")
