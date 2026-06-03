@@ -4,13 +4,19 @@ base_complete_legislative_dinc <-  read.csv("data/final/final dataset legislativ
 
 base_complete_legislative <- base_complete_legislative[!is.na(base_complete_legislative$decile),]
 base_complete_legislative <- base_complete_legislative[!is.na(base_complete_legislative$partyfacts_id),]
+base_complete_legislative <- base_complete_legislative[!is.na(base_complete_legislative$election_date_date),]
 base_complete_legislative <- base_complete_legislative %>%
   filter(base_complete_legislative$partyfacts_id != "Other")
+base_complete_legislative <- base_complete_legislative %>%
+  filter(base_complete_legislative$year >= 1966)
 
 base_complete_legislative_dinc <- base_complete_legislative_dinc[!is.na(base_complete_legislative_dinc$decile),]
 base_complete_legislative_dinc <- base_complete_legislative_dinc[!is.na(base_complete_legislative_dinc$partyfacts_id),]
+base_complete_legislative_dinc <- base_complete_legislative_dinc[!is.na(base_complete_legislative_dinc$election_date_date),]
 base_complete_legislative_dinc <- base_complete_legislative_dinc %>%
   filter(base_complete_legislative_dinc$partyfacts_id != "Other")
+base_complete_legislative_dinc <- base_complete_legislative_dinc %>%
+  filter(base_complete_legislative_dinc$year >= 1966)
 
 
 
@@ -40,7 +46,8 @@ deciles_data <- base_complete_legislative %>%
     taux_participation = first(na.omit(taux_participation)),
     total_sieges = sum(votes_en_siege, na.rm = TRUE),
     total_ministres = sum(votes_en_ministres, na.rm = TRUE),
-    votes_valides_en_sieges = sum(votes_en_siege[!is.na(votes_en_siege)]),
+    votes_valides_en_sieges =
+      total_sieges / taux_participation * 100,
     .groups = "drop"
   )
 
@@ -97,15 +104,20 @@ ratios_50 <- deciles_data %>%
       sum(votes_valides_en_sieges[decile %in% 1:5]),
     
     ratio_sieges_ministres_50_50 =
-      sum((total_ministres / total_sieges)[decile %in% 6:10]) /
-      sum((total_ministres / total_sieges)[decile %in% 1:5]),
+      (
+        sum(total_ministres[decile %in% 6:10]) /
+          sum(total_sieges[decile %in% 6:10])
+      ) /
+      (
+        sum(total_ministres[decile %in% 1:5]) /
+          sum(total_sieges[decile %in% 1:5])
+      ),
     
     .groups = "drop"
   )
 
 
 # 6. Réintégration dans la base principale
-
 base_complete_legislative <- base_complete_legislative %>%
   left_join(ratios_1_10, by = c("isoname", "year")) %>%
    left_join(ratios_50, by = c("isoname", "year"))
@@ -184,7 +196,12 @@ base_complete_legislative_index <- base_complete_legislative %>%
     .groups = "drop"
   )
 
-
+View(
+  base_complete_legislative %>%
+    ungroup() %>%
+    filter(election_couverture_ministers < 1) %>%
+    distinct(year,isoname,election_couverture_seats,election_couverture_ministers)
+)
 
 #DINC ----
 library(dplyr)
@@ -357,6 +374,11 @@ base_complete_legislative_dinc_index <- base_complete_legislative_dinc %>%
     .groups = "drop"
   )
 
+base_complete_legislative_dinc_index_group <- base_complete_legislative_dinc_index %>%
+  group_by(isoname, year) %>%
+  slice(1) %>%
+  ungroup()
+
 
 ##Liste des pays/années où tous les ministres ne sont pas couverts ----
 View(
@@ -372,4 +394,29 @@ cor(base_complete_legislative_dinc_index$ratio_gouvernement_1_10, base_complete_
 cor(base_complete_legislative_dinc_index$ratio_gouvernement_50_50, base_complete_legislative_dinc_index$verif_ratio_50_50, 
     use = "complete.obs")
 
+
+#Quelques tests de vérification
+max(base_complete_legislative_dinc_index_group$ratio_gouvernement_1_10, na.rm = TRUE)
+min(base_complete_legislative_dinc_index_group$ratio_gouvernement_1_10, na.rm = TRUE)
+mean(base_complete_legislative_dinc_index_group$ratio_gouvernement_1_10, na.rm = TRUE)
+
+max(base_complete_legislative_dinc_index_group$ratio_gouvernement_50_50, na.rm = TRUE)
+min(base_complete_legislative_dinc_index_group$ratio_gouvernement_50_50, na.rm = TRUE)
+mean(base_complete_legislative_dinc_index_group$ratio_gouvernement_50_50, na.rm = TRUE)
+
+library(ggplot2)
+library(ggrepel)
+
+ggplot(base_complete_legislative_dinc_index_group,
+       aes(x = ratio_gouvernement_1_10,
+           y = ratio_gouvernement_50_50,
+           label = paste(isoname, year))) +
+  geom_point(alpha = 0.7) +
+  geom_text_repel(size = 3, max.overlaps = 50) +
+  theme_minimal() +
+  labs(
+    x = "Ratio gouvernement 1 vs 10",
+    y = "Ratio gouvernement 50 vs 50",
+    title = "Comparaison des ratios gouvernementaux"
+  )
 
