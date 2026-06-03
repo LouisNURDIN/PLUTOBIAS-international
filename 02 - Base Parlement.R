@@ -102,7 +102,7 @@ Elections_global <- Elections_global %>%
 
 
 Elections_global <- Elections_global  %>% 
-  mutate(seats_share = seats / seats_total)
+  mutate(seats_share = seats / seats_total * 100)
 ## Join entre les bases ----
 base_vote_parlement_legislatives <- Base_legislatives_deciles %>%
   left_join(
@@ -113,10 +113,6 @@ base_vote_parlement_legislatives <- Base_legislatives_deciles %>%
   )
 
 ###Traitement pour avoir le taux de députés par partis sur l'ensemble des députés
-
-
-
-
 base_vote_parlement_legislatives <- base_vote_parlement_legislatives %>%
   filter(year <= 2015)
 
@@ -124,8 +120,8 @@ base_vote_parlement_legislatives <- base_vote_parlement_legislatives %>%
 base_vote_parlement_legislatives <- base_vote_parlement_legislatives %>%
   mutate(
     seats_share = case_when(
-      partyfacts_id == "1691" & year == 2002 ~ 0.487,
-      partyfacts_id == "1408" & year == 2002 ~ 0.51295,
+      partyfacts_id == "1691" & year == 2002 ~ 48.7,
+      partyfacts_id == "1408" & year == 2002 ~ 51.295,
       TRUE ~ seats_share
     )
   )

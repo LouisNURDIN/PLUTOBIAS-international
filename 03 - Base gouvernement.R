@@ -83,9 +83,9 @@ base_complete <- grid %>%
     base_vote_parlement_legislatives2,
     by = c("isoname", "year", "decile", "partyfacts_id")
   ) %>%
-  arrange(isoname,year, decile) %>%
-  group_by(isoname,decile) %>%
-  fill(partyfacts_id, survey, votes, pct_votes,nbr_obs,votes_valides,taux_participation,election_date_date,
+  arrange(isoname, year, decile,partyfacts_id) %>%
+  group_by(isoname,decile, partyfacts_id) %>%
+  fill(survey, votes, pct_votes,nbr_obs,votes_valides,taux_participation,election_date_date,
        seats,seats_total,seats_share,election_couverture_seats, .direction = "down") %>%
   ungroup()
 
