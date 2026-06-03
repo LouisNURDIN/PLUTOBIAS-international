@@ -200,7 +200,8 @@ deciles_data_dinc <- base_complete_legislative_dinc %>%
     taux_participation = first(na.omit(taux_participation)),
     total_sieges = sum(votes_en_siege, na.rm = TRUE),
     total_ministres = sum(votes_en_ministres, na.rm = TRUE),
-    votes_valides_en_sieges = sum(votes_en_siege[!is.na(votes_en_siege)]),
+    votes_valides_en_sieges =
+      total_sieges / taux_participation * 100,
     .groups = "drop"
   )
 
@@ -256,17 +257,19 @@ ratios_50_dinc <- deciles_data_dinc %>%
       sum(votes_valides_en_sieges[decile %in% 1:5]),
     
     ratio_sieges_ministres_50_50 =
-      sum((total_ministres / total_sieges)[decile %in% 6:10]) /
-      sum((total_ministres / total_sieges)[decile %in% 1:5]),
+      (
+        sum(total_ministres[decile %in% 6:10]) /
+          sum(total_sieges[decile %in% 6:10])
+      ) /
+      (
+        sum(total_ministres[decile %in% 1:5]) /
+          sum(total_sieges[decile %in% 1:5])
+      ),
     
     .groups = "drop"
   )
 
 # 6. Réintégration dans la base principale
-base_complete_legislative_dinc <- base_complete_legislative_dinc %>%
-  left_join(ratios_1_10_dinc, by = c("isoname", "year")) %>%
-  left_join(ratios_50_dinc, by = c("isoname", "year"))
-
 base_complete_legislative_dinc <- base_complete_legislative_dinc %>%
   left_join(
     deciles_data_dinc %>%
@@ -274,7 +277,12 @@ base_complete_legislative_dinc <- base_complete_legislative_dinc %>%
     by = c("isoname","year", "decile")
   )
 
-names(base_complete_legislative)
+base_complete_legislative_dinc <- base_complete_legislative_dinc %>%
+  left_join(ratios_1_10_dinc, by = c("isoname", "year")) %>%
+  left_join(ratios_50_dinc, by = c("isoname", "year"))
+
+
+
 # Base finale
 base_complete_legislative_dinc <- base_complete_legislative_dinc %>%
   mutate(
@@ -304,9 +312,16 @@ base_complete_legislative_dinc <- base_complete_legislative_dinc %>%
     election_couverture_ministers
   ) 
 
+cor(base_complete_legislative_dinc$ratio_gouvernement_1_10, base_complete_legislative_dinc$verif_ratio_10_10, 
+    use = "complete.obs")
+
+cor(base_complete_legislative_dinc$ratio_gouvernement_50_50, base_complete_legislative_dinc$verif_ratio_50_50, 
+    use = "complete.obs")
+
+
 #base propre
 base_complete_legislative_dinc_index <- base_complete_legislative_dinc %>%
-  group_by(isoname,join_year, year,election_date_date, decile) %>%
+  group_by(isoname,year,election_date_date, decile) %>%
   summarise(
     
     # identifiant survey (supposé constant)
@@ -335,8 +350,13 @@ base_complete_legislative_dinc_index <- base_complete_legislative_dinc %>%
     .groups = "drop"
   )
 
-cor(base_complete_legislative_dinc$ratio_gouvernement_1_10, base_complete_legislative_dinc$verif_ratio_10_10, 
+
+
+
+cor(base_complete_legislative_dinc_index$ratio_gouvernement_1_10, base_complete_legislative_dinc_index$verif_ratio_10_10, 
     use = "complete.obs")
 
-cor(base_complete_legislative_dinc$ratio_gouvernement_50_50, base_complete_legislative_dinc$verif_ratio_50_50, 
+cor(base_complete_legislative_dinc_index$ratio_gouvernement_50_50, base_complete_legislative_dinc_index$verif_ratio_50_50, 
     use = "complete.obs")
+
+
