@@ -16,8 +16,8 @@ build_gmp_inc_base_long_2 <- function(df, annee, country){
   # sécurité
   year <- unique(df$year)[1]
   survey <- unique(df$survey)[1]
-  
-  
+  source <- unique(df$source)[1]
+  source_recode <- unique(df$source_recode)[1]
   # 1. distribution revenu (par pays + année)
   
   dist_rev <- df %>%
@@ -95,7 +95,9 @@ build_gmp_inc_base_long_2 <- function(df, annee, country){
       annee = annee,
       year = year,
       isoname = country,
-      survey = survey
+      survey = survey,
+      source = source,
+      source_recode = source_recode
     ) %>%
     relocate(isoname, annee, year, vote, decile, survey)
 }
@@ -175,7 +177,7 @@ build_votes_by_decile <- function(df){
   
   # 1. Votes par décile × parti (comptage simple)
   votes <- df %>%
-    group_by(dinc, vote, partyfacts_id, isoname, year,survey) %>%
+    group_by(dinc, vote, partyfacts_id, isoname, year,survey,source, source_recode) %>%
     summarise(
       votes = n(),
       .groups = "drop"
