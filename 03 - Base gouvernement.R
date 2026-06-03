@@ -116,7 +116,7 @@ base_complete <- base_complete %>%
 base_complete <- base_complete[!is.na(base_complete$year),]
 
 base_complete <- base_complete %>%
-  select(isoname, year, election_date_date,join_year, survey, decile, partyfacts_id, votes, pct_votes,
+  select(isoname, year, election_date_date,join_year, survey,source, source_recode, decile, partyfacts_id, votes, pct_votes,
          votes_valides, taux_participation, seats, seats_total, seats_share, ministers_party, total_ministers, ministers_share, election_couverture_seats
          )
 
@@ -163,10 +163,8 @@ View(
 
 #DINC ----
 base_vote_parlement_legislatives_dinc <- read.csv("data/intermediary/parliament/elections and parliament dataset with dinc.csv", sep = ",")
-
 ##calcul bonne date pour le join ----
-library(lubridate)
-library(stringr)
+
 base_vote_parlement_legislatives_dinc2 <- base_vote_parlement_legislatives_dinc %>%
   group_by(isoname, year) %>%
   mutate(
@@ -194,37 +192,67 @@ whogov_parties <- whogov_parties %>%
     year = as.integer(year)
   )
 
-tmp2 <- whogov_parties %>%
-  left_join(
-    base_vote_parlement_legislatives_dinc2,
-    by = c("isoname", "partyfacts_id"),
-    relationship = "many-to-many"
+
+library(dplyr)
+library(tidyr)
+years <- seq(
+  min(base_vote_parlement_legislatives_dinc2$year, na.rm = TRUE),
+  max(whogov_parties$year, na.rm = TRUE),
+  by = 1
+)
+
+base <- base_vote_parlement_legislatives_dinc2 %>%
+  distinct(isoname, decile, partyfacts_id)
+
+party_life <- base_vote_parlement_legislatives_dinc2 %>%
+  group_by(isoname, partyfacts_id) %>%
+  summarise(
+    first_year = min(year, na.rm = TRUE),
+    last_year  = max(year, na.rm = TRUE),
+    .groups = "drop"
   )
 
-base_complete2 <- tmp2 %>%
-  mutate(
-    join_year = as.integer(join_year),
-    .year = as.integer(.data$year.x)
+grid <- tidyr::expand_grid(
+  base_vote_parlement_legislatives_dinc2 %>%
+    distinct(isoname, decile, partyfacts_id),
+  year = years
+) %>%
+  left_join(party_life, by = c("isoname", "partyfacts_id")) %>%
+  filter(year >= first_year & year <= last_year)
+
+base_complete_dinc <- grid %>%
+  left_join(
+    base_vote_parlement_legislatives_dinc2,
+    by = c("isoname", "year", "decile", "partyfacts_id")
   ) %>%
-  filter(join_year <= .year | is.na(join_year)) %>%
-  group_by(isoname, .year, decile,partyfacts_id) %>%
-  slice_max(join_year, n = 1, with_ties = FALSE) %>%
+  arrange(isoname,year, decile, partyfacts_id) %>%
+  group_by(isoname, decile, partyfacts_id) %>%
+  fill(
+    survey, votes, pct_votes, nbr_obs, votes_valides,
+    taux_participation, election_date_date,
+    seats, seats_total, seats_share, election_couverture_seats,
+    .direction = "down"
+  ) %>%
   ungroup()
 
+base_complete_dinc <- base_complete_dinc %>%
+  left_join(
+    whogov_parties,
+    by = c("isoname","year","partyfacts_id"),
+    relationship = "many-to-many"
+  )
+#code original ----
 
 ###mise au propre de la base ----
-base_complete2 <- base_complete2 %>%
-  rename(year = year.x)
+base_complete_dinc <- base_complete_dinc[!is.na(base_complete_dinc$year),]
 
-base_complete2 <- base_complete2[!is.na(base_complete2$year),]
-
-base_complete2 <- base_complete2 %>%
-  select(isoname, join_year,year, election_date,decile, partyfacts_id, votes, pct_votes,
+base_complete_dinc <- base_complete_dinc %>%
+  select(isoname, year, election_date_date,join_year, survey, source, source_recode,decile, partyfacts_id, votes, pct_votes,
          votes_valides, taux_participation, seats, seats_total, seats_share, ministers_party, total_ministers, ministers_share, election_couverture_seats
   )
 
 #####verif nombre de ministres couverts par élection ----
-base_complete2 <- base_complete2 %>%
+base_complete_dinc <- base_complete_dinc %>%
   mutate(
     ministers_party = coalesce(ministers_party, 0),
     total_ministers = coalesce(total_ministers, 0),
@@ -236,10 +264,8 @@ base_complete2 <- base_complete2 %>%
   ) %>%
   ungroup()
 
-
-
 #Base avec bonnes élections législatives ----
-base_complete_legislatives_dinc <- base_complete2 %>%
+base_complete_legislatives_dinc <- base_complete_dinc %>%
   filter(isoname%in% pays_gmp_legislatives)
 
 ##Pour le moment filtre sur l'année mais on pourra modifier plus tard quand on aura des élections plus récentes ----
@@ -249,7 +275,7 @@ base_complete_legislatives_before_2015_dinc <- base_complete_legislatives_dinc %
 
 #Liste des pays/années avec données incohérentes ----
 View(
-  base_complete_legislatives_dinc2 %>%
+  base_complete_legislatives_dinc %>%
     ungroup() %>%
     filter(election_couverture_ministers > 1) %>%
     distinct(year,isoname,election_couverture_ministers)
@@ -257,7 +283,7 @@ View(
 
 ##Liste des pays/années où tous les ministres ne sont pas couverts ----
 View(
-  base_complete_legislatives_dinc2 %>%
+  base_complete_legislatives_dinc %>%
     ungroup() %>%
     filter(election_couverture_ministers < 1) %>%
     distinct(year,isoname,election_couverture_seats,election_couverture_ministers)
@@ -285,7 +311,7 @@ write.csv(
 )
 
 write.csv(
-  base_complete2,
+  base_complete_dinc,
   "data/final/final dataset all countries dinc method.csv",
   row.names = FALSE
 )
