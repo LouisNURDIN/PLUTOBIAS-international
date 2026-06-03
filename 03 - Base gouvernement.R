@@ -73,22 +73,36 @@ years <- seq(
 base <- base_vote_parlement_legislatives2 %>%
   distinct(isoname, decile, partyfacts_id)
 
+party_life <- base_vote_parlement_legislatives2 %>%
+  group_by(isoname, partyfacts_id) %>%
+  summarise(
+    first_year = min(year, na.rm = TRUE),
+    last_year  = max(year, na.rm = TRUE),
+    .groups = "drop"
+  )
+
 grid <- tidyr::expand_grid(
-  base,
+  base_vote_parlement_legislatives2 %>%
+    distinct(isoname, decile, partyfacts_id),
   year = years
-)
+) %>%
+  left_join(party_life, by = c("isoname", "partyfacts_id")) %>%
+  filter(year >= first_year & year <= last_year)
 
 base_complete <- grid %>%
   left_join(
     base_vote_parlement_legislatives2,
     by = c("isoname", "year", "decile", "partyfacts_id")
   ) %>%
-  arrange(isoname, year, decile,partyfacts_id) %>%
-  group_by(isoname,decile, partyfacts_id) %>%
-  fill(survey, votes, pct_votes,nbr_obs,votes_valides,taux_participation,election_date_date,
-       seats,seats_total,seats_share,election_couverture_seats, .direction = "down") %>%
+  arrange(isoname,year, decile, partyfacts_id) %>%
+  group_by(isoname, decile, partyfacts_id) %>%
+  fill(
+    survey, votes, pct_votes, nbr_obs, votes_valides,
+    taux_participation, election_date_date,
+    seats, seats_total, seats_share, election_couverture_seats,
+    .direction = "down"
+  ) %>%
   ungroup()
-
 
 base_complete <- base_complete %>%
   left_join(

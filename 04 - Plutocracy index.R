@@ -110,7 +110,7 @@ base_complete_legislative <- base_complete_legislative %>%
 
 names(base_complete_legislative)
 # Base finale
-base_complete_legislative_index <- base_complete_legislative %>%
+base_complete_legislative <- base_complete_legislative %>%
   mutate(
     verif_ratio_10_10 =
       ratio_participation_1_10 *
@@ -125,7 +125,7 @@ base_complete_legislative_index <- base_complete_legislative %>%
   ) %>%
   select(
     isoname,join_year,year,survey,
-    election_date,decile,
+    election_date_date,decile,
     partyfacts_id,
     pct_votes, taux_participation,
     seats_share, votes_en_siege,
@@ -139,13 +139,13 @@ base_complete_legislative_index <- base_complete_legislative %>%
   ) 
 
 #base propre
-base_complete_legislative_index <- base_complete_legislative_index %>%
-  group_by(isoname,join_year, year,election_date, decile) %>%
+base_complete_legislative_index <- base_complete_legislative %>%
+  group_by(isoname, year, decile) %>%
   summarise(
     
     # identifiant survey (supposé constant)
     survey = first(na.omit(survey)),
-    
+    election_date_date = first(na.omit(election_date_date)),
     # ratios → on sécurise avec mean (ou first si tu es sûr qu'ils sont constants)
     taux_participation = mean(taux_participation, na.rm = TRUE),
     total_sieges_decile = mean(total_sieges, na.rm = TRUE),
