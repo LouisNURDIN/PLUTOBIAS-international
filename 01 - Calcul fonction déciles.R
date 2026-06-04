@@ -1,17 +1,16 @@
 #Calcul fonction déciles
+library(dplyr)
+library(tidyr)
+library(purrr)
+library(stringr)
 Base_elections_legislatives <- read.csv("data/intermediary/elections/legislative elections dataset.csv", sep = ",")
-unique(Base_elections_legislatives$weight)
+
 sum(is.na(Base_elections_legislatives$weight))
 
 Base_elections_legislatives <- Base_elections_legislatives %>%
   filter(Base_elections_legislatives$partyfacts_id != "Other")
 ##Test pour recalculer les déciles ----
 #Fonction pour calculer vote par décile
-library(dplyr)
-library(tidyr)
-library(purrr)
-library(stringr)
-
 
 build_gmp_inc_base_long_2 <- function(df, annee, country){
   
@@ -239,7 +238,3 @@ write.csv(
   row.names = FALSE
 )
 
-
-Base_legislatives_deciles2 %>%
-  count(isoname, year, decile, partyfacts_id) %>%
-  filter(n > 1)

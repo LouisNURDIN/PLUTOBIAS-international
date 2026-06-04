@@ -207,11 +207,13 @@ View(
 library(dplyr)
 base_complete_legislative_dinc <- base_complete_legislative_dinc %>%
   mutate(
-    across(c(ministers_share, seats_share),
+    across(c(ministers_share),
            ~ as.numeric(gsub(",", ".", .)) * 100),
-    
+    across(c(seats_share),
+           ~ as.numeric(gsub(",", ".", .)),
     votes_en_siege = pmin(coalesce(seats_share, 0), pct_votes),
     votes_en_ministres = pmin(coalesce(ministers_share, 0), pct_votes)
+  )
   )
 
 
