@@ -1,4 +1,5 @@
 #Calcul des indices de ploutocratie 
+library(dplyr)
 base_complete_legislative <-  read.csv("data/final/final dataset legislative elections.csv", sep = ",")
 base_complete_legislative_dinc <-  read.csv("data/final/final dataset legislative elections dinc method.csv", sep = ",")
 
@@ -28,11 +29,11 @@ base_complete_legislative_dinc <- base_complete_legislative %>%
   filter(year <= 2015)
 
 #Calcul des indices pour la ploutocratie ---- 
-library(dplyr)
+
 base_complete_legislative <- base_complete_legislative %>%
   mutate(
-    across(c(ministers_share, seats_share),
-           ~ as.numeric(gsub(",", ".", .)) * 100),
+    ministers_share = as.numeric(gsub(",", ".", ministers_share))*100,
+    seats_share = as.numeric(gsub(",", ".", seats_share)),
     
     votes_en_siege = pmin(coalesce(seats_share, 0), pct_votes),
     votes_en_ministres = pmin(coalesce(ministers_share, 0), pct_votes)
@@ -149,7 +150,7 @@ base_complete_legislative <- base_complete_legislative %>%
     election_date_date,decile,
     partyfacts_id,
     pct_votes, taux_participation,
-    seats_share, votes_en_siege,
+    seats_share, votes_en_siege,ministers_party,
     ministers_share, votes_en_ministres,
     total_sieges, total_ministres,
     ratio_participation_1_10,ratio_votes_valides_en_sieges_1_10,
@@ -207,13 +208,11 @@ View(
 library(dplyr)
 base_complete_legislative_dinc <- base_complete_legislative_dinc %>%
   mutate(
-    across(c(ministers_share),
-           ~ as.numeric(gsub(",", ".", .)) * 100),
-    across(c(seats_share),
-           ~ as.numeric(gsub(",", ".", .)),
+    ministers_share = as.numeric(gsub(",", ".", ministers_share)) * 100,
+    seats_share = as.numeric(gsub(",", ".", seats_share)),
+    
     votes_en_siege = pmin(coalesce(seats_share, 0), pct_votes),
     votes_en_ministres = pmin(coalesce(ministers_share, 0), pct_votes)
-  )
   )
 
 
@@ -384,9 +383,9 @@ base_complete_legislative_dinc_index_group <- base_complete_legislative_dinc_ind
 
 ##Liste des pays/années où tous les ministres ne sont pas couverts ----
 View(
-  base_complete_legislative_dinc_index %>%
+  base_complete_legislative_dinc_index_group %>%
     ungroup() %>%
-    filter(election_couverture_ministers < 1) %>%
+    filter(election_couverture_ministers < 0.8) %>%
     distinct(year,isoname,election_couverture_seats,election_couverture_ministers)
 )
 
@@ -396,7 +395,8 @@ cor(base_complete_legislative_dinc_index$ratio_gouvernement_1_10, base_complete_
 cor(base_complete_legislative_dinc_index$ratio_gouvernement_50_50, base_complete_legislative_dinc_index$verif_ratio_50_50, 
     use = "complete.obs")
 
-
+unique(base_complete_legislative_dinc$election_couverture_ministers[base_complete_legislative_dinc$isoname == "Czech Republic"])
+unique(base_complete_legislative_dinc$ratio_gouvernement_1_10[base_complete_legislative_dinc$isoname == "Italy"])
 #Quelques tests de vérification
 max(base_complete_legislative_dinc_index_group$ratio_gouvernement_1_10, na.rm = TRUE)
 min(base_complete_legislative_dinc_index_group$ratio_gouvernement_1_10, na.rm = TRUE)

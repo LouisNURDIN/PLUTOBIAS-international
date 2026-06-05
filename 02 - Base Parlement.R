@@ -153,7 +153,7 @@ View(
 View(
   base_vote_parlement_legislatives %>%
     ungroup() %>%
-    filter(election_couverture_seats < 0.8) %>%
+    filter(election_couverture_seats < 80) %>%
     distinct(year,isoname,election_couverture_seats)
 )   
 
@@ -167,7 +167,7 @@ View(Elections_global %>%
 
 View(
   Elections_global %>%
-    filter(seats_share >= 0.05) %>%
+    filter(seats_share >= 10) %>%
     distinct(isoname, year, election_date, partyfacts_id, seats,seats_share) %>%
     anti_join(
       base_vote_parlement_legislatives %>%
