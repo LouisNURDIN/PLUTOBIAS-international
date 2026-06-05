@@ -146,7 +146,7 @@ base_complete_legislatives_before_2015 <- base_complete_legislatives %>%
 View(
   base_complete_legislatives %>%
     ungroup() %>%
-    filter(election_couverture_ministers > 1) %>%
+    filter(election_couverture_ministers < 1) %>%
     distinct(year,isoname,election_couverture_ministers)
 )
 

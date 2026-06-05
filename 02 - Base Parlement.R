@@ -266,7 +266,7 @@ base_vote_parlement_legislatives2 <- base_vote_parlement_legislatives2  %>%
 View(
   base_vote_parlement_legislatives2 %>%
     ungroup() %>%
-    filter(election_couverture_seats > 100) %>%
+    filter(election_couverture_seats < 80) %>%
     distinct(year,isoname,election_couverture_seats)
 )
 #Export base avec méthode dinc

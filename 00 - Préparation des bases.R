@@ -117,7 +117,7 @@ Base_elections_legislatives <- Base_elections_legislatives %>%
       partyfacts_id == "604" & isoname == "Belgium" & year == 2014 ~ "622",
       partyfacts_id == "8259" & isoname == "Belgium" & year == 1999 ~ "554",
       partyfacts_id == "1680" & isoname == "Belgium" & year == 2003 ~ "1586",
-      partyfacts_id == "500" & isoname == "Belgium" & year < 1977  ~ "480",
+      partyfacts_id == "500" & isoname == "Belgium" & year <= 1977  ~ "480",
       partyfacts_id == "1626" & isoname == "Italy" & year == 2001 ~ "6241",
       partyfacts_id == "813" & isoname == "Italy" & year == 2001 ~ "6241",
       partyfacts_id == "1221" & isoname == "Italy" & year == 2001 ~ "6241",
