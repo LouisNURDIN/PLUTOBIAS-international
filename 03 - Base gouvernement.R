@@ -17,6 +17,7 @@ whogov_parties <- whogov %>%
   group_by(isoname, year, partyfacts_id) %>%
   summarise(
     ministers_party = n(),
+    prime_minister = first(name[position == "Prime Min."]),
     .groups = "drop_last"
   ) %>%
   mutate(
@@ -110,6 +111,7 @@ base_complete <- base_complete %>%
     by = c("isoname","year","partyfacts_id"),
     relationship = "many-to-many"
   )
+
 #code original ----
 
 ###mise au propre de la base ----
