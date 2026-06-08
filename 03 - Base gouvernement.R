@@ -39,20 +39,13 @@ whogov_parties_bonnes_elections <- whogov_parties %>%
       distinct(isoname, year),
     by = c("isoname", "year")
   )
-View(whogov_parties_bonnes_elections %>%
-       filter(ministers_share >= 0.10) %>%
-       filter(year <= 2015) %>%
-       distinct(isoname, year, partyfacts_id,ministers_share) %>%
-       anti_join(
-         base_vote_parlement_legislatives %>% distinct(isoname, year, partyfacts_id),
-         by = c("isoname", "year", "partyfacts_id")
-       ))
+
 
 #Correctifs de mes partis dans whogov pouyr faire les bons joins ----
-whogov_parties <- whogov_parties %>%
+whogov_parties_bonnes_elections <- whogov_parties_bonnes_elections %>%
   mutate(
     partyfacts_id = case_when(
-      partyfacts_id == "480" & isoname == "Belgium" & year >= 1977  ~ "500",
+      partyfacts_id == "480" & isoname == "Belgium" & year > 1977  ~ "500",
       partyfacts_id == "554" & isoname == "Belgium" & year > 2003  ~ "789",
       partyfacts_id == "1680"&  isoname == "Belgium" & year == 2003  ~ "1586",
       partyfacts_id == "1586"&  isoname == "Belgium" & year == 2007   ~ "1680",
@@ -85,12 +78,20 @@ whogov_parties <- whogov_parties %>%
       partyfacts_id == "365"&  isoname == "Italy" & year ==  2013 ~ "6303",
       partyfacts_id == "2484"&  isoname == "Malaysia" ~ "3637",
       partyfacts_id == "2318"&  isoname == "Malaysia" ~ "3637",
-      partyfacts_id == "2789"&  isoname == "Malaysia" ~ "2789",
+      partyfacts_id == "2789"&  isoname == "Malaysia" ~ "Other",
       partyfacts_id == "5599"&  isoname == "Malaysia" & year == 2013 ~ "3637",
       TRUE ~ partyfacts_id
     )
   )
 
+View(whogov_parties_bonnes_elections %>%
+       filter(ministers_share >= 0.10) %>%
+       filter(year <= 2015) %>%
+       distinct(isoname, year, partyfacts_id,ministers_share) %>%
+       anti_join(
+         base_vote_parlement_legislatives %>% distinct(isoname, year, partyfacts_id),
+         by = c("isoname", "year", "partyfacts_id")
+       ))
 
 ##calcul bonne date pour le join ----
 library(lubridate)
