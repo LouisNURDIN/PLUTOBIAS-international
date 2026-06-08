@@ -41,11 +41,57 @@ whogov_parties_bonnes_elections <- whogov_parties %>%
   )
 View(whogov_parties_bonnes_elections %>%
        filter(ministers_share >= 0.10) %>%
+       filter(year <= 2015) %>%
        distinct(isoname, year, partyfacts_id,ministers_share) %>%
        anti_join(
          base_vote_parlement_legislatives %>% distinct(isoname, year, partyfacts_id),
          by = c("isoname", "year", "partyfacts_id")
        ))
+
+#Correctifs de mes partis dans whogov pouyr faire les bons joins ----
+whogov_parties <- whogov_parties %>%
+  mutate(
+    partyfacts_id = case_when(
+      partyfacts_id == "480" & isoname == "Belgium" & year >= 1977  ~ "500",
+      partyfacts_id == "554" & isoname == "Belgium" & year > 2003 & ~ "789",
+      partyfacts_id == "1680"&  isoname == "Belgium" & year == 2003  & ~ "1586",
+      partyfacts_id == "1586"&  isoname == "Belgium" & year == 2007  & ~ "1680",
+      partyfacts_id == "604"&  isoname == "Belgium" & year == 2010  & ~ "622",
+      partyfacts_id == "604"&  isoname == "Belgium" & year == 2014  & ~ "622",
+      partyfacts_id == "8041"&  isoname == "France" & year == 1967  & ~ "1083",
+      partyfacts_id == "1246"&  isoname == "France" & year == 1973  & ~ "1083",
+      partyfacts_id == "2688"&  isoname == "France" & year == 1973  & ~ "Other",
+      partyfacts_id == "8041"&  isoname == "France" & year == 1973  & ~ "1083",
+      partyfacts_id == "2688"&  isoname == "France" & year == 1978  & ~ "Other",
+      partyfacts_id == "2719"&  isoname == "Hungary" & year == 1998  & ~ "Other",
+      partyfacts_id == "2719"&  isoname == "Hungary" & year == 2002  & ~ "Other",
+      partyfacts_id == "2722"&  isoname == "Iceland" & year ==2009 ~ "Other",
+      partyfacts_id == "2726"&  isoname == "India" & year == 1967 ~ "Other",
+      partyfacts_id == "1207"&  isoname == "India" & year == 1996 ~ "6321",   #attention pour le cas de l'INde
+      partyfacts_id == "2491"&  isoname == "India" & year == 1996 ~ "6321", #attention pour le cas de l'INde
+      partyfacts_id == "2731"&  isoname == "Indonesia"  ~ "Other",
+      partyfacts_id == "3433"&  isoname == "Iraq" ~ "Other",
+      partyfacts_id == "5619"&  isoname == "Iraq" & year == 2010 ~ "",
+      partyfacts_id == "5616"&  isoname == "Iraq" & year == 2004 ~ "",
+      partyfacts_id == "5616"&  isoname == "Iraq" & year == 2005 ~ "",
+      partyfacts_id == "2735"&  isoname == "Ireland" & year == 1992 ~ "Other",
+      partyfacts_id == "2741"&  isoname == "Italy" ~ "Other",
+      partyfacts_id == "813"&  isoname == "Italy" & year == 2001 ~ "6241",
+      partyfacts_id == "1626"&  isoname == "Italy" & year ==  2001 ~ "6241",
+      partyfacts_id == "279"&  isoname == "Italy" & year == 2006 ~ "1372",
+      partyfacts_id == "878"&  isoname == "Italy" & year == 2006 ~ "1372",
+      partyfacts_id == "813"&  isoname == "Italy" & year == 2008 ~ "6303",
+      partyfacts_id == "1626"&  isoname == "Italy" & year == 2008 ~ "6303",
+      partyfacts_id == "365"&  isoname == "Italy" & year ==  2013~ "6303",
+      partyfacts_id == "2484"&  isoname == "Malaysia" ~ "3637",
+      partyfacts_id == "2318"&  isoname == "Malaysia" ~ "3637",
+      partyfacts_id == "2789"&  isoname == "Malaysia" ~ "2789",
+      partyfacts_id == "5599"&  isoname == "Malaysia" & year == 2013 ~ "3637",
+
+      TRUE ~ partyfacts_id
+    )
+  )
+
 
 ##calcul bonne date pour le join ----
 library(lubridate)
