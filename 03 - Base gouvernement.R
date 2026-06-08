@@ -86,7 +86,8 @@ whogov_parties <- whogov_parties %>%
       partyfacts_id == "878"&  isoname == "Italy" & year == 2006 ~ "1372",
       partyfacts_id == "813"&  isoname == "Italy" & year == 2008 ~ "6303",
       partyfacts_id == "1626"&  isoname == "Italy" & year == 2008 ~ "6303",
-      partyfacts_id == "365"&  isoname == "Italy" & year ==  2013 ~ "6303",
+      partyfacts_id == "365"&  isoname == "Italy" & year ==  2013 ~ "1626",
+      partyfacts_id == "6303"&  isoname == "Italy" & year ==  2013 ~ "1626",
       partyfacts_id == "2484"&  isoname == "Malaysia" ~ "3637",
       partyfacts_id == "2318"&  isoname == "Malaysia" ~ "3637",
       partyfacts_id == "2789"&  isoname == "Malaysia" ~ "Other",
@@ -104,11 +105,12 @@ whogov_parties <- whogov_parties %>%
       partyfacts_id == "2907"&  isoname == "Senegal" ~ "Other",
       partyfacts_id == "2757"&  isoname == "South Korea" ~ "Other",
       partyfacts_id == "2927"&  isoname == "Spain" ~ "Other",
-      partyfacts_id == "2934"&  isoname == "Sweden" ~ "2934",
+      partyfacts_id == "2934"&  isoname == "Sweden" ~ "Other",
       partyfacts_id == "1231"&  isoname == "Switzerland" ~ "360",
       partyfacts_id == "2941"&  isoname == "Taiwan" ~ "Other",
       partyfacts_id == "2956"&  isoname == "Turkey" ~ "Other",
       partyfacts_id == "1388"&  isoname == "United Kingdom" & year == 2010 ~ "540",
+      partyfacts_id == "5766"&  isoname == "Senegal" & year == 2012 ~ "4010",
       TRUE ~ partyfacts_id
     )
   )
@@ -221,11 +223,11 @@ base_complete <- base_complete %>%
 
 #Traiter les cas où les ministres se dupliquent car plusieurs fois le même PF dans une élection ----
 #Attention vigilance sur cette partie c'est peut-être faux
-base_complete_legislatives <- base_complete_legislatives %>%
+base_complete <- base_complete %>%
   mutate(
     ministers_share = case_when(
       partyfacts_id == "1083" & isoname == "France" & year == 1967  ~ 0.25,
-      partyfacts_id == "1083" & isoname == "France" & year == 1973  ~ 22.4101475,
+      partyfacts_id == "1083" & isoname == "France" & year == 1973  ~ 0.224101475,
       partyfacts_id == "6241" & isoname == "Italy" & year == 2001  ~ 0.05859375,
       partyfacts_id == "1372" & isoname == "Italy" & year == 2006  ~ 0.0392857138,
       
@@ -374,11 +376,11 @@ base_complete_dinc <- base_complete_dinc %>%
   )
 
 #Traiter les cas où les ministres se dupliquent car plusieurs fois le même PF dans une élection ----
-base_complete_legislatives_dinc <- base_complete_legislatives_dinc %>%
+base_complete_dinc <- base_complete_dinc %>%
   mutate(
     ministers_share = case_when(
       partyfacts_id == "1083" & isoname == "France" & year == 1967  ~ 0.25,
-      partyfacts_id == "1083" & isoname == "France" & year == 1973  ~ 22.4101475,
+      partyfacts_id == "1083" & isoname == "France" & year == 1973  ~ 0.224101475,
       partyfacts_id == "6241" & isoname == "Italy" & year == 2001  ~ 0.05859375,
       partyfacts_id == "1372" & isoname == "Italy" & year == 2006  ~ 0.0392857138,
       
@@ -419,14 +421,14 @@ View(
 View(
   base_complete_legislatives_dinc %>%
     ungroup() %>%
-    filter(election_couverture_seats > 1) %>%
+    filter(election_couverture_seats > 100) %>%
     distinct(year,isoname,election_couverture_seats)
 )
 ##Liste des pays/années où tous les ministres ne sont pas couverts ----
 View(
   base_complete_legislatives_dinc %>%
     ungroup() %>%
-    filter(election_couverture_ministers < 1) %>%
+    filter(election_couverture_ministers < 100) %>%
     distinct(year,isoname,election_couverture_seats,election_couverture_ministers)
 )
 

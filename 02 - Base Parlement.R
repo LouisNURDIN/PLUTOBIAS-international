@@ -6,9 +6,19 @@ library(stringr)
 
 #Import base élections législatives
 Base_legislatives_deciles <- read.csv("data/intermediary/elections/legislative elections with decile dataset.csv", sep = ",")
+#Hong Kong et Taiwan pas couverts dans whogov donc on peut les supprimer en amont
+Base_legislatives_deciles <- Base_legislatives_deciles %>%
+  filter(isoname != "Hong Kong")
+Base_legislatives_deciles <- Base_legislatives_deciles %>%
+  filter(isoname != "Taiwan")
+
 elections_legislatives_valides <- read.csv("data/intermediary/elections/valid legislative elections.csv", sep = ",")
 
 Base_legislatives_deciles2 <- read.csv("data/intermediary/elections/legislative elections with dinc dataset.csv", sep = ",")
+Base_legislatives_deciles2 <- Base_legislatives_deciles2 %>%
+  filter(isoname != "Hong Kong")
+Base_legislatives_deciles2 <- Base_legislatives_deciles2 %>%
+  filter(isoname != "Taiwan")
 
 #Elections global ----
 Data_elections_global <- read.csv ("data/raw/elections global/elections-global-release.csv" , sep = ";")
@@ -152,9 +162,12 @@ base_vote_parlement_legislatives <- base_vote_parlement_legislatives %>%
       partyfacts_id == "1083" & isoname == "France" & year == 1973  ~ 0.25,
       partyfacts_id == "6241" & isoname == "Italy" & year == 2001  ~ 7.30158725,
       partyfacts_id == "1737" & isoname == "Italy" & year == 2001  ~ 12.8042326667,
-      partyfacts_id == "6241" & isoname == "Italy" & year == 2006  ~ 14.867725,
+      partyfacts_id == "6241" & isoname == "Italy" & year == 2006  ~ 13.80952375,
       partyfacts_id == "1372" & isoname == "Italy" & year == 2006  ~ 18.4126983333,
-      
+      partyfacts_id == "1691" & isoname == "Hungary" & year == 2002  ~ 48.70466321,
+      partyfacts_id == "1408" & isoname == "Hungary" & year == 2002  ~ 46.11398964,
+      partyfacts_id == "1408" & isoname == "Hungary" & year == 2002  ~ 4.92227979,
+      partyfacts_id == "4010" & isoname == "Senegal" & year == 2012  ~ 26.44444444,
       TRUE ~ seats_share
     )
   )
@@ -180,6 +193,12 @@ View(
     distinct(year,isoname,election_couverture_seats)
 )   
 
+View(
+  base_vote_parlement_legislatives %>%
+    ungroup() %>%
+    filter(election_couverture_seats > 100) %>%
+    distinct(year,isoname,election_couverture_seats)
+) 
 ##Valeurs présentes dans ma base Parlement maps pas élections----
 View(Elections_global %>%
        distinct(isoname, year, election_date, partyfacts_id,seats,seats_share) %>%
@@ -290,6 +309,10 @@ base_vote_parlement_legislatives2 <- base_vote_parlement_legislatives2 %>%
       partyfacts_id == "1737" & isoname == "Italy" & year == 2001  ~ 12.8042326667,
       partyfacts_id == "6241" & isoname == "Italy" & year == 2006  ~ 14.867725,
       partyfacts_id == "1372" & isoname == "Italy" & year == 2006  ~ 18.4126983333,
+      partyfacts_id == "1691" & isoname == "Hungary" & year == 2002  ~ 48.70466321,
+      partyfacts_id == "1408" & isoname == "Hungary" & year == 2002  ~ 46.11398964,
+      partyfacts_id == "1408" & isoname == "Hungary" & year == 2002  ~ 4.92227979,
+      partyfacts_id == "4010" & isoname == "Senegal" & year == 2012  ~ 26.44444444,
       
       TRUE ~ seats_share
     )

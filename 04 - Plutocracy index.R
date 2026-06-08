@@ -190,7 +190,9 @@ base_complete_legislative_index <- base_complete_legislative %>%
     ratio_sieges_ministres_50_50 = mean(ratio_sieges_ministres_50_50, na.rm = TRUE),
     ratio_gouvernement_50_50 = mean(ratio_gouvernement_50_50, na.rm = TRUE),
     verif_ratio_50_50 = mean(verif_ratio_50_50, na.rm = TRUE),
-    
+    election_couverture_seats = first(na.omit(election_couverture_seats)),
+    election_couverture_ministers = first(na.omit(election_couverture_ministers)),
+    other_ministers = first(na.omit(other_ministers)),
     # sécurité diagnostic
 
     
@@ -210,6 +212,25 @@ View(
     filter(election_couverture_ministers > 1) %>%
     distinct(year,isoname,election_couverture_seats,election_couverture_ministers,other_ministers)
 )
+
+base_complete_legislative_index_group <- base_complete_legislative_index %>%
+  group_by(isoname, year) %>%
+  slice(1) %>%
+  ungroup()
+
+ggplot(base_complete_legislative_index_group,
+       aes(x = ratio_gouvernement_1_10,
+           y = ratio_gouvernement_50_50,
+           label = paste(isoname, year))) +
+  geom_point(alpha = 0.7) +
+  geom_text_repel(size = 3, max.overlaps = 50) +
+  theme_minimal() +
+  labs(
+    x = "Ratio gouvernement 1 vs 10",
+    y = "Ratio gouvernement 50 vs 50",
+    title = "Comparaison des ratios gouvernementaux"
+  )
+
 
 #DINC ----
 library(dplyr)
@@ -428,4 +449,5 @@ ggplot(base_complete_legislative_dinc_index_group,
     y = "Ratio gouvernement 50 vs 50",
     title = "Comparaison des ratios gouvernementaux"
   )
+
 
