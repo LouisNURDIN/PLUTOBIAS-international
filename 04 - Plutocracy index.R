@@ -157,7 +157,7 @@ base_complete_legislative <- base_complete_legislative %>%
     ratio_sieges_ministres_1_10,ratio_gouvernement_1_10,
     verif_ratio_10_10, ratio_participation_50_50, ratio_votes_valides_en_sieges_50_50,
     ratio_sieges_ministres_50_50, ratio_gouvernement_50_50, verif_ratio_50_50,election_couverture_seats,
-    election_couverture_ministers
+    election_couverture_ministers,other_ministers,
   ) 
 
 cor(base_complete_legislative$ratio_gouvernement_1_10, base_complete_legislative$verif_ratio_10_10, 
@@ -201,7 +201,14 @@ View(
   base_complete_legislative %>%
     ungroup() %>%
     filter(election_couverture_ministers < 0.8) %>%
-    distinct(year,isoname,election_couverture_seats,election_couverture_ministers)
+    distinct(year,isoname,election_couverture_seats,election_couverture_ministers,other_ministers)
+)
+
+View(
+  base_complete_legislative %>%
+    ungroup() %>%
+    filter(election_couverture_ministers > 1) %>%
+    distinct(year,isoname,election_couverture_seats,election_couverture_ministers,other_ministers)
 )
 
 #DINC ----

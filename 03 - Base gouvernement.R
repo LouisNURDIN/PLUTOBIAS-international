@@ -42,19 +42,30 @@ whogov_parties_bonnes_elections <- whogov_parties %>%
 
 
 #Correctifs de mes partis dans whogov pouyr faire les bons joins ----
-whogov_parties_bonnes_elections <- whogov_parties_bonnes_elections %>%
+
+whogov_parties <- whogov_parties %>%
+  mutate(
+    isoname = case_when(
+      isoname == "Czechia" ~ "Czech Republic",
+      TRUE ~ isoname
+    )
+  )
+      
+      
+whogov_parties <- whogov_parties %>%
   mutate(
     partyfacts_id = case_when(
       partyfacts_id == "480" & isoname == "Belgium" & year > 1977  ~ "500",
-      partyfacts_id == "554" & isoname == "Belgium" & year > 2003  ~ "789",
+      partyfacts_id == "554" & isoname == "Belgium" & year >= 2003  ~ "789",
       partyfacts_id == "1680"&  isoname == "Belgium" & year == 2003  ~ "1586",
       partyfacts_id == "1586"&  isoname == "Belgium" & year == 2007   ~ "1680",
       partyfacts_id == "604"&  isoname == "Belgium" & year == 2010   ~ "622",
       partyfacts_id == "604"&  isoname == "Belgium" & year == 2014   ~ "622",
-      partyfacts_id == "8041"&  isoname == "France" & year == 1967   ~ "1083",
-      partyfacts_id == "1246"&  isoname == "France" & year == 1973   ~ "1083",
+      partyfacts_id == "2685"&  isoname == "Finland" ~ "Other",
+      partyfacts_id == "5514"&  isoname == "France" ~ "1083",
+      partyfacts_id == "1246"&  isoname == "France" ~ "1083",
       partyfacts_id == "2688"&  isoname == "France" & year == 1973   ~ "Other",
-      partyfacts_id == "8041"&  isoname == "France" & year == 1973   ~ "1083",
+      partyfacts_id == "8041"&  isoname == "France" ~ "1083",
       partyfacts_id == "2688"&  isoname == "France" & year == 1978   ~ "Other",
       partyfacts_id == "2719"&  isoname == "Hungary" & year == 1998   ~ "Other",
       partyfacts_id == "2719"&  isoname == "Hungary" & year == 2002   ~ "Other",
@@ -80,11 +91,29 @@ whogov_parties_bonnes_elections <- whogov_parties_bonnes_elections %>%
       partyfacts_id == "2318"&  isoname == "Malaysia" ~ "3637",
       partyfacts_id == "2789"&  isoname == "Malaysia" ~ "Other",
       partyfacts_id == "5599"&  isoname == "Malaysia" & year == 2013 ~ "3637",
+      partyfacts_id == "921"&  isoname == "Netherlands" & year == 1971 ~ "45",
+      partyfacts_id == "921"&  isoname == "Netherlands" & year == 1972 ~ "45",
+      partyfacts_id == "163"&  isoname == "Netherlands" & year == 1977 ~ "1157",
+      partyfacts_id == "1390"&  isoname == "Netherlands" & year == 1977 ~ "1157",
+      partyfacts_id == "1390"&  isoname == "Netherlands" & year ==  1981 ~ "1157",
+      partyfacts_id == "2854"&  isoname == "Nigeria" ~ "Other",
+      partyfacts_id == "2888"&  isoname == "Poland" ~ "Other",
+      partyfacts_id == "727"&  isoname == "Poland" & year ==  2007 ~ "Other",  #ou sinon on peut le mettre avec PSL mais ce n'est pas exactement pareil
+      partyfacts_id == "2891"&  isoname == "Portugal" ~ "Other",
+      partyfacts_id == "1308"&  isoname == "Portugal" & year ==  2015 ~ "1359",
+      partyfacts_id == "2907"&  isoname == "Senegal" ~ "Other",
+      partyfacts_id == "2757"&  isoname == "South Korea" ~ "Other",
+      partyfacts_id == "2927"&  isoname == "Spain" ~ "Other",
+      partyfacts_id == "2934"&  isoname == "Sweden" ~ "2934",
+      partyfacts_id == "1231"&  isoname == "Switzerland" ~ "360",
+      partyfacts_id == "2941"&  isoname == "Taiwan" ~ "Other",
+      partyfacts_id == "2956"&  isoname == "Turkey" ~ "Other",
+      partyfacts_id == "1388"&  isoname == "United Kingdom" & year == 2010 ~ "540",
       TRUE ~ partyfacts_id
     )
   )
 
-View(whogov_parties_bonnes_elections %>%
+View(whogov_parties %>%
        filter(ministers_share >= 0.10) %>%
        filter(year <= 2015) %>%
        distinct(isoname, year, partyfacts_id,ministers_share) %>%
@@ -92,6 +121,13 @@ View(whogov_parties_bonnes_elections %>%
          base_vote_parlement_legislatives %>% distinct(isoname, year, partyfacts_id),
          by = c("isoname", "year", "partyfacts_id")
        ))
+
+whogov_parties <- whogov_parties %>%
+  group_by(isoname, year) %>%
+  mutate(
+    other_ministers = ministers_share[partyfacts_id == "Other"][1]
+  ) %>%
+  ungroup()
 
 ##calcul bonne date pour le join ----
 library(lubridate)
@@ -180,7 +216,7 @@ base_complete <- base_complete[!is.na(base_complete$year),]
 
 base_complete <- base_complete %>%
   select(isoname, year, election_date_date,join_year, survey,source, source_recode, decile, partyfacts_id, votes, pct_votes,
-         votes_valides, taux_participation, seats, seats_total, seats_share, ministers_party, total_ministers, ministers_share, election_couverture_seats
+         votes_valides, taux_participation, seats, seats_total, seats_share, ministers_party, total_ministers, ministers_share, election_couverture_seats,other_ministers
          )
 
 #####verif nombre de ministres couverts par élection ----
@@ -204,12 +240,14 @@ base_complete_legislatives <- base_complete %>%
 base_complete_legislatives_before_2015 <- base_complete_legislatives %>%
   filter(base_complete_legislatives$year <= 2015)
 
-
+#On enlève les années avant 1966 car Whogov n'a pas les données
+base_complete_legislatives <- base_complete_legislatives %>%
+  filter(base_complete_legislatives$year >= 1966)
 #Liste des pays/années avec données incohérentes ----
 View(
   base_complete_legislatives %>%
     ungroup() %>%
-    filter(election_couverture_ministers < 1) %>%
+    filter(election_couverture_ministers < 0.8) %>%
     distinct(year,isoname,election_couverture_ministers)
 )
 
