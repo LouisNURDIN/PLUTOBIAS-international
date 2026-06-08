@@ -219,6 +219,20 @@ base_complete <- base_complete %>%
          votes_valides, taux_participation, seats, seats_total, seats_share, ministers_party, total_ministers, ministers_share, election_couverture_seats,other_ministers
          )
 
+#Traiter les cas où les ministres se dupliquent car plusieurs fois le même PF dans une élection ----
+#Attention vigilance sur cette partie c'est peut-être faux
+base_complete_legislatives <- base_complete_legislatives %>%
+  mutate(
+    ministers_share = case_when(
+      partyfacts_id == "1083" & isoname == "France" & year == 1967  ~ 0.25,
+      partyfacts_id == "1083" & isoname == "France" & year == 1973  ~ 22.4101475,
+      partyfacts_id == "6241" & isoname == "Italy" & year == 2001  ~ 0.05859375,
+      partyfacts_id == "1372" & isoname == "Italy" & year == 2006  ~ 0.0392857138,
+      
+      TRUE ~ ministers_share
+    )
+  )
+
 #####verif nombre de ministres couverts par élection ----
 base_complete <- base_complete %>%
   mutate(
@@ -251,35 +265,6 @@ View(
     distinct(year,isoname,election_couverture_ministers)
 )
 
-
-#Traiter les cas où les ministres se dupliquent car plusieurs fois le même PF dans une élection ----
-#Attention vigilance sur cette partie c'est peut-être faux
-base_complete_legislatives <- base_complete_legislatives %>%
-  mutate(
-    seats_share = case_when(
-      partyfacts_id == "1083" & isoname == "France" & year == 1967  ~ 0.25,
-      partyfacts_id == "1083" & isoname == "France" & year == 1973  ~ 0.25,
-      partyfacts_id == "6241" & isoname == "Italy" & year == 2001  ~ 7.30158725,
-      partyfacts_id == "1737" & isoname == "Italy" & year == 2001  ~ 12.8042326667,
-      partyfacts_id == "6241" & isoname == "Italy" & year == 2006  ~ 14.867725,
-      partyfacts_id == "1372" & isoname == "Italy" & year == 2006  ~ 18.4126983333,
-      
-      TRUE ~ seats_share
-    )
-  )
-      
-
-base_complete_legislatives <- base_complete_legislatives %>%
-  mutate(
-    ministers_share = case_when(
-      partyfacts_id == "1083" & isoname == "France" & year == 1967  ~ 0.25,
-      partyfacts_id == "1083" & isoname == "France" & year == 1973  ~ 22.4101475,
-      partyfacts_id == "6241" & isoname == "Italy" & year == 2001  ~ 0.05859375,
-      partyfacts_id == "1372" & isoname == "Italy" & year == 2006  ~ 0.0392857138,
-      
-      TRUE ~ ministers_share
-    )
-  )
 
 View(
   base_complete_legislatives %>%
@@ -388,6 +373,18 @@ base_complete_dinc <- base_complete_dinc %>%
          votes_valides, taux_participation, seats, seats_total, seats_share, ministers_party, total_ministers, ministers_share, election_couverture_seats
   )
 
+#Traiter les cas où les ministres se dupliquent car plusieurs fois le même PF dans une élection ----
+base_complete_legislatives_dinc <- base_complete_legislatives_dinc %>%
+  mutate(
+    ministers_share = case_when(
+      partyfacts_id == "1083" & isoname == "France" & year == 1967  ~ 0.25,
+      partyfacts_id == "1083" & isoname == "France" & year == 1973  ~ 22.4101475,
+      partyfacts_id == "6241" & isoname == "Italy" & year == 2001  ~ 0.05859375,
+      partyfacts_id == "1372" & isoname == "Italy" & year == 2006  ~ 0.0392857138,
+      
+      TRUE ~ ministers_share
+    )
+  )
 #####verif nombre de ministres couverts par élection ----
 base_complete_dinc <- base_complete_dinc %>%
   mutate(
@@ -409,32 +406,8 @@ base_complete_legislatives_dinc <- base_complete_dinc %>%
 base_complete_legislatives_before_2015_dinc <- base_complete_legislatives_dinc %>%
   filter(base_complete_legislatives_dinc$year <= 2015)
 
-#Traiter les cas où les ministres se dupliquent car plusieurs fois le même PF dans une élection ----
-base_complete_legislatives_dinc <- base_complete_legislatives_dinc %>%
-  mutate(
-    seats_share = case_when(
-      partyfacts_id == "1083" & isoname == "France" & year == 1967  ~ 0.25,
-      partyfacts_id == "1083" & isoname == "France" & year == 1973  ~ 0.25,
-      partyfacts_id == "6241" & isoname == "Italy" & year == 2001  ~ 7.30158725,
-      partyfacts_id == "1737" & isoname == "Italy" & year == 2001  ~ 12.8042326667,
-      partyfacts_id == "6241" & isoname == "Italy" & year == 2006  ~ 14.867725,
-      partyfacts_id == "1372" & isoname == "Italy" & year == 2006  ~ 18.4126983333,
-      
-      TRUE ~ seats_share
-    )
-  )
 
-base_complete_legislatives_dinc <- base_complete_legislatives_dinc %>%
-  mutate(
-    ministers_share = case_when(
-      partyfacts_id == "1083" & isoname == "France" & year == 1967  ~ 0.25,
-      partyfacts_id == "1083" & isoname == "France" & year == 1973  ~ 22.4101475,
-      partyfacts_id == "6241" & isoname == "Italy" & year == 2001  ~ 0.05859375,
-      partyfacts_id == "1372" & isoname == "Italy" & year == 2006  ~ 0.0392857138,
-      
-      TRUE ~ ministers_share
-    )
-  )
+
 #Liste des pays/années avec données incohérentes ----
 View(
   base_complete_legislatives_dinc %>%

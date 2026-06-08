@@ -144,6 +144,21 @@ base_vote_parlement_legislatives <- base_vote_parlement_legislatives %>%
       
       TRUE ~ partyfacts_id))
 
+#Traiter les cas où les partis et sièges se dupliquent ----
+base_vote_parlement_legislatives <- base_vote_parlement_legislatives %>%
+  mutate(
+    seats_share = case_when(
+      partyfacts_id == "1083" & isoname == "France" & year == 1967  ~ 0.25,
+      partyfacts_id == "1083" & isoname == "France" & year == 1973  ~ 0.25,
+      partyfacts_id == "6241" & isoname == "Italy" & year == 2001  ~ 7.30158725,
+      partyfacts_id == "1737" & isoname == "Italy" & year == 2001  ~ 12.8042326667,
+      partyfacts_id == "6241" & isoname == "Italy" & year == 2006  ~ 14.867725,
+      partyfacts_id == "1372" & isoname == "Italy" & year == 2006  ~ 18.4126983333,
+      
+      TRUE ~ seats_share
+    )
+  )
+
 base_vote_parlement_legislatives <- base_vote_parlement_legislatives  %>% 
   group_by(isoname,year,election_date,decile)%>%
   mutate(election_couverture_seats = sum(seats_share))
@@ -266,6 +281,19 @@ base_vote_parlement_legislatives2 <- base_vote_parlement_legislatives2 %>%
     )
   )
 
+base_vote_parlement_legislatives2 <- base_vote_parlement_legislatives2 %>%
+  mutate(
+    seats_share = case_when(
+      partyfacts_id == "1083" & isoname == "France" & year == 1967  ~ 0.25,
+      partyfacts_id == "1083" & isoname == "France" & year == 1973  ~ 0.25,
+      partyfacts_id == "6241" & isoname == "Italy" & year == 2001  ~ 7.30158725,
+      partyfacts_id == "1737" & isoname == "Italy" & year == 2001  ~ 12.8042326667,
+      partyfacts_id == "6241" & isoname == "Italy" & year == 2006  ~ 14.867725,
+      partyfacts_id == "1372" & isoname == "Italy" & year == 2006  ~ 18.4126983333,
+      
+      TRUE ~ seats_share
+    )
+  )
 
 base_vote_parlement_legislatives2 <- base_vote_parlement_legislatives2  %>% 
   group_by(isoname,year,election_date,decile)%>%
