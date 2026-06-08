@@ -32,6 +32,21 @@ whogov_parties <- whogov_parties %>%
 whogov_parties <- whogov_parties %>%
   mutate(partyfacts_id = as.character(partyfacts_id))
 
+#voir les partis présents dans ma base whogov mais pas vote-parlement
+whogov_parties_bonnes_elections <- whogov_parties %>%
+  semi_join(
+    elections_legislatives_valides %>%
+      distinct(isoname, year),
+    by = c("isoname", "year")
+  )
+View(whogov_parties_bonnes_elections %>%
+       filter(ministers_share >= 0.10) %>%
+       distinct(isoname, year, partyfacts_id,ministers_share) %>%
+       anti_join(
+         base_vote_parlement_legislatives %>% distinct(isoname, year, partyfacts_id),
+         by = c("isoname", "year", "partyfacts_id")
+       ))
+
 ##calcul bonne date pour le join ----
 library(lubridate)
 library(stringr)

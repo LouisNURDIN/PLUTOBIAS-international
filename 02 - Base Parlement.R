@@ -136,6 +136,14 @@ base_vote_parlement_legislatives <- base_vote_parlement_legislatives %>%
     )
   )
 
+base_vote_parlement_legislatives <- base_vote_parlement_legislatives %>%
+  mutate(
+    partyfacts_id = case_when(
+      partyfacts_id == "1629" & year == 1956 ~ "737",
+
+      TRUE ~ partyfacts_id
+    )
+  )
 base_vote_parlement_legislatives <- base_vote_parlement_legislatives  %>% 
   group_by(isoname,year,election_date,decile)%>%
   mutate(election_couverture_seats = sum(seats_share))

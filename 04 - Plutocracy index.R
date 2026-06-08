@@ -200,7 +200,7 @@ base_complete_legislative_index <- base_complete_legislative %>%
 View(
   base_complete_legislative %>%
     ungroup() %>%
-    filter(election_couverture_ministers < 1) %>%
+    filter(election_couverture_ministers < 0.8) %>%
     distinct(year,isoname,election_couverture_seats,election_couverture_ministers)
 )
 

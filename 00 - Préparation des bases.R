@@ -142,6 +142,8 @@ Base_elections_legislatives <- Base_elections_legislatives %>%
       partyfacts_id == "5766" & isoname == "Senegal" & year == 2012 ~ "4010",
       partyfacts_id == "2379" & isoname == "Senegal" & year == 2012 ~ "4010",
       partyfacts_id == "2380" & isoname == "Senegal" & year == 2012 ~ "4010",
+      partyfacts_id == "5917" & isoname == "Iraq" & year == 2010 ~ "5919",
+      partyfacts_id == "6303" & isoname == "Italy" & year == 2013  ~ "1626",
       TRUE ~ partyfacts_id
     )
   )
