@@ -53,18 +53,18 @@ whogov_parties <- whogov_parties %>%
   mutate(
     partyfacts_id = case_when(
       partyfacts_id == "480" & isoname == "Belgium" & year >= 1977  ~ "500",
-      partyfacts_id == "554" & isoname == "Belgium" & year > 2003 & ~ "789",
-      partyfacts_id == "1680"&  isoname == "Belgium" & year == 2003  & ~ "1586",
-      partyfacts_id == "1586"&  isoname == "Belgium" & year == 2007  & ~ "1680",
-      partyfacts_id == "604"&  isoname == "Belgium" & year == 2010  & ~ "622",
-      partyfacts_id == "604"&  isoname == "Belgium" & year == 2014  & ~ "622",
-      partyfacts_id == "8041"&  isoname == "France" & year == 1967  & ~ "1083",
-      partyfacts_id == "1246"&  isoname == "France" & year == 1973  & ~ "1083",
-      partyfacts_id == "2688"&  isoname == "France" & year == 1973  & ~ "Other",
-      partyfacts_id == "8041"&  isoname == "France" & year == 1973  & ~ "1083",
-      partyfacts_id == "2688"&  isoname == "France" & year == 1978  & ~ "Other",
-      partyfacts_id == "2719"&  isoname == "Hungary" & year == 1998  & ~ "Other",
-      partyfacts_id == "2719"&  isoname == "Hungary" & year == 2002  & ~ "Other",
+      partyfacts_id == "554" & isoname == "Belgium" & year > 2003  ~ "789",
+      partyfacts_id == "1680"&  isoname == "Belgium" & year == 2003  ~ "1586",
+      partyfacts_id == "1586"&  isoname == "Belgium" & year == 2007   ~ "1680",
+      partyfacts_id == "604"&  isoname == "Belgium" & year == 2010   ~ "622",
+      partyfacts_id == "604"&  isoname == "Belgium" & year == 2014   ~ "622",
+      partyfacts_id == "8041"&  isoname == "France" & year == 1967   ~ "1083",
+      partyfacts_id == "1246"&  isoname == "France" & year == 1973   ~ "1083",
+      partyfacts_id == "2688"&  isoname == "France" & year == 1973   ~ "Other",
+      partyfacts_id == "8041"&  isoname == "France" & year == 1973   ~ "1083",
+      partyfacts_id == "2688"&  isoname == "France" & year == 1978   ~ "Other",
+      partyfacts_id == "2719"&  isoname == "Hungary" & year == 1998   ~ "Other",
+      partyfacts_id == "2719"&  isoname == "Hungary" & year == 2002   ~ "Other",
       partyfacts_id == "2722"&  isoname == "Iceland" & year ==2009 ~ "Other",
       partyfacts_id == "2726"&  isoname == "India" & year == 1967 ~ "Other",
       partyfacts_id == "1207"&  isoname == "India" & year == 1996 ~ "6321",   #attention pour le cas de l'INde
@@ -87,7 +87,6 @@ whogov_parties <- whogov_parties %>%
       partyfacts_id == "2318"&  isoname == "Malaysia" ~ "3637",
       partyfacts_id == "2789"&  isoname == "Malaysia" ~ "2789",
       partyfacts_id == "5599"&  isoname == "Malaysia" & year == 2013 ~ "3637",
-
       TRUE ~ partyfacts_id
     )
   )
