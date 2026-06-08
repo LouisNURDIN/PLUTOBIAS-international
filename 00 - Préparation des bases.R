@@ -23,7 +23,6 @@ Partyfacts_id <- read.csv("data/raw/partyfacts-external-parties (1).csv", sep = 
 
 Partyfacts_id_wpidmicro <- Partyfacts_id %>%
   filter(dataset_key == "wpidmicro")
-unique(Partyfacts_id$dataset_key)
 
 Partyfacts_id_parlgov <- Partyfacts_id %>%
   filter(dataset_key == "parlgov")
