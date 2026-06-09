@@ -22,11 +22,6 @@ base_complete_legislative_dinc <- base_complete_legislative_dinc %>%
 
 
 #Pour le moment filtre sur l'année 2015 mais on pourraz le modifier quand on aura des données d'enquêtes plus récentes
-base_complete_legislative <- base_complete_legislative %>%
-  filter(year <= 2015)
-
-base_complete_legislative_dinc <- base_complete_legislative %>%
-  filter(year <= 2015)
 
 #Calcul des indices pour la ploutocratie ---- 
 
@@ -247,7 +242,7 @@ base_complete_legislative_dinc <- base_complete_legislative_dinc %>%
 # 3. Agrégation PROPRE au niveau décile
 
 deciles_data_dinc <- base_complete_legislative_dinc %>%
-  group_by(isoname, year, decile) %>%
+  group_by(isoname, year, decile, source_recode) %>%
   summarise(
     taux_participation = first(na.omit(taux_participation)),
     total_sieges = sum(votes_en_siege, na.rm = TRUE),
@@ -260,7 +255,7 @@ deciles_data_dinc <- base_complete_legislative_dinc %>%
 # 4. Ratios 1 vs 10
 
 ratios_1_10_dinc <- deciles_data_dinc %>%
-  group_by(isoname, year) %>%
+  group_by(isoname, year, source_recode) %>%
   summarise(
     
     ratio_participation_1_10 =
@@ -290,7 +285,7 @@ ratios_1_10_dinc <- deciles_data_dinc %>%
 
 # 5. Ratios 50 / 50
 ratios_50_dinc <- deciles_data_dinc %>%
-  group_by(isoname,year) %>%
+  group_by(isoname,year,source_recode) %>%
   summarise(
     ratio_participation_50_50 =
       sum(taux_participation[decile %in% 6:10]) /
@@ -361,7 +356,7 @@ base_complete_legislative_dinc <- base_complete_legislative_dinc %>%
     ratio_sieges_ministres_1_10,ratio_gouvernement_1_10,
     verif_ratio_10_10, ratio_participation_50_50, ratio_votes_valides_en_sieges_50_50,
     ratio_sieges_ministres_50_50, ratio_gouvernement_50_50, verif_ratio_50_50,election_couverture_seats,
-    election_couverture_ministers
+    election_couverture_ministers, source, source_recode
   ) 
 
 cor(base_complete_legislative_dinc$ratio_gouvernement_1_10, base_complete_legislative_dinc$verif_ratio_10_10, 
@@ -373,7 +368,7 @@ cor(base_complete_legislative_dinc$ratio_gouvernement_50_50, base_complete_legis
 
 #base propre
 base_complete_legislative_dinc_index <- base_complete_legislative_dinc %>%
-  group_by(isoname,year,election_date_date, decile) %>%
+  group_by(source, source_recode,isoname,year,election_date_date, decile) %>%
   summarise(
     
     # identifiant survey (supposé constant)
@@ -404,7 +399,7 @@ base_complete_legislative_dinc_index <- base_complete_legislative_dinc %>%
   )
 
 base_complete_legislative_dinc_index_group <- base_complete_legislative_dinc_index %>%
-  group_by(isoname, year) %>%
+  group_by(source, source_recode,isoname, year) %>%
   slice(1) %>%
   ungroup()
 

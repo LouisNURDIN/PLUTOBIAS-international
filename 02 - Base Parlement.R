@@ -15,6 +15,7 @@ Base_legislatives_deciles <- Base_legislatives_deciles %>%
 elections_legislatives_valides <- read.csv("data/intermediary/elections/valid legislative elections.csv", sep = ",")
 
 Base_legislatives_deciles2 <- read.csv("data/intermediary/elections/legislative elections with dinc dataset.csv", sep = ",")
+unique(Base_legislatives_deciles2$source_recode)
 Base_legislatives_deciles2 <- Base_legislatives_deciles2 %>%
   filter(isoname != "Hong Kong")
 Base_legislatives_deciles2 <- Base_legislatives_deciles2 %>%
@@ -33,8 +34,8 @@ Data_elections_global <- Data_elections_global  %>%
   )
       
       
-pays_gmp_legislatives <- unique(Base_legislatives_deciles$isoname)
-annees_gmp_legislatives <- unique(Base_legislatives_deciles$year)
+pays_gmp_legislatives <- unique(Base_legislatives_deciles2$isoname)
+annees_gmp_legislatives <- unique(Base_legislatives_deciles2$year)
 
 #filtrer pour avoir que les pays dans WPID
 Data_elections_global_group <- Data_elections_global %>%
@@ -52,8 +53,6 @@ check_electionsglobal_wpid_legislatives <- elections_legislatives_valides %>%
     Data_elections_global_elections_valides, by = c("isoname", "year")
   )
 
-check_electionsglobal_wpid_legislatives <- check_electionsglobal_wpid_legislatives %>%
-  filter(check_electionsglobal_wpid_legislatives$year <= 2015)
 
 
 #Vérifier le nombre d'élections compatibles entre les deux groupes
@@ -295,9 +294,7 @@ base_vote_parlement_legislatives2 <- Base_legislatives_deciles2 %>%
     by = c("isoname", "year","partyfacts_id")
   )
 
-###Traitement pour avoir le taux de députés par partis sur l'ensemble des députés
-base_vote_parlement_legislatives2 <- base_vote_parlement_legislatives2 %>%
-  filter(year <= 2015)
+###Traitement pour avoir le taux de députés par partis sur l'ensemble des députéss
 
 
 base_vote_parlement_legislatives2 <- base_vote_parlement_legislatives2 %>%
@@ -328,15 +325,17 @@ base_vote_parlement_legislatives2 <- base_vote_parlement_legislatives2 %>%
     )
   )
 
+
 base_vote_parlement_legislatives2 <- base_vote_parlement_legislatives2  %>% 
-  group_by(isoname,year,election_date,decile)%>%
+  group_by(isoname,year,election_date,decile,source,source_recode)%>%
   mutate(election_couverture_seats = sum(seats_share))
 
+unique(base_vote_parlement_legislatives2$source_recode)
 View(
   base_vote_parlement_legislatives2 %>%
     ungroup() %>%
     filter(election_couverture_seats < 80) %>%
-    distinct(year,isoname,election_couverture_seats)
+    distinct(year,isoname,source_recode,election_couverture_seats)
 )
 #Export base avec méthode dinc
 write.csv(

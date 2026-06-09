@@ -232,11 +232,7 @@ elections_legislatives_valides2 <- Base_legislatives_deciles2 %>%
   group_by(isoname,year) %>%
   summarise(.groups = "drop")
 
-write.csv(
-  Base_legislatives_deciles2,
-  "data/intermediary/elections/legislative elections with dinc dataset.csv",
-  row.names = FALSE
-)
+
 
 #Autres bases ----
 #CSES ----
@@ -347,3 +343,19 @@ cses_dataset_income <- cses_data_clean %>%
 #Espace pour empiler les bases votes entre elles ----
 Base_legislatives_deciles2 <- Base_legislatives_deciles2 %>%
   bind_rows(cses_dataset_income)
+
+elections_legislatives_valides2 <- Base_legislatives_deciles2 %>%
+  group_by(isoname,year,source, source_recode) %>%
+  summarise(.groups = "drop")
+
+write.csv(
+  elections_legislatives_valides2,
+  "data/intermediary/elections/valid elections.csv",
+  row.names = FALSE
+)
+
+write.csv(
+  Base_legislatives_deciles2,
+  "data/intermediary/elections/legislative elections with dinc dataset.csv",
+  row.names = FALSE
+)
