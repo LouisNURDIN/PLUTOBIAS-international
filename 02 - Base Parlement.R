@@ -23,6 +23,16 @@ Base_legislatives_deciles2 <- Base_legislatives_deciles2 %>%
 #Elections global ----
 Data_elections_global <- read.csv ("data/raw/elections global/elections-global-release.csv" , sep = ";")
 
+#correctif données Malaysie 2004
+Data_elections_global <- Data_elections_global  %>%
+  mutate(
+    seats_total = case_when(
+      country_name == "Malaysia" & year == 2004  ~ 219,
+      TRUE ~ seats_total
+    )
+  )
+      
+      
 pays_gmp_legislatives <- unique(Base_legislatives_deciles$isoname)
 annees_gmp_legislatives <- unique(Base_legislatives_deciles$year)
 
@@ -158,8 +168,8 @@ base_vote_parlement_legislatives <- base_vote_parlement_legislatives %>%
 base_vote_parlement_legislatives <- base_vote_parlement_legislatives %>%
   mutate(
     seats_share = case_when(
-      partyfacts_id == "1083" & isoname == "France" & year == 1967  ~ 0.25,
-      partyfacts_id == "1083" & isoname == "France" & year == 1973  ~ 0.25,
+      partyfacts_id == "1083" & isoname == "France" & year == 1967  ~ 25,
+      partyfacts_id == "1083" & isoname == "France" & year == 1973  ~ 25,
       partyfacts_id == "6241" & isoname == "Italy" & year == 2001  ~ 7.30158725,
       partyfacts_id == "1737" & isoname == "Italy" & year == 2001  ~ 12.8042326667,
       partyfacts_id == "6241" & isoname == "Italy" & year == 2006  ~ 13.80952375,

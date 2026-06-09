@@ -450,4 +450,3 @@ ggplot(base_complete_legislative_dinc_index_group,
     title = "Comparaison des ratios gouvernementaux"
   )
 
-
