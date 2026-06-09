@@ -1,6 +1,7 @@
 library(haven)
 library(dplyr)
 library(tidyr)
+library(stringr)
 #Ouverture de la base ----
 GMP_inc <- read_dta("data/raw/wpid/gmp-inc.dta")
 
@@ -78,7 +79,7 @@ Base_all_elections <- GMP_inc_2 %>%
     by = "dataset_party_id"
   )
 
-library(stringr)
+
 Base_all_elections <- Base_all_elections %>%
   mutate(
     partyfacts_id = as.character(partyfacts_id),
@@ -199,9 +200,16 @@ cses_data <- cses_data %>%
 cses_data <- cses_data %>%
   rename(educ = IMD2003)
 
+#Filtre pour ne garder que les données valides sur le revenu, le vote, et les bonnes élections
+cses_data <- cses_data %>%
+  filter(inc <= 5)
+cses_data <- cses_data %>%
+  filter(dataset_party_id < 9999996)
+cses_data <- cses_data %>%
+  filter(type <= 13)
 
 cses_data_clean <- cses_data %>%
-  select(dataset_party_id,isoname,year, source, source_recode, type, inc, turnout, dataset_party_id, gender, educ)
+  select(dataset_party_id,isoname,year, source, source_recode, type, inc, turnout, dataset_party_id)
 #verif données
 unique(cses_data_clean$inc)
 unique(cses_data_clean$type)
@@ -212,8 +220,24 @@ cses_data_clean <- cses_data_clean %>%
   mutate(
     dataset_party_id = case_when(
       turnout == "0" ~ "Abstention",
+      dataset_party_id == 9999993 ~ "Abstention",
+      dataset_party_id == 9999988 ~ "Other",
+      dataset_party_id == 9999989 ~ "Other",
+      dataset_party_id == 9999990 ~ "Other",
+      dataset_party_id == 9999991 ~ "Other",
+      dataset_party_id == 9999992 ~ "Other",
+      dataset_party_id == 9999995 ~ "Other",
       TRUE ~ as.character(dataset_party_id)
     )
+  )
+
+
+#Join partyfacts dans cses
+cses_data_clean <- cses_data_clean %>%
+  left_join(
+    Partyfacts_id_cses %>%
+      dplyr::select(dataset_party_id,partyfacts_id),
+    by = "dataset_party_id"
   )
 
 cses_data_clean <- cses_data_clean %>%
@@ -224,13 +248,6 @@ cses_data_clean <- cses_data_clean %>%
       str_detect(dataset_party_id, "Other$") ~ "Other",
       TRUE ~ partyfacts_id
     )
-  )
-#Join partyfacts dans cses
-cses_data_clean <- cses_data_clean %>%
-  left_join(
-    Partyfacts_id_cses %>%
-      dplyr::select(dataset_party_id,partyfacts_id),
-    by = "dataset_party_id"
   )
 
 #Traitement des partyfacts dans cses pour join 
