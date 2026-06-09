@@ -5,13 +5,6 @@ library(purrr)
 library(stringr)
 
 #Import base élections législatives
-Base_legislatives_deciles <- read.csv("data/intermediary/elections/legislative elections with decile dataset.csv", sep = ",")
-#Hong Kong et Taiwan pas couverts dans whogov donc on peut les supprimer en amont
-Base_legislatives_deciles <- Base_legislatives_deciles %>%
-  filter(isoname != "Hong Kong")
-Base_legislatives_deciles <- Base_legislatives_deciles %>%
-  filter(isoname != "Taiwan")
-
 elections_legislatives_valides <- read.csv("data/intermediary/elections/valid legislative elections.csv", sep = ",")
 
 Base_legislatives_deciles2 <- read.csv("data/intermediary/elections/legislative elections with dinc dataset.csv", sep = ",")
@@ -89,13 +82,6 @@ Elections_global <- Data_elections_global %>%
 Elections_global <- Elections_global %>%
   rename(isoname = country_name)
 
-Elections_global <- Elections_global %>%
-  semi_join(
-    Base_legislatives_deciles %>%
-      distinct(isoname, year),
-    by = c("isoname", "year")
-  )
-
 ##Traitement sur données manquantes ----
 Elections_global <- Elections_global %>%
   group_by(isoname, year, election_date) %>%
@@ -122,136 +108,6 @@ Elections_global <- Elections_global %>%
 
 Elections_global <- Elections_global  %>% 
   mutate(seats_share = seats / seats_total * 100)
-
-## Join entre les bases ----
-base_vote_parlement_legislatives <- Base_legislatives_deciles %>%
-  left_join(
-    Elections_global %>%
-      select(isoname, year,partyfacts_id,election_date,seats,seats_total,seats_share),
-    distinct(isoname, year,partyfacts_id),
-    by = c("isoname", "year","partyfacts_id")
-  )
-
-###Traitement pour avoir le taux de députés par partis sur l'ensemble des députés
-base_vote_parlement_legislatives <- base_vote_parlement_legislatives %>%
-  filter(year <= 2015)
-
-
-base_vote_parlement_legislatives <- base_vote_parlement_legislatives %>%
-  mutate(
-    seats_share = case_when(
-      partyfacts_id == "1691" & year == 2002 ~ 48.7,
-      partyfacts_id == "1408" & year == 2002 ~ 51.295,
-      TRUE ~ seats_share
-    )
-  )
-
-base_vote_parlement_legislatives <- base_vote_parlement_legislatives %>%
-  mutate(
-    seats = case_when(
-      partyfacts_id == "1691" & year == 2002 ~ 188,
-      partyfacts_id == "1408" & year == 2002 ~ 198,
-      TRUE ~ seats_share
-    )
-  )
-
-
-base_vote_parlement_legislatives <- base_vote_parlement_legislatives %>%
-  mutate(
-    partyfacts_id = case_when(
-      partyfacts_id == "1629" & year == 1956 ~ "737",
-      
-      TRUE ~ partyfacts_id))
-
-#Traiter les cas où les partis et sièges se dupliquent ----
-base_vote_parlement_legislatives <- base_vote_parlement_legislatives %>%
-  mutate(
-    seats_share = case_when(
-      partyfacts_id == "1083" & isoname == "France" & year == 1967  ~ 25,
-      partyfacts_id == "1083" & isoname == "France" & year == 1973  ~ 25,
-      partyfacts_id == "6241" & isoname == "Italy" & year == 2001  ~ 7.30158725,
-      partyfacts_id == "1737" & isoname == "Italy" & year == 2001  ~ 12.8042326667,
-      partyfacts_id == "6241" & isoname == "Italy" & year == 2006  ~ 13.80952375,
-      partyfacts_id == "1372" & isoname == "Italy" & year == 2006  ~ 18.4126983333,
-      partyfacts_id == "1691" & isoname == "Hungary" & year == 2002  ~ 48.70466321,
-      partyfacts_id == "1408" & isoname == "Hungary" & year == 2002  ~ 46.11398964,
-      partyfacts_id == "1408" & isoname == "Hungary" & year == 2002  ~ 4.92227979,
-      partyfacts_id == "4010" & isoname == "Senegal" & year == 2012  ~ 26.44444444,
-      TRUE ~ seats_share
-    )
-  )
-
-base_vote_parlement_legislatives <- base_vote_parlement_legislatives  %>% 
-  group_by(isoname,year,election_date,decile)%>%
-  mutate(election_couverture_seats = sum(seats_share))
-#Lister les partis sans données sur les sièges au parlement ----
-unique(base_vote_parlement_legislatives$vote[is.na(base_vote_parlement_legislatives$seats)])
-
-View(
-  base_vote_parlement_legislatives %>%
-    ungroup() %>%
-    filter(is.na(seats)) %>%
-    distinct(year,isoname,vote,partyfacts_id,seats)
-)
-
-##Liste des élections où le taux de sièges couverts est inférieur à 1----
-View(
-  base_vote_parlement_legislatives %>%
-    ungroup() %>%
-    filter(election_couverture_seats < 80) %>%
-    distinct(year,isoname,election_couverture_seats)
-)   
-
-View(
-  base_vote_parlement_legislatives %>%
-    ungroup() %>%
-    filter(election_couverture_seats > 100) %>%
-    distinct(year,isoname,election_couverture_seats)
-) 
-##Valeurs présentes dans ma base Parlement maps pas élections----
-View(Elections_global %>%
-       distinct(isoname, year, election_date, partyfacts_id,seats,seats_share) %>%
-       anti_join(
-         base_vote_parlement_legislatives %>% distinct(isoname, year, election_date, partyfacts_id),
-         by = c("isoname", "year", "election_date", "partyfacts_id")
-       ))
-
-View(
-  Elections_global %>%
-    filter(seats_share >= 10) %>%
-    distinct(isoname, year, election_date, partyfacts_id, seats,seats_share) %>%
-    anti_join(
-      base_vote_parlement_legislatives %>%
-        distinct(isoname, year, election_date, partyfacts_id),
-      by = c("isoname", "year", "election_date", "partyfacts_id")
-    )
-)
-
-
-
-#Partis présents dans base élections mais pas Parlement
-View(
-  base_vote_parlement_legislatives %>%
-    ungroup() %>%
-    group_by(isoname, year, partyfacts_id) %>%
-    summarise(
-      mean_pct_votes = mean(pct_votes, na.rm = TRUE),
-      .groups = "drop"
-    ) %>%
-    anti_join(
-      Elections_global %>%
-        distinct(isoname, year, election_date, partyfacts_id),
-      by = c("isoname", "year", "partyfacts_id")
-    )
-)
-
-#Export de la base vote-parlement
-write.csv(
-  base_vote_parlement_legislatives,
-  "data/intermediary/parliament/elections and parliament dataset.csv",
-  row.names = FALSE
-)
-
 
 
 #DINC ----

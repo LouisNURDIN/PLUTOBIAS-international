@@ -2,8 +2,8 @@ library(dplyr)
 library(tidyr)
 library(purrr)
 library(stringr)
+library(lubridate)
 #Base avec données gouvernements
-base_vote_parlement_legislatives <- read.csv("data/intermediary/parliament/elections and parliament dataset.csv", sep = ",")
 whogov <- read.csv("data/raw/whogov/WhoGov_within_V3.1.csv", sep = ";")
 elections_legislatives_valides <- read.csv("data/intermediary/elections/valid elections.csv", sep = ",")
 pays_gmp_legislatives <- unique(elections_legislatives_valides$isoname)
@@ -131,159 +131,6 @@ whogov_parties <- whogov_parties %>%
   ) %>%
   ungroup()
 
-##calcul bonne date pour le join ----
-library(lubridate)
-library(stringr)
-base_vote_parlement_legislatives2 <- base_vote_parlement_legislatives %>%
-  group_by(isoname, year) %>%
-  mutate(
-    election_date = na_if(election_date, ""),
-    election_date = first(na.omit(election_date))
-  ) %>%
-  ungroup() %>%
-  mutate(
-    election_date_date = as.Date(str_replace_all(election_date, "\\.", "-")),
-    join_year = case_when(
-      is.na(election_date_date) ~ year,
-      month(election_date_date) < 7 ~ year(election_date_date),
-      TRUE ~ year(election_date_date) + 1
-    )
-  )
-
-###join whogov avec ma base élections/législatives ----
-base_vote_parlement_legislatives2 <- base_vote_parlement_legislatives2 %>%
-  mutate(
-    join_year = as.integer(join_year)
-  )
-
-whogov_parties <- whogov_parties %>%
-  mutate(
-    year = as.integer(year)
-  )
-
-
-library(dplyr)
-library(tidyr)
-years <- seq(
-  min(base_vote_parlement_legislatives2$year, na.rm = TRUE),
-  max(whogov_parties$year, na.rm = TRUE),
-  by = 1
-)
-
-base <- base_vote_parlement_legislatives2 %>%
-  distinct(isoname, decile, partyfacts_id)
-
-party_life <- base_vote_parlement_legislatives2 %>%
-  group_by(isoname, partyfacts_id) %>%
-  summarise(
-    first_year = min(year, na.rm = TRUE),
-    last_year  = max(year, na.rm = TRUE),
-    .groups = "drop"
-  )
-
-grid <- tidyr::expand_grid(
-  base_vote_parlement_legislatives2 %>%
-    distinct(isoname, decile, partyfacts_id),
-  year = years
-) %>%
-  left_join(party_life, by = c("isoname", "partyfacts_id")) %>%
-  filter(year >= first_year & year <= last_year)
-
-base_complete <- grid %>%
-  left_join(
-    base_vote_parlement_legislatives2,
-    by = c("isoname", "year", "decile", "partyfacts_id")
-  ) %>%
-  arrange(isoname,year, decile, partyfacts_id) %>%
-  group_by(isoname, decile, partyfacts_id) %>%
-  fill(
-    survey, votes, pct_votes, nbr_obs, votes_valides,
-    taux_participation, election_date_date,
-    seats, seats_total, seats_share, election_couverture_seats,
-    .direction = "down"
-  ) %>%
-  ungroup()
-
-base_complete <- base_complete %>%
-  left_join(
-    whogov_parties,
-    by = c("isoname","year","partyfacts_id"),
-    relationship = "many-to-many"
-  )
-
-#code original ----
-
-###mise au propre de la base ----
-base_complete <- base_complete[!is.na(base_complete$year),]
-
-base_complete <- base_complete %>%
-  select(isoname, year, election_date_date,join_year, survey,source, source_recode, decile, partyfacts_id, votes, pct_votes,
-         votes_valides, taux_participation, seats, seats_total, seats_share, ministers_party, total_ministers, ministers_share, election_couverture_seats,other_ministers
-         )
-
-#Traiter les cas où les ministres se dupliquent car plusieurs fois le même PF dans une élection ----
-#Attention vigilance sur cette partie c'est peut-être faux
-base_complete <- base_complete %>%
-  mutate(
-    ministers_share = case_when(
-      partyfacts_id == "1083" & isoname == "France" & year == 1967  ~ 0.25,
-      partyfacts_id == "1083" & isoname == "France" & year == 1973  ~ 0.224101475,
-      partyfacts_id == "6241" & isoname == "Italy" & year == 2001  ~ 0.05859375,
-      partyfacts_id == "1372" & isoname == "Italy" & year == 2006  ~ 0.0392857138,
-      
-      TRUE ~ ministers_share
-    )
-  )
-
-#####verif nombre de ministres couverts par élection ----
-base_complete <- base_complete %>%
-  mutate(
-    ministers_party = coalesce(ministers_party, 0),
-    total_ministers = coalesce(total_ministers, 0),
-    ministers_share = coalesce(ministers_share, 0)
-  ) %>%
-  group_by(isoname, year, decile) %>%
-  mutate(
-    election_couverture_ministers = sum(ministers_share, na.rm = TRUE)
-  ) %>%
-  ungroup()
-
-#Base avec bonnes élections législatives ----
-base_complete_legislatives <- base_complete %>%
-  filter(isoname%in% pays_gmp_legislatives)
-
-##Pour le moment filtre sur l'année mais on pourra modifier plus tard quand on aura des élections plus récentes ----
-base_complete_legislatives_before_2015 <- base_complete_legislatives %>%
-  filter(base_complete_legislatives$year <= 2015)
-
-#On enlève les années avant 1966 car Whogov n'a pas les données
-base_complete_legislatives <- base_complete_legislatives %>%
-  filter(base_complete_legislatives$year >= 1966)
-#Liste des pays/années avec données incohérentes ----
-View(
-  base_complete_legislatives %>%
-    ungroup() %>%
-    filter(election_couverture_ministers < 0.8) %>%
-    distinct(year,isoname,election_couverture_ministers)
-)
-
-
-View(
-  base_complete_legislatives %>%
-    ungroup() %>%
-    filter(election_couverture_seats > 100) %>%
-    distinct(year,isoname,election_couverture_seats)
-)
-##Liste des pays/années où tous les ministres ne sont pas couverts ----
-View(
-  base_complete_legislatives %>%
-    ungroup() %>%
-    filter(election_couverture_ministers < 1) %>%
-    distinct(year,isoname,election_couverture_seats,election_couverture_ministers)
-)
-
-
-
 
 #DINC ----
 base_vote_parlement_legislatives_dinc <- read.csv("data/intermediary/parliament/elections and parliament dataset with dinc.csv", sep = ",")
@@ -402,9 +249,7 @@ base_complete_dinc <- base_complete_dinc %>%
 
 unique(base_complete_dinc$source_recode)
 
-#Base avec bonnes élections législatives ----
-base_complete_legislatives_dinc <- base_complete_dinc %>%
-  filter(isoname%in% pays_gmp_legislatives)
+
 
 
 
@@ -412,21 +257,21 @@ base_complete_legislatives_dinc <- base_complete_dinc %>%
 
 #Liste des pays/années avec données incohérentes ----
 View(
-  base_complete_legislatives_dinc %>%
+  base_complete_dinc %>%
     ungroup() %>%
     filter(election_couverture_ministers > 1) %>%
-    distinct(year,isoname,election_couverture_ministers)
+    distinct(year,isoname,election_couverture_ministers,source_recode)
 )
 
 View(
-  base_complete_legislatives_dinc %>%
+  base_complete_dinc %>%
     ungroup() %>%
     filter(election_couverture_seats > 100) %>%
-    distinct(year,isoname,election_couverture_seats)
+    distinct(year,isoname,election_couverture_seats,source_recode)
 )
 ##Liste des pays/années où tous les ministres ne sont pas couverts ----
 View(
-  base_complete_legislatives_dinc %>%
+  base_complete_dinc %>%
     ungroup() %>%
     filter(election_couverture_ministers < 100) %>%
     distinct(year,isoname,election_couverture_seats,election_couverture_ministers,source_recode)
@@ -434,30 +279,9 @@ View(
 
 
 #Export des bases ----
-#Sans dinc
-write.csv(
-  base_complete_legislatives,
-  "data/final/final dataset legislative elections.csv",
-  row.names = FALSE
-)
-
-write.csv(
-  base_complete,
-  "data/final/final dataset all countries.csv",
-  row.names = FALSE
-)
-#avec dinc
-write.csv(
-  base_complete_legislatives_dinc,
-  "data/final/final dataset legislative elections dinc method.csv",
-  row.names = FALSE
-)
-
 write.csv(
   base_complete_dinc,
   "data/final/final dataset all countries dinc method.csv",
   row.names = FALSE
 )
 
-
-unique(whogov)

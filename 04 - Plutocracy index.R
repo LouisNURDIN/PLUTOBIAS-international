@@ -1,15 +1,7 @@
 #Calcul des indices de ploutocratie 
 library(dplyr)
-base_complete_legislative <-  read.csv("data/final/final dataset legislative elections.csv", sep = ",")
-base_complete_legislative_dinc <-  read.csv("data/final/final dataset legislative elections dinc method.csv", sep = ",")
+base_complete_legislative_dinc <-  read.csv("data/final/final dataset all countries dinc method.csv", sep = ",")
 
-base_complete_legislative <- base_complete_legislative[!is.na(base_complete_legislative$decile),]
-base_complete_legislative <- base_complete_legislative[!is.na(base_complete_legislative$partyfacts_id),]
-base_complete_legislative <- base_complete_legislative[!is.na(base_complete_legislative$election_date_date),]
-base_complete_legislative <- base_complete_legislative %>%
-  filter(base_complete_legislative$partyfacts_id != "Other")
-base_complete_legislative <- base_complete_legislative %>%
-  filter(base_complete_legislative$year >= 1966)
 
 base_complete_legislative_dinc <- base_complete_legislative_dinc[!is.na(base_complete_legislative_dinc$decile),]
 base_complete_legislative_dinc <- base_complete_legislative_dinc[!is.na(base_complete_legislative_dinc$partyfacts_id),]
@@ -18,213 +10,6 @@ base_complete_legislative_dinc <- base_complete_legislative_dinc %>%
   filter(base_complete_legislative_dinc$partyfacts_id != "Other")
 base_complete_legislative_dinc <- base_complete_legislative_dinc %>%
   filter(base_complete_legislative_dinc$year >= 1966)
-
-
-
-#Pour le moment filtre sur l'année 2015 mais on pourraz le modifier quand on aura des données d'enquêtes plus récentes
-
-#Calcul des indices pour la ploutocratie ---- 
-
-base_complete_legislative <- base_complete_legislative %>%
-  mutate(
-    ministers_share = as.numeric(gsub(",", ".", ministers_share))*100,
-    seats_share = as.numeric(gsub(",", ".", seats_share)),
-    
-    votes_en_siege = pmin(coalesce(seats_share, 0), pct_votes),
-    votes_en_ministres = pmin(coalesce(ministers_share, 0), pct_votes)
-  )
-
-# 3. Agrégation PROPRE au niveau décile
-
-deciles_data <- base_complete_legislative %>%
-  group_by(isoname, year, decile) %>%
-  summarise(
-    taux_participation = first(na.omit(taux_participation)),
-    total_sieges = sum(votes_en_siege, na.rm = TRUE),
-    total_ministres = sum(votes_en_ministres, na.rm = TRUE),
-    votes_valides_en_sieges =
-      total_sieges / taux_participation * 100,
-    .groups = "drop"
-  )
-
-# 4. Ratios 1 vs 10
-ratios_1_10 <- deciles_data %>%
-  group_by(isoname, year) %>%
-  summarise(
-    
-    ratio_participation_1_10 =
-      first(taux_participation[decile == 10]) /
-      first(taux_participation[decile == 1]),
-    
-    ratio_sieges_1_10 =
-      first(total_sieges[decile == 10]) /
-      first(total_sieges[decile == 1]),
-    
-    ratio_gouvernement_1_10 =
-      first(total_ministres[decile == 10]) /
-      first(total_ministres[decile == 1]),
-    
-    ratio_votes_valides_en_sieges_1_10 =
-      first(votes_valides_en_sieges[decile == 10]) /
-      first(votes_valides_en_sieges[decile == 1]),
-    
-    ratio_sieges_ministres_1_10 =
-      (first(total_ministres[decile == 10]) /
-         first(total_sieges[decile == 10])) /
-      (first(total_ministres[decile == 1]) /
-         first(total_sieges[decile == 1])),
-    
-    .groups = "drop"
-  )
-
-
-# 5. Ratios 50 / 50
-
-ratios_50 <- deciles_data %>%
-  group_by(isoname,year) %>%
-  summarise(
-    ratio_participation_50_50 =
-      sum(taux_participation[decile %in% 6:10]) /
-      sum(taux_participation[decile %in% 1:5]),
-    
-    ratio_sieges_50_50 =
-      sum(total_sieges[decile %in% 6:10]) /
-      sum(total_sieges[decile %in% 1:5]),
-    
-    ratio_gouvernement_50_50 =
-      sum(total_ministres[decile %in% 6:10]) /
-      sum(total_ministres[decile %in% 1:5]),
-    
-    ratio_votes_valides_en_sieges_50_50 =
-      sum(votes_valides_en_sieges[decile %in% 6:10]) /
-      sum(votes_valides_en_sieges[decile %in% 1:5]),
-    
-    ratio_sieges_ministres_50_50 =
-      (
-        sum(total_ministres[decile %in% 6:10]) /
-          sum(total_sieges[decile %in% 6:10])
-      ) /
-      (
-        sum(total_ministres[decile %in% 1:5]) /
-          sum(total_sieges[decile %in% 1:5])
-      ),
-    
-    .groups = "drop"
-  )
-
-
-# 6. Réintégration dans la base principale
-base_complete_legislative <- base_complete_legislative %>%
-  left_join(ratios_1_10, by = c("isoname", "year")) %>%
-   left_join(ratios_50, by = c("isoname", "year"))
-
-base_complete_legislative <- base_complete_legislative %>%
-  left_join(
-    deciles_data %>%
-      select(isoname,year, decile, total_sieges, total_ministres),
-    by = c("isoname","year", "decile")
-  )
-
-names(base_complete_legislative)
-# Base finale
-base_complete_legislative <- base_complete_legislative %>%
-  mutate(
-    verif_ratio_10_10 =
-      ratio_participation_1_10 *
-      ratio_votes_valides_en_sieges_1_10 *
-      ratio_sieges_ministres_1_10,
-    
-    verif_ratio_50_50 =
-      ratio_participation_50_50 *
-      ratio_votes_valides_en_sieges_50_50 *
-      ratio_sieges_ministres_50_50,
-    
-  ) %>%
-  select(
-    isoname,join_year,year,survey,
-    election_date_date,decile,
-    partyfacts_id,
-    pct_votes, taux_participation,
-    seats_share, votes_en_siege,ministers_party,
-    ministers_share, votes_en_ministres,
-    total_sieges, total_ministres,
-    ratio_participation_1_10,ratio_votes_valides_en_sieges_1_10,
-    ratio_sieges_ministres_1_10,ratio_gouvernement_1_10,
-    verif_ratio_10_10, ratio_participation_50_50, ratio_votes_valides_en_sieges_50_50,
-    ratio_sieges_ministres_50_50, ratio_gouvernement_50_50, verif_ratio_50_50,election_couverture_seats,
-    election_couverture_ministers,other_ministers,
-  ) 
-
-cor(base_complete_legislative$ratio_gouvernement_1_10, base_complete_legislative$verif_ratio_10_10, 
-    use = "complete.obs")
-
-cor(base_complete_legislative$ratio_gouvernement_50_50, base_complete_legislative$verif_ratio_50_50, 
-    use = "complete.obs")
-
-#base propre
-base_complete_legislative_index <- base_complete_legislative %>%
-  group_by(isoname, year, decile) %>%
-  summarise(
-    
-    # identifiant survey (supposé constant)
-    survey = first(na.omit(survey)),
-    election_date_date = first(na.omit(election_date_date)),
-    # ratios → on sécurise avec mean (ou first si tu es sûr qu'ils sont constants)
-    taux_participation = mean(taux_participation, na.rm = TRUE),
-    total_sieges_decile = mean(total_sieges, na.rm = TRUE),
-    total_ministres_decile = mean(total_ministres, na.rm = TRUE),
-    
-    ratio_participation_1_10 = mean(ratio_participation_1_10, na.rm = TRUE),
-    ratio_votes_valides_en_sieges_1_10 = mean(ratio_votes_valides_en_sieges_1_10, na.rm = TRUE),
-    ratio_sieges_ministres_1_10 = mean(ratio_sieges_ministres_1_10, na.rm = TRUE),
-    ratio_gouvernement_1_10 = mean(ratio_gouvernement_1_10, na.rm = TRUE),
-    verif_ratio_10_10 = mean(verif_ratio_10_10, na.rm = TRUE),
-    
-    ratio_participation_50_50 = mean(ratio_participation_50_50, na.rm = TRUE),
-    ratio_votes_valides_en_sieges_50_50 = mean(ratio_votes_valides_en_sieges_50_50, na.rm = TRUE),
-    ratio_sieges_ministres_50_50 = mean(ratio_sieges_ministres_50_50, na.rm = TRUE),
-    ratio_gouvernement_50_50 = mean(ratio_gouvernement_50_50, na.rm = TRUE),
-    verif_ratio_50_50 = mean(verif_ratio_50_50, na.rm = TRUE),
-    election_couverture_seats = first(na.omit(election_couverture_seats)),
-    election_couverture_ministers = first(na.omit(election_couverture_ministers)),
-    other_ministers = first(na.omit(other_ministers)),
-    # sécurité diagnostic
-
-    
-    .groups = "drop"
-  )
-
-View(
-  base_complete_legislative %>%
-    ungroup() %>%
-    filter(election_couverture_ministers < 0.8) %>%
-    distinct(year,isoname,election_couverture_seats,election_couverture_ministers,other_ministers)
-)
-
-View(
-  base_complete_legislative %>%
-    ungroup() %>%
-    filter(election_couverture_ministers > 1) %>%
-    distinct(year,isoname,election_couverture_seats,election_couverture_ministers,other_ministers)
-)
-
-base_complete_legislative_index_group <- base_complete_legislative_index %>%
-  group_by(isoname, year) %>%
-  slice(1) %>%
-  ungroup()
-
-ggplot(base_complete_legislative_index_group,
-       aes(x = ratio_gouvernement_1_10,
-           y = ratio_gouvernement_50_50,
-           label = paste(isoname, year))) +
-  geom_point(alpha = 0.7) +
-  geom_text_repel(size = 3, max.overlaps = 50) +
-  theme_minimal() +
-  labs(
-    x = "Ratio gouvernement 1 vs 10",
-    y = "Ratio gouvernement 50 vs 50",
-    title = "Comparaison des ratios gouvernementaux"
-  )
 
 
 #DINC ----
@@ -242,7 +27,7 @@ base_complete_legislative_dinc <- base_complete_legislative_dinc %>%
 # 3. Agrégation PROPRE au niveau décile
 
 deciles_data_dinc <- base_complete_legislative_dinc %>%
-  group_by(isoname, year, decile, source_recode) %>%
+  group_by( source_recode, isoname, year, decile) %>%
   summarise(
     taux_participation = first(na.omit(taux_participation)),
     total_sieges = sum(votes_en_siege, na.rm = TRUE),
@@ -255,7 +40,7 @@ deciles_data_dinc <- base_complete_legislative_dinc %>%
 # 4. Ratios 1 vs 10
 
 ratios_1_10_dinc <- deciles_data_dinc %>%
-  group_by(isoname, year, source_recode) %>%
+  group_by( source_recode,isoname, year) %>%
   summarise(
     
     ratio_participation_1_10 =
@@ -285,7 +70,7 @@ ratios_1_10_dinc <- deciles_data_dinc %>%
 
 # 5. Ratios 50 / 50
 ratios_50_dinc <- deciles_data_dinc %>%
-  group_by(isoname,year,source_recode) %>%
+  group_by( source_recode,isoname,year) %>%
   summarise(
     ratio_participation_50_50 =
       sum(taux_participation[decile %in% 6:10]) /
@@ -408,8 +193,8 @@ base_complete_legislative_dinc_index_group <- base_complete_legislative_dinc_ind
 View(
   base_complete_legislative_dinc_index_group %>%
     ungroup() %>%
-    filter(election_couverture_ministers < 0.8) %>%
-    distinct(year,isoname,election_couverture_seats,election_couverture_ministers)
+    filter(election_couverture_ministers < 80) %>%
+    distinct(year,isoname,election_couverture_seats,election_couverture_ministers,source_recode)
 )
 
 cor(base_complete_legislative_dinc_index$ratio_gouvernement_1_10, base_complete_legislative_dinc_index$verif_ratio_10_10, 
