@@ -105,13 +105,13 @@ ratios_50_dinc <- deciles_data_dinc %>%
 base_complete_legislative_dinc <- base_complete_legislative_dinc %>%
   left_join(
     deciles_data_dinc %>%
-      select(isoname,year, decile, total_sieges, total_ministres),
-    by = c("isoname","year", "decile")
+      select(source_recode,isoname,year, decile, total_sieges, total_ministres),
+    by = c("source_recode","isoname","year", "decile")
   )
 
 base_complete_legislative_dinc <- base_complete_legislative_dinc %>%
-  left_join(ratios_1_10_dinc, by = c("isoname", "year")) %>%
-  left_join(ratios_50_dinc, by = c("isoname", "year"))
+  left_join(ratios_1_10_dinc, by = c("source_recode","isoname", "year")) %>%
+  left_join(ratios_50_dinc, by = c("source_recode","isoname", "year"))
 
 
 
@@ -130,7 +130,7 @@ base_complete_legislative_dinc <- base_complete_legislative_dinc %>%
     
   ) %>%
   select(
-    isoname,year,
+    source_recode, isoname,year,
     election_date_date,decile,
     partyfacts_id,
     pct_votes, taux_participation,
@@ -141,7 +141,7 @@ base_complete_legislative_dinc <- base_complete_legislative_dinc %>%
     ratio_sieges_ministres_1_10,ratio_gouvernement_1_10,
     verif_ratio_10_10, ratio_participation_50_50, ratio_votes_valides_en_sieges_50_50,
     ratio_sieges_ministres_50_50, ratio_gouvernement_50_50, verif_ratio_50_50,election_couverture_seats,
-    election_couverture_ministers, source, source_recode
+    election_couverture_ministers, 
   ) 
 
 cor(base_complete_legislative_dinc$ratio_gouvernement_1_10, base_complete_legislative_dinc$verif_ratio_10_10, 
@@ -153,7 +153,7 @@ cor(base_complete_legislative_dinc$ratio_gouvernement_50_50, base_complete_legis
 
 #base propre
 base_complete_legislative_dinc_index <- base_complete_legislative_dinc %>%
-  group_by(source, source_recode,isoname,year,election_date_date, decile) %>%
+  group_by(source_recode,isoname,year,election_date_date, decile) %>%
   summarise(
     
     # identifiant survey (supposé constant)
@@ -184,7 +184,7 @@ base_complete_legislative_dinc_index <- base_complete_legislative_dinc %>%
   )
 
 base_complete_legislative_dinc_index_group <- base_complete_legislative_dinc_index %>%
-  group_by(source, source_recode,isoname, year) %>%
+  group_by(source_recode,isoname, year) %>%
   slice(1) %>%
   ungroup()
 

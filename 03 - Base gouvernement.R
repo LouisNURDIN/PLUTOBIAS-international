@@ -137,7 +137,7 @@ base_vote_parlement_legislatives_dinc <- read.csv("data/intermediary/parliament/
 ##calcul bonne date pour le join ----
 
 base_vote_parlement_legislatives_dinc2 <- base_vote_parlement_legislatives_dinc %>%
-  group_by(isoname, year,source, source_recode) %>%
+  group_by( source_recode, isoname, year,source) %>%
   mutate(
     election_date = na_if(election_date, ""),
     election_date = first(na.omit(election_date))
@@ -173,10 +173,10 @@ years <- seq(
 )
 
 base <- base_vote_parlement_legislatives_dinc2 %>%
-  distinct(isoname, decile, partyfacts_id,source, source_recode)
+  distinct(source_recode,isoname, decile, partyfacts_id)
 
 party_life <- base_vote_parlement_legislatives_dinc2 %>%
-  group_by(isoname, partyfacts_id,source, source_recode) %>%
+  group_by(source_recode,isoname, partyfacts_id) %>%
   summarise(
     first_year = min(year, na.rm = TRUE),
     last_year  = max(year, na.rm = TRUE),
@@ -185,23 +185,23 @@ party_life <- base_vote_parlement_legislatives_dinc2 %>%
 
 grid <- tidyr::expand_grid(
   base_vote_parlement_legislatives_dinc2 %>%
-    distinct(isoname, decile, partyfacts_id,source, source_recode),
+    distinct(source_recode,isoname, decile, partyfacts_id),
   year = years
 ) %>%
-  left_join(party_life, by = c("isoname", "partyfacts_id","source", "source_recode")) %>%
+  left_join(party_life, by = c("source_recode","isoname", "partyfacts_id")) %>%
   filter(year >= first_year & year <= last_year)
 
 base_complete_dinc <- grid %>%
   left_join(
     base_vote_parlement_legislatives_dinc2,
-    by = c("isoname", "year", "decile", "partyfacts_id", "source", "source_recode")
+    by = c("source_recode","isoname", "year", "decile", "partyfacts_id")
   ) %>%
-  arrange(isoname,year, decile, partyfacts_id) %>%
-  group_by(isoname, decile, partyfacts_id,source, source_recode) %>%
+  arrange(source_recode,isoname,year, decile, partyfacts_id) %>%
+  group_by(source_recode,isoname, decile, partyfacts_id) %>%
   fill(
     survey, votes, pct_votes, nbr_obs, votes_valides,
     taux_participation, election_date_date,
-    seats, seats_total, seats_share, election_couverture_seats,source, source_recode,
+    seats, seats_total, seats_share, election_couverture_seats,source_recode,
     .direction = "down"
   ) %>%
   ungroup()
@@ -218,7 +218,7 @@ base_complete_dinc <- base_complete_dinc %>%
 base_complete_dinc <- base_complete_dinc[!is.na(base_complete_dinc$year),]
 
 base_complete_dinc <- base_complete_dinc %>%
-  select(isoname, year, election_date_date,join_year, survey, source, source_recode,decile, partyfacts_id, votes, pct_votes,
+  select(isoname, year, election_date_date,join_year, survey, source_recode,decile, partyfacts_id, votes, pct_votes,
          votes_valides, taux_participation, seats, seats_total, seats_share, ministers_party, total_ministers, ministers_share, election_couverture_seats
   )
 
@@ -241,17 +241,13 @@ base_complete_dinc <- base_complete_dinc %>%
     total_ministers = coalesce(total_ministers, 0),
     ministers_share = coalesce(ministers_share, 0)
   ) %>%
-  group_by(isoname, year, decile,source,source_recode) %>%
+  group_by(source_recode,isoname, year, decile) %>%
   mutate(
     election_couverture_ministers = sum(ministers_share, na.rm = TRUE)
   ) %>%
   ungroup()
 
 unique(base_complete_dinc$source_recode)
-
-
-
-
 
 
 
