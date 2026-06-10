@@ -31,7 +31,8 @@ Partyfacts_id_parlgov <- Partyfacts_id %>%
 Partyfacts_id_cses <- Partyfacts_id %>%
   filter(dataset_key == "cses")
 
-
+Partyfacts_id_wvs <- Partyfacts_id %>%
+  filter(dataset_key == "wvs")
 
 #2ème méthode = on enlève les élections où turnout = NA + les élections où Turnout = NA et/ou toujours la même valeur----
 GMP_inc_2 <- GMP_inc %>%
@@ -305,13 +306,261 @@ cses_data_clean <- cses_data_clean %>%
       TRUE ~ partyfacts_id
     )
   )
-
 #Export Base CSES ----
 write.csv(
   cses_data_clean,
   "data/intermediary/elections/cses elections dataset.csv",
   row.names = FALSE
 )
+
+#WVS ----
+wvs_data <- read.csv  ("data/raw/wvs/WVS_Time_Series_1981-2022_csv_v5_0.csv")
+
+wvs_data <- wvs_data %>%
+  rename(isoname = COUNTRY_ALPHA)
+wvs_data <- wvs_data %>%
+  mutate(dataset_key= "wvs")
+wvs_data <- wvs_data %>%
+  mutate(source = "WVS")
+wvs_data <- wvs_data %>%
+  mutate(source_recode = "WVS")
+wvs_data <- wvs_data %>%
+  rename(year = S020)
+wvs_data <- wvs_data %>%
+  rename(dataset_party_id = E179WVS) #turnout inclus dans cette variable
+wvs_data <- wvs_data %>%
+  mutate(type = "Lower House")
+wvs_data <- wvs_data %>%
+  mutate(turnout = NA)
+
+wvs_data <- wvs_data %>%
+  rename(inc = X047_WVS)
+wvs_data <- wvs_data %>%
+  rename(gender = X001)
+wvs_data <- wvs_data %>%
+  rename(educ = X025)
+wvs_data <- wvs_data %>%
+  rename(age = X003)
+
+wvs_data_clean <- wvs_data %>%
+  select(dataset_key,isoname,year, source, source_recode, type, inc, turnout, dataset_party_id)
+
+#Filtre pour ne garder que les données valides sur le revenu, le vote, et les bonnes élections
+wvs_data_clean <- wvs_data_clean %>%
+  filter(inc >= 1)
+wvs_data_clean <- wvs_data_clean %>%
+  filter(dataset_party_id >= 1)
+
+
+
+wvs_data_clean <- wvs_data_clean %>%
+  mutate(
+    dataset_party_id = case_when(
+      dataset_party_id == "1" ~ "Abstention",   #il s'agit des personnes qui n'ont pas le droit de vote, pour le moment je les mets dans Abstention mais on peut les retirer plus tard
+      dataset_party_id == "2" ~ "Abstention",
+      dataset_party_id == "3" ~ "Abstention",
+      dataset_party_id == "7" ~ "Abstention",
+      dataset_party_id == "5" ~ "Other",
+      dataset_party_id == "8" ~ "Other",
+
+      TRUE ~ as.character(dataset_party_id)
+    )
+  )
+
+#Join partyfacts dans wvs ----
+Partyfacts_id_wvs <- Partyfacts_id_wvs %>%
+  mutate(dataset_party_id = as.character(dataset_party_id))
+
+wvs_data_clean <- wvs_data_clean %>%
+  left_join(
+    Partyfacts_id_wvs %>%
+      dplyr::select(dataset_party_id,partyfacts_id),
+    by = "dataset_party_id"
+  )
+
+Partyfacts_id_wvs <- Partyfacts_id_wvs %>%
+  mutate(partyfacts_id = as.character(partyfacts_id))
+
+wvs_data_clean <- wvs_data_clean %>%
+  mutate(
+    partyfacts_id = as.character(partyfacts_id),
+    partyfacts_id = case_when(
+      dataset_party_id == "Abstention" ~ "Abstention",
+      str_detect(dataset_party_id, "Other$") ~ "Other",
+      TRUE ~ partyfacts_id
+    )
+  )
+
+#Traitement des partyfacts dans cses pour join 
+wvs_data_clean <- wvs_data_clean %>%
+  mutate(
+    partyfacts_id = case_when(
+      partyfacts_id == "1388" & isoname == "United Kingdom" ~ "540",
+      partyfacts_id == "1231" & isoname == "Switzerland" ~ "360",
+      partyfacts_id == "7415" & isoname == "Sweden" ~ "199",
+      partyfacts_id == "5750" & isoname == "Spain" ~ "441",
+      partyfacts_id == "8814" & isoname == "Spain" ~ "441",
+      partyfacts_id == "1004" & isoname == "Canada" & year <= 2003 ~ "232",
+      partyfacts_id == "1004" & isoname == "Canada" & year >= 2003 ~ "1004" ,
+      partyfacts_id == "1044" & isoname == "Finland" ~ "1096" ,
+      partyfacts_id == "4785" & isoname == "France" ~ "1478" ,
+      partyfacts_id == "5514" & isoname == "France" ~ "1083" ,
+      partyfacts_id == "8041" & isoname == "France" ~ "1083" ,
+      partyfacts_id == "Other" & isoname == "India" & year == 1977  ~ "4788" ,
+      partyfacts_id == "1332" & isoname == "Canada" & year == 2000 ~ "1757",
+      dataset_party_id == "BW-Umbrella for Democratic Change" & isoname == "Botswana" & year == 2014 ~ "4832",
+      partyfacts_id == "604" & isoname == "Belgium" & year == 2007 ~ "756",
+      partyfacts_id == "604" & isoname == "Belgium" & year == 2003 ~ "622",
+      partyfacts_id == "604" & isoname == "Belgium" & year == 2010 ~ "622",
+      partyfacts_id == "604" & isoname == "Belgium" & year == 2014 ~ "622",
+      partyfacts_id == "8259" & isoname == "Belgium" & year == 1999 ~ "554",
+      partyfacts_id == "1680" & isoname == "Belgium" & year == 2003 ~ "1586",
+      partyfacts_id == "500" & isoname == "Belgium" & year <= 1977  ~ "480",
+      partyfacts_id == "1626" & isoname == "Italy" & year == 2001 ~ "6241",
+      partyfacts_id == "813" & isoname == "Italy" & year == 2001 ~ "6241",
+      partyfacts_id == "1221" & isoname == "Italy" & year == 2001 ~ "6241",
+      partyfacts_id == "962" & isoname == "Italy" & year == 2001 ~ "6241",
+      partyfacts_id == "1626" & isoname == "Italy" & year == 2006 ~ "6241",
+      partyfacts_id == "813" & isoname == "Italy" & year == 2006 ~ "6241",
+      partyfacts_id == "1221" & isoname == "Italy" & year == 2006 ~ "6241",
+      partyfacts_id == "878" & isoname == "Italy" & year == 2001 ~ "1737",
+      partyfacts_id == "279" & isoname == "Italy" & year == 2001 ~ "1737",
+      partyfacts_id == "1635" & isoname == "Italy" & year == 2001 ~ "1737",
+      partyfacts_id == "1737" & isoname == "Italy" & year == 2006 ~ "1372",
+      partyfacts_id == "279" & isoname == "Italy" & year == 2006 ~ "1372",
+      partyfacts_id == "1711" & isoname == "Italy" & year == 2006 ~ "1372",
+      partyfacts_id == "3956" & isoname == "Italy" & year == 2006 ~ "1372",
+      partyfacts_id == "1404" & isoname == "Italy" & year == 2006 ~ "1372",
+      partyfacts_id == "4107" & isoname == "Japan" ~ "3",
+      partyfacts_id == "6183" & isoname == "Poland" & year == 2001 ~ "57",
+      partyfacts_id == "7594" & isoname == "Iraq" & year == 2010 ~ "5615",
+      partyfacts_id == "7594" & isoname == "Iraq" & year == 2014 ~ "5615",
+      partyfacts_id == "6561" & isoname == "South Korea" & year == 2000 ~ "2548",
+      partyfacts_id == "6561" & isoname == "South Korea" & year == 2008 ~ "2305",
+      partyfacts_id == "6561" & isoname == "South Korea" & year == 2012 ~ "2305",
+      partyfacts_id == "5766" & isoname == "Senegal" & year == 2012 ~ "4010",
+      partyfacts_id == "2379" & isoname == "Senegal" & year == 2012 ~ "4010",
+      partyfacts_id == "2380" & isoname == "Senegal" & year == 2012 ~ "4010",
+      partyfacts_id == "5917" & isoname == "Iraq" & year == 2010 ~ "5919",
+      partyfacts_id == "6303" & isoname == "Italy" & year == 2013  ~ "1626",
+      TRUE ~ partyfacts_id
+    )
+  )
+
+unique(wvs_data_clean$isoname)
+wvs_data_clean <- wvs_data_clean %>%
+  mutate(
+    isoname = case_when(
+      isoname == "ALB" ~ "Albania",   
+      isoname == "AND" ~ "Andorra",
+      isoname == "ARG" ~ "Argentina",
+      isoname == "ARM" ~ "Armenia",
+      isoname == "AUS" ~ "Australia",
+      isoname == "BFA" ~ "Burkina Faso",
+      isoname == "BGD" ~ "Bangladesh",   
+      isoname == "BIH" ~ "Bosnia and Herzegovina",
+      isoname == "BLR" ~ "Belarus",
+      isoname == "BOL" ~ "Bolivia",
+      isoname == "BRA" ~ "Brazil",
+      isoname == "CAN" ~ "Canada",
+      isoname == "CHE" ~ "Switzerland",   
+      isoname == "CHL" ~ "Chile",
+      isoname == "COL" ~ "Colombia",
+      isoname == "CYP" ~ "Cyprus",
+      isoname == "CZE" ~ "Czech Republic",
+      isoname == "DEU" ~ "Germany",
+      isoname == "DOM" ~ "Dominican Republic",   
+      isoname == "DZA" ~ "Algeria",
+      isoname == "ECU" ~ "Ecuador",
+      isoname == "EGY" ~ "Egypt",
+      isoname == "ESP" ~ "Spain",
+      isoname == "EST" ~ "Estonia",
+      isoname == "ETH" ~ "Ethiopia",  
+      isoname == "FIN" ~ "Finland",
+      isoname == "GBR" ~ "United Kingdom",
+      isoname == "GEO" ~ "Georgia",
+      isoname == "GHA" ~ "Ghana",
+      isoname == "GRC" ~ "Greece",
+      isoname == "GTM" ~ "Guatemala",  
+      isoname == "HKG" ~ "Hong Kong",
+      isoname == "HTI" ~ "Haiti",
+      isoname == "HUN" ~ "Hungary",
+      isoname == "IDN" ~ "Indonesia",
+      isoname == "IND" ~ "India",
+      isoname == "IRN" ~ "Iran",   
+      isoname == "IRQ" ~ "Iraq",
+      isoname == "ISR" ~ "Israel",
+      isoname == "JOR" ~ "Jordan",
+      isoname == "JPN" ~ "Japan",
+      isoname == "KAZ" ~ "Kazakhstan",
+      isoname == "KEN" ~ "Kenya",   
+      isoname == "KGZ" ~ "Kyrgyzstan ",
+      isoname == "KOR" ~ "South Korea",
+      isoname == "LBN" ~ "Lebanon",
+      isoname == "LBY" ~ "Libya",
+      isoname == "LTU" ~ "Lithuania",
+      isoname == "LVA" ~ "Latvia",   
+      isoname == "MAC" ~ "Macau",
+      isoname == "MAR" ~ "Morocco",
+      isoname == "MDA" ~ "Molodova",
+      isoname == "MDV" ~ "Maldives",
+      isoname == "MEX" ~ "Mexico",
+      isoname == "MKD" ~ "North Macedonia",   
+      isoname == "MLI" ~ "Mali",
+      isoname == "MMR" ~ "Myanmar",
+      isoname == "MNE" ~ "Montenegro",
+      isoname == "MNG" ~ "Mongolia",
+      isoname == "MYS" ~ "Malaysia",
+      isoname == "NGA" ~ "Nigeria",  
+      isoname == "NIC" ~ "Nicaragua",
+      isoname == "NIR" ~ "North Ireland",
+      isoname == "NLD" ~ "Netherlands",
+      isoname == "NOR" ~ "Norway",
+      isoname == "NZL" ~ "New Zealand",
+      isoname == "PAK" ~ "Pakistan",   
+      isoname == "PER" ~ "Peru",
+      isoname == "PHL" ~ "Philippines",
+      isoname == "POL" ~ "Poland",
+      isoname == "PRI" ~ "Puerto Rico",
+      isoname == "PSE" ~ "Palestine",
+      isoname == "ROU" ~ "Romania",   
+      isoname == "RUS" ~ "Russia",
+      isoname == "RWA" ~ "Rwanda",
+      isoname == "SGP" ~ "Singapore",
+      isoname == "SLV" ~ "El Salvador",
+      isoname == "SRB" ~ "Serbia",
+      isoname == "SVK" ~ "Slovakia",  
+      isoname == "SVN" ~ "Slovenia",
+      isoname == "SWE" ~ "Sweden",
+      isoname == "THA" ~ "Thailand",
+      isoname == "TJK" ~ "Tajikistan",
+      isoname == "TUN" ~ "Tunisia",
+      isoname == "TUR" ~ "Turkey",   
+      isoname == "TWN" ~ "Taiwan",
+      isoname == "TZA" ~ "Tanzania",
+      isoname == "UGA" ~ "Uganda",
+      isoname == "UKR" ~ "Ukraine",
+      isoname == "URY" ~ "Uruguay",
+      isoname == "USA" ~ "United States",   
+      isoname == "UZB" ~ "Uzbekistan",
+      isoname == "VEN" ~ "Venezuela",
+      isoname == "YEM" ~ "Yemen",
+      isoname == "ZAF" ~ "South Africa",
+      isoname == "ZMB" ~ "Zambia",
+      isoname == "ZWE" ~ "Zimbabwe",   
+
+      
+      TRUE ~ as.character(dataset_party_id)
+    )
+  )
+#Export Base WVS ----
+write.csv(
+  wvs_data_clean,
+  "data/intermediary/elections/wvs elections dataset.csv",
+  row.names = FALSE
+)
+
+
 
 
 
