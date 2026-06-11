@@ -81,6 +81,8 @@ Base_legislatives_deciles2 <- Base_legislatives_deciles2 %>%
 #Autres bases ----
 #CSES ----
 cses_data_clean <- read.csv("data/intermediary/elections/cses elections dataset.csv")
+cses_data_clean_income <- cses_data %>%
+  filter(inc <= 5)
 
 #calcul décile cses ----
 build_cses_base_long <- function(df, annee, country){
@@ -178,13 +180,33 @@ build_cses_base_long <- function(df, annee, country){
 # PIPELINE MULTI-PAYS
 
 
-cses_dataset_income <- cses_data_clean %>%
+cses_dataset_income <- cses_data_clean_income %>%
   group_by(isoname, year) %>%
   group_split() %>%
   map_dfr(~ build_cses_base_long(.x, unique(.x$year), unique(.x$isoname)))
 cses_dataset_income <- cses_dataset_income %>%
   mutate(bias = "plutocracy")
 
+##CSES gender ----
+cses_data_clean_sexe <- cses_data_clean %>%
+  filter(gender >= 1)
+
+###Calcul CSES gender ----
+cses_data_clean_sexe <- cses_data_clean_sexe %>%
+  count(isoname,year, gender, partyfacts_id) %>%
+  group_by(isoname,year, gender) %>%
+  mutate(
+    pct_votes = n / sum(n) * 100
+  ) %>%
+  ungroup()
+
+##CSES educ ----
+cses_data_clean_educ <- cses_data_clean %>%
+  filter(educ >= 1)
+
+##CSES educ ----
+cses_data_clean_age <- cses_data_clean %>%
+  filter(age >= 1)
 
 #Espace pour empiler les bases votes entre elles ----
 Base_legislatives_deciles2 <- Base_legislatives_deciles2 %>%
@@ -192,6 +214,8 @@ Base_legislatives_deciles2 <- Base_legislatives_deciles2 %>%
 
 #WVS ----
 wvs_data_clean <- read.csv("data/intermediary/elections/wvs elections dataset.csv")
+wvs_data_clean_income <- wvs_data_clean %>%
+  filter(inc >= 1)
 
 #calcul décile cses ----
 build_wvs_base_long <- function(df, annee, country){
@@ -289,7 +313,7 @@ build_wvs_base_long <- function(df, annee, country){
 # PIPELINE MULTI-PAYS
 
 
-wvs_dataset_income <- wvs_data_clean %>%
+wvs_dataset_income <- wvs_data_clean_income %>%
   group_by(isoname, year) %>%
   group_split() %>%
   map_dfr(~ build_wvs_base_long(.x, unique(.x$year), unique(.x$isoname)))
@@ -297,7 +321,23 @@ wvs_dataset_income <- wvs_dataset_income %>%
   mutate(bias = "plutocracy")
 
 
+##WVS gender ---
+wvs_data_clean_sexe <- wvs_data_clean %>%
+  filter(gender >= 1)
 
+###WVS calcul fonction gender ----
+
+##WVS educ ----
+wvs_data_clean_educ <- cses_data_clean %>%
+  filter(educ >= 1)
+
+###WVS calcul fonction educ ----
+
+##WVS age ----
+wvs_data_clean_age <- cses_data_clean %>%
+  filter(age >= 1)
+
+###WVS calcul fonction age ----
 
 #Espace pour empiler les bases votes entre elles ----
 Base_legislatives_deciles2 <- Base_legislatives_deciles2 %>%
