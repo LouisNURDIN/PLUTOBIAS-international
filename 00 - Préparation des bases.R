@@ -400,6 +400,7 @@ wvs_data_clean <- wvs_data_clean %>%
       dataset_party_id == "1" ~ "Abstention",   #il s'agit des personnes qui n'ont pas le droit de vote, pour le moment je les mets dans Abstention mais on peut les retirer plus tard
       dataset_party_id == "2" ~ "Abstention",
       dataset_party_id == "3" ~ "Abstention",
+      dataset_party_id == "4" ~ "Abstention",
       dataset_party_id == "7" ~ "Abstention",
       dataset_party_id == "5" ~ "Other",
       dataset_party_id == "8" ~ "Other",

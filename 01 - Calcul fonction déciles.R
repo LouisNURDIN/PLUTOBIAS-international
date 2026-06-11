@@ -77,6 +77,7 @@ Base_legislatives_deciles2 <- Base_legislatives_deciles2 %>%
 Base_legislatives_deciles2 <- Base_legislatives_deciles2 %>%
   mutate(bias = "plutocracy")
 
+
 ##wpid gender ----
 Base_elections_legislatives_sexe <- Base_elections_legislatives[!is.na(Base_elections_legislatives$gender),]
 ###Calcul fonction sexe wpid ----
@@ -137,7 +138,7 @@ Base_legislatives_gender <- Base_legislatives_gender %>%
 Base_legislatives_gender <- Base_legislatives_gender %>%
   rename(category = gender)
 
-#Calcul fonction educ wpid ----
+##Calcul fonction educ wpid ----
 unique(Base_elections_legislatives$educ)
 Base_elections_legislatives_educ <- Base_elections_legislatives[!is.na(Base_elections_legislatives$educ),]
 
@@ -236,10 +237,107 @@ Base_legislatives_educ <- Base_legislatives_educ %>%
       TRUE ~ as.character(category)
     )
   )
-#Calcul fonction age ----
+
+##Calcul fonction age ----
 unique(Base_elections_legislatives$age)
 
+Base_elections_legislatives_age <- Base_elections_legislatives[!is.na(Base_elections_legislatives$age),]
 
+build_votes_by_age_fractional <- function(df){
+  
+  # 1. distribution + weights (comme ta fonction revenu)
+  dist_age <- df %>%
+    count(age) %>%
+    arrange(age) %>%
+    mutate(
+      pct = n / sum(n) * 100,
+      cum_pct = cumsum(pct),
+      cum_prev = lag(cum_pct, default = 0)
+    )
+  
+  age_groups <- data.frame(
+    age_group = c(1, 2),
+    lower = c(0, 50),
+    upper = c(50, 100)
+  )
+  
+  weights_matrix <- dist_age %>%
+    crossing(age_groups) %>%
+    mutate(
+      overlap = pmax(0, pmin(cum_pct, upper) - pmax(cum_prev, lower)),
+      weight = overlap / (cum_pct - cum_prev)
+    ) %>%
+    filter(weight > 0)
+  
+  # 2. expansion micro → groupes pondérés
+  df_groups <- df %>%
+    left_join(
+      weights_matrix %>%
+        dplyr::select(age, age_group, weight),
+      by = "age",
+      relationship = "many-to-many"
+    ) %>%
+    filter(!is.na(weight))
+  
+  # 3. vote variable (comme ta fonction standard)
+  df_groups <- df_groups %>%
+    mutate(
+      vote = case_when(
+        is.na(dataset_party_id) ~ NA_character_,
+        str_detect(dataset_party_id, "Abstention$") ~ "Abstention",
+        TRUE ~ dataset_party_id
+      )
+    )
+  
+  # 4. votes
+  votes <- df_groups %>%
+    group_by(isoname, year, age_group, vote, partyfacts_id) %>%
+    summarise(
+      votes = sum(weight),
+      .groups = "drop"
+    ) %>%
+    group_by(age_group) %>%
+    mutate(
+      pct_votes = votes / sum(votes) * 100
+    ) %>%
+    ungroup()
+  
+  # 5. participation
+  participation <- df_groups %>%
+    group_by(age_group) %>%
+    summarise(
+      nbr_obs = sum(weight),
+      votes_valides = sum(
+        weight * (!str_detect(dataset_party_id, "Abstention$")),
+        na.rm = TRUE
+      ),
+      taux_participation = votes_valides / nbr_obs * 100,
+      .groups = "drop"
+    )
+  
+  # 6. output final (même structure que deciles / sexe)
+  votes %>%
+    left_join(participation, by = "age_group")
+}
+
+Base_legislatives_age <- Base_elections_legislatives %>%
+  group_by(isoname, year) %>%
+  group_split() %>%
+  map_dfr(~ build_votes_by_age_fractional(.x)) %>%
+  left_join(meta_info, by = c("isoname", "year"))
+
+Base_legislatives_age <- Base_legislatives_age %>%
+  mutate(bias = "gerontocracy")
+Base_legislatives_age <- Base_legislatives_age %>%
+  rename(category = age_group)
+Base_legislatives_age <- Base_legislatives_age %>%
+  mutate(
+    category = case_when(
+      category == "1" ~ "bot-age", 
+      category== "2" ~ "top-age",
+      TRUE ~ as.character(category)
+    )
+  )
 #Autres bases ----
 #CSES ----
 cses_data_clean <- read.csv("data/intermediary/elections/cses elections dataset.csv")
@@ -513,13 +611,107 @@ cses_dataset_educ <- cses_dataset_educ %>%
       TRUE ~ as.character(category)
     )
   )
+
 ##CSES age ----
 cses_data_clean_age <- cses_data_clean %>%
   filter(age < 9997)
 
-#Espace pour empiler les bases votes entre elles ----
-Base_legislatives_deciles2 <- Base_legislatives_deciles2 %>%
-  bind_rows(cses_dataset_income) 
+build_votes_by_age_fractional <- function(df){
+  
+  # 1. distribution + weights (comme ta fonction revenu)
+  dist_age <- df %>%
+    count(age) %>%
+    arrange(age) %>%
+    mutate(
+      pct = n / sum(n) * 100,
+      cum_pct = cumsum(pct),
+      cum_prev = lag(cum_pct, default = 0)
+    )
+  
+  age_groups <- data.frame(
+    age_group = c(1, 2),
+    lower = c(0, 50),
+    upper = c(50, 100)
+  )
+  
+  weights_matrix <- dist_age %>%
+    crossing(age_groups) %>%
+    mutate(
+      overlap = pmax(0, pmin(cum_pct, upper) - pmax(cum_prev, lower)),
+      weight = overlap / (cum_pct - cum_prev)
+    ) %>%
+    filter(weight > 0)
+  
+  # 2. expansion micro → groupes pondérés
+  df_groups <- df %>%
+    left_join(
+      weights_matrix %>%
+        dplyr::select(age, age_group, weight),
+      by = "age",
+      relationship = "many-to-many"
+    ) %>%
+    filter(!is.na(weight))
+  
+  # 3. vote variable (comme ta fonction standard)
+  df_groups <- df_groups %>%
+    mutate(
+      vote = case_when(
+        is.na(dataset_party_id) ~ NA_character_,
+        str_detect(dataset_party_id, "Abstention$") ~ "Abstention",
+        TRUE ~ dataset_party_id
+      )
+    )
+  
+  # 4. votes
+  votes <- df_groups %>%
+    group_by(isoname, year, age_group, vote, partyfacts_id) %>%
+    summarise(
+      votes = sum(weight),
+      .groups = "drop"
+    ) %>%
+    group_by(age_group) %>%
+    mutate(
+      pct_votes = votes / sum(votes) * 100
+    ) %>%
+    ungroup()
+  
+  # 5. participation
+  participation <- df_groups %>%
+    group_by(age_group) %>%
+    summarise(
+      nbr_obs = sum(weight),
+      votes_valides = sum(
+        weight * (!str_detect(dataset_party_id, "Abstention$")),
+        na.rm = TRUE
+      ),
+      taux_participation = votes_valides / nbr_obs * 100,
+      .groups = "drop"
+    )
+  
+  # 6. output final (même structure que deciles / sexe)
+  votes %>%
+    left_join(participation, by = "age_group")
+}
+
+cses_dataset_age <- cses_data_clean_age %>%
+  group_by(isoname, year) %>%
+  group_split() %>%
+  map_dfr(~ build_votes_by_age_fractional(.x)) %>%
+  left_join(meta_info_cses, by = c("isoname", "year"))
+
+cses_dataset_age <- cses_dataset_age %>%
+  mutate(bias = "gerontocracy")
+cses_dataset_age <- cses_dataset_age %>%
+  rename(category = age_group)
+cses_dataset_age <- cses_dataset_age %>%
+  mutate(
+    category = case_when(
+      category == "1" ~ "bot-age", 
+      category== "2" ~ "top-age",
+      TRUE ~ as.character(category)
+    )
+  )
+
 
 #WVS ----
 wvs_data_clean <- read.csv("data/intermediary/elections/wvs elections dataset.csv")
@@ -797,19 +989,155 @@ wvs_dataset_educ <- wvs_dataset_educ %>%
       TRUE ~ as.character(category)
     )
   )
+
+
+
 ##WVS age ----
-wvs_data_clean_age <- cses_data_clean %>%
+wvs_data_clean_age <- wvs_data_clean %>%
   filter(age >= 1)
 
-###WVS calcul fonction age ----
+build_votes_by_age_fractional <- function(df){
+  
+  # 1. distribution + weights (comme ta fonction revenu)
+  dist_age <- df %>%
+    count(age) %>%
+    arrange(age) %>%
+    mutate(
+      pct = n / sum(n) * 100,
+      cum_pct = cumsum(pct),
+      cum_prev = lag(cum_pct, default = 0)
+    )
+  
+  age_groups <- data.frame(
+    age_group = c(1, 2),
+    lower = c(0, 50),
+    upper = c(50, 100)
+  )
+  
+  weights_matrix <- dist_age %>%
+    crossing(age_groups) %>%
+    mutate(
+      overlap = pmax(0, pmin(cum_pct, upper) - pmax(cum_prev, lower)),
+      weight = overlap / (cum_pct - cum_prev)
+    ) %>%
+    filter(weight > 0)
+  
+  # 2. expansion micro → groupes pondérés
+  df_groups <- df %>%
+    left_join(
+      weights_matrix %>%
+        dplyr::select(age, age_group, weight),
+      by = "age",
+      relationship = "many-to-many"
+    ) %>%
+    filter(!is.na(weight))
+  
+  # 3. vote variable (comme ta fonction standard)
+  df_groups <- df_groups %>%
+    mutate(
+      vote = case_when(
+        is.na(dataset_party_id) ~ NA_character_,
+        str_detect(dataset_party_id, "Abstention$") ~ "Abstention",
+        TRUE ~ dataset_party_id
+      )
+    )
+  
+  # 4. votes
+  votes <- df_groups %>%
+    group_by(isoname, year, age_group, vote, partyfacts_id) %>%
+    summarise(
+      votes = sum(weight),
+      .groups = "drop"
+    ) %>%
+    group_by(age_group) %>%
+    mutate(
+      pct_votes = votes / sum(votes) * 100
+    ) %>%
+    ungroup()
+  
+  # 5. participation
+  participation <- df_groups %>%
+    group_by(age_group) %>%
+    summarise(
+      nbr_obs = sum(weight),
+      votes_valides = sum(
+        weight * (!str_detect(dataset_party_id, "Abstention$")),
+        na.rm = TRUE
+      ),
+      taux_participation = votes_valides / nbr_obs * 100,
+      .groups = "drop"
+    )
+  
+  # 6. output final (même structure que deciles / sexe)
+  votes %>%
+    left_join(participation, by = "age_group")
+}
+
+wvs_dataset_age <- wvs_data_clean_age %>%
+  group_by(isoname, year) %>%
+  group_split() %>%
+  map_dfr(~ build_votes_by_age_fractional(.x)) %>%
+  left_join(meta_info_wvs, by = c("isoname", "year"))
+
+wvs_dataset_age <- wvs_dataset_age %>%
+  mutate(bias = "gerontocracy")
+wvs_dataset_age <- wvs_dataset_age %>%
+  rename(category = age_group)
+wvs_dataset_age <- wvs_dataset_age %>%
+  mutate(
+    category = case_when(
+      category == "1" ~ "bot-age", 
+      category== "2" ~ "top-age",
+      TRUE ~ as.character(category)
+    )
+  )
+
+#Traitement des df income ----
+Base_legislatives_deciles2 <- Base_legislatives_deciles2 %>%
+  mutate(
+    category = paste0("inc-", category))
+cses_dataset_income <- cses_dataset_income %>%
+  mutate(
+    category = paste0("inc-", category))
+wvs_dataset_income <- wvs_dataset_income %>%
+  mutate(
+    category = paste0("inc-", category))
 
 #Espace pour empiler les bases votes entre elles ----
-Base_legislatives_deciles2 <- Base_legislatives_deciles2 %>%
-  bind_rows(wvs_dataset_income)
+bases <- list(
+  Base_legislatives_deciles2,
+  Base_legislatives_educ,
+  Base_legislatives_age,
+  Base_legislatives_gender,
+  cses_dataset_income,
+  cses_dataset_educ,
+  cses_dataset_age,
+  cses_dataset_gender,
+  wvs_dataset_income,
+  wvs_dataset_educ,
+  wvs_dataset_age,
+  wvs_dataset_gender
+)
+
+bases <- lapply(
+  bases,
+  \(x) x %>% mutate(category = as.character(category))
+)
+
+Base_all_clivages <- bind_rows(bases)
+
+#vérif qu'on a bien tout 
+unique(Base_all_clivages$bias)
+unique(Base_all_clivages$category)
+unique(Base_all_clivages$source_recode)
+
+Base_all_clivages <- Base_all_clivages %>%
+  select(source,source_recode,survey,bias,isoname,year, 
+         category,vote,partyfacts_id,votes, pct_votes,nbr_obs,votes_valides,taux_participation)
 
 
-
-elections_legislatives_valides2 <- Base_legislatives_deciles2 %>%
+#Liste de toutes nos élections par années et datasets
+elections_legislatives_valides2 <- Base_all_clivages %>%
   group_by(isoname,year,source, source_recode) %>%
   summarise(.groups = "drop")
 
@@ -820,7 +1148,7 @@ write.csv(
 )
 
 write.csv(
-  Base_legislatives_deciles2,
-  "data/intermediary/elections/legislative elections with dinc dataset.csv",
+  Base_all_clivages,
+  "data/intermediary/elections/dataset with all clivages and elections.csv",
   row.names = FALSE
 )
