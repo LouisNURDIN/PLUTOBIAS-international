@@ -89,7 +89,7 @@ unique(GMP_inc_2$educ)
 unique(GMP_inc_2$age)
 
 GMP_inc_2_clean <- GMP_inc_2 %>%
-  select(isoname,year, source, source_recode, type, inc,gender,educ, age, turnout,dataset_party_id)
+  select(isoname,year, source, source_recode, survey,type, dinc,gender,educ, age, turnout,dataset_party_id)
 ##Join Partyfacts dans GMP inc ----
 Base_all_elections <- GMP_inc_2_clean %>%
   left_join(
@@ -188,9 +188,10 @@ write.csv(
   row.names = FALSE
 )
 
+
 #Ajout de nouvelles bases ----
 
-##CSES ----
+#CSES ----
 cses_data <- read.csv("data/raw/cses/cses_imd.csv")
 ###Identifier les variables qui nous intéressent pour les harmoniser----
 cses_data <- cses_data %>%
@@ -219,6 +220,8 @@ cses_data <- cses_data %>%
 cses_data <- cses_data %>%
   rename(age = IMD2001_1)
 
+cses_data <- cses_data %>%
+  mutate(survey = "?")
 #ne pas oublier de garder le weight 
 
 
@@ -229,7 +232,7 @@ cses_data <- cses_data %>%
   filter(type <= 13)
 
 cses_data_clean <- cses_data %>%
-  select(isoname,year, source, source_recode, type, inc,gender,educ,age, turnout, dataset_party_id)
+  select(isoname,year, source, source_recode,survey, type, inc,gender,educ,age, turnout, dataset_party_id)
 
 cses_data_clean <- cses_data_clean %>%
   mutate(
@@ -335,7 +338,7 @@ cses_data_clean <- cses_data_clean %>%
       TRUE ~ partyfacts_id
     )
   )
-#Export Base CSES ----
+###Export Base CSES ----
 write.csv(
   cses_data_clean,
   "data/intermediary/elections/cses elections dataset.csv",
@@ -370,9 +373,11 @@ wvs_data <- wvs_data %>%
   rename(educ = X025)
 wvs_data <- wvs_data %>%
   rename(age = X003)
+wvs_data <- wvs_data %>%
+  mutate(survey = "Pre-electoral")
 
 wvs_data_clean <- wvs_data %>%
-  select(isoname,year, source, source_recode, type, inc,gender,educ,age, turnout, dataset_party_id)
+  select(isoname,year, source, source_recode,survey, type, inc,gender,educ,age, turnout, dataset_party_id)
 
 #Filtre pour ne garder que les données valides sur le revenu, le vote, et les bonnes élections
 
@@ -589,7 +594,7 @@ wvs_data_clean <- wvs_data_clean %>%
       TRUE ~ as.character(dataset_party_id)
     )
   )
-#Export Base WVS ----
+###Export Base WVS ----
 write.csv(
   wvs_data_clean,
   "data/intermediary/elections/wvs elections dataset.csv",
