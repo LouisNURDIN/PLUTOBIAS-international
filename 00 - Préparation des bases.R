@@ -253,6 +253,7 @@ cses_data_clean <- cses_data_clean %>%
   mutate(
     dataset_party_id = case_when(
       turnout == "0" ~ "Abstention",
+      turnout == 9999993 ~ "Abstention",
       dataset_party_id == 9999993 ~ "Abstention",
       dataset_party_id == 9999988 ~ "Other",
       dataset_party_id == 9999989 ~ "Other",

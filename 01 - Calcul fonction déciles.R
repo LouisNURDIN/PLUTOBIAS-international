@@ -1147,6 +1147,10 @@ write.csv(
   row.names = FALSE
 )
 
+
+#Traitement sur Base_all_clivages pour traiter tous les joins manquants entre bases 
+
+
 write.csv(
   Base_all_clivages,
   "data/intermediary/elections/dataset with all clivages and elections.csv",

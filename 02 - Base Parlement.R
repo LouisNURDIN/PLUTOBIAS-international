@@ -7,11 +7,11 @@ library(stringr)
 #Import base élections législatives
 elections_legislatives_valides <- read.csv("data/intermediary/elections/valid legislative elections.csv", sep = ",")
 
-Base_legislatives_deciles2 <- read.csv("data/intermediary/elections/legislative elections with dinc dataset.csv", sep = ",")
-unique(Base_legislatives_deciles2$source_recode)
-Base_legislatives_deciles2 <- Base_legislatives_deciles2 %>%
+Base_all_clivages <- read.csv("data/intermediary/elections/dataset with all clivages and elections.csv", sep = ",")
+
+Base_all_clivages <- Base_all_clivages %>%
   filter(isoname != "Hong Kong")
-Base_legislatives_deciles2 <- Base_legislatives_deciles2 %>%
+Base_all_clivages <- Base_all_clivages %>%
   filter(isoname != "Taiwan")
 
 #Elections global ----
@@ -27,8 +27,8 @@ Data_elections_global <- Data_elections_global  %>%
   )
       
       
-pays_gmp_legislatives <- unique(Base_legislatives_deciles2$isoname)
-annees_gmp_legislatives <- unique(Base_legislatives_deciles2$year)
+pays_gmp_legislatives <- unique(Base_all_clivages$isoname)
+annees_gmp_legislatives <- unique(Base_all_clivages$year)
 
 #filtrer pour avoir que les pays dans WPID
 Data_elections_global_group <- Data_elections_global %>%
@@ -113,7 +113,7 @@ Elections_global <- Elections_global  %>%
 #DINC ----
 Elections_global2 <- Elections_global %>%
   semi_join(
-    Base_legislatives_deciles2 %>%
+    Base_all_clivages %>%
       distinct(isoname, year),
     by = c("isoname", "year")
   )
@@ -142,7 +142,7 @@ Elections_global2 <- Elections_global2 %>%
   )
 
 ## Join entre les bases ----
-base_vote_parlement_legislatives2 <- Base_legislatives_deciles2 %>%
+Base_vote_parlement_global <- Base_all_clivages %>%
   left_join(
     Elections_global2 %>%
       select(isoname, year,partyfacts_id,election_date,seats,seats_total,seats_share),
@@ -153,7 +153,7 @@ base_vote_parlement_legislatives2 <- Base_legislatives_deciles2 %>%
 ###Traitement pour avoir le taux de députés par partis sur l'ensemble des députéss
 
 
-base_vote_parlement_legislatives2 <- base_vote_parlement_legislatives2 %>%
+Base_vote_parlement_global <- Base_vote_parlement_global %>%
   mutate(
     seats_share = case_when(
       partyfacts_id == "1691" & year == 2002 ~ 42.48,
@@ -163,7 +163,7 @@ base_vote_parlement_legislatives2 <- base_vote_parlement_legislatives2 %>%
     )
   )
 
-base_vote_parlement_legislatives2 <- base_vote_parlement_legislatives2 %>%
+Base_vote_parlement_global <- Base_vote_parlement_global %>%
   mutate(
     seats_share = case_when(
       partyfacts_id == "1083" & isoname == "France" & year == 1967  ~ 0.25,
@@ -182,21 +182,39 @@ base_vote_parlement_legislatives2 <- base_vote_parlement_legislatives2 %>%
   )
 
 
-base_vote_parlement_legislatives2 <- base_vote_parlement_legislatives2  %>% 
-  group_by(isoname,year,election_date,decile,source,source_recode)%>%
-  mutate(election_couverture_seats = sum(seats_share))
+Base_vote_parlement_global <- Base_vote_parlement_global  %>% 
+  group_by(source_recode,bias,category,isoname,year,)%>%
+  mutate(election_couverture_seats = sum(seats_share, na.rm = TRUE))
 
-unique(base_vote_parlement_legislatives2$source_recode)
+
+  Base_vote_parlement_global <- Base_vote_parlement_global %>%
+    filter(year <= 2015)
+
+#Lister les élections problématiques 
 View(
-  base_vote_parlement_legislatives2 %>%
+  Base_vote_parlement_global %>%
     ungroup() %>%
     filter(election_couverture_seats < 80) %>%
     distinct(year,isoname,source_recode,election_couverture_seats)
 )
+
+#Lister les partis importants qui joinent mal
+View(Elections_global2 %>%
+       filter(seats_share >= 10) %>%
+       filter(year <= 2015) %>%
+       distinct(isoname, year, partyfacts_id, seats_share) %>%
+       anti_join(
+         Base_vote_parlement_global %>% distinct(source_recode,isoname, year, partyfacts_id,seats_share,election_couverture_seats),
+         by = c("isoname", "year", "partyfacts_id"
+                )
+       ))
+
+
+
 #Export base avec méthode dinc
 write.csv(
-  base_vote_parlement_legislatives2,
-  "data/intermediary/parliament/elections and parliament dataset with dinc.csv",
+  Base_vote_parlement_global,
+  "data/intermediary/parliament/Elections and parliament global dataset.csv",
   row.names = FALSE
 )
 
