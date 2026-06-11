@@ -215,8 +215,11 @@ cses_data <- cses_data %>%
   rename(gender = IMD2002)
 cses_data <- cses_data %>%
   rename(educ = IMD2003)
+
 cses_data <- cses_data %>%
   rename(age = IMD2001_1)
+
+#ne pas oublier de garder le weight 
 
 
 #Filtre pour ne garder que les données valides sur le revenu, le vote, et les bonnes élections
