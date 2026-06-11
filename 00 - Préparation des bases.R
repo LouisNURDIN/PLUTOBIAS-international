@@ -72,8 +72,26 @@ GMP_inc_2 <- GMP_inc_2 %>%
     )
   )
 
+GMP_inc_2 <- GMP_inc_2 %>%
+  rename(gender = sex)
+
+GMP_inc_2 <- GMP_inc_2 %>%
+  mutate(
+    gender = as.character(gender),
+    gender = case_when(
+      gender == "0" ~ "men",
+      gender == "1" ~ "women",
+      TRUE ~ gender
+    )
+  )
+
+unique(GMP_inc_2$educ)
+unique(GMP_inc_2$age)
+
+GMP_inc_2_clean <- GMP_inc_2 %>%
+  select(isoname,year, source, source_recode, type, inc,gender,educ, age, turnout,dataset_party_id)
 ##Join Partyfacts dans GMP inc ----
-Base_all_elections <- GMP_inc_2 %>%
+Base_all_elections <- GMP_inc_2_clean %>%
   left_join(
     Partyfacts_id_wpidmicro %>%
       dplyr::select(dataset_party_id,partyfacts_id),
@@ -171,9 +189,6 @@ write.csv(
 )
 
 #Ajout de nouvelles bases ----
-##EVS ----
-evs_data <- read.csv("data/raw/evs/evs all data.csv")
-###Identifier les variables qui nous intéressent pour les harmoniser----
 
 ##CSES ----
 cses_data <- read.csv("data/raw/cses/cses_imd.csv")
@@ -200,17 +215,28 @@ cses_data <- cses_data %>%
   rename(gender = IMD2002)
 cses_data <- cses_data %>%
   rename(educ = IMD2003)
+cses_data <- cses_data %>%
+  rename(age = IMD2001_1)
+
 
 #Filtre pour ne garder que les données valides sur le revenu, le vote, et les bonnes élections
-cses_data <- cses_data %>%
-  filter(inc <= 5)
 cses_data <- cses_data %>%
   filter(dataset_party_id < 9999996)
 cses_data <- cses_data %>%
   filter(type <= 13)
 
 cses_data_clean <- cses_data %>%
-  select(dataset_party_id,isoname,year, source, source_recode, type, inc, turnout, dataset_party_id)
+  select(isoname,year, source, source_recode, type, inc,gender,educ,age, turnout, dataset_party_id)
+
+cses_data_clean <- cses_data_clean %>%
+  mutate(
+    gender = case_when(
+      gender == "1" ~ "men",   
+      gender == "2" ~ "women",
+      TRUE ~ as.character(gender)
+    )
+  )
+
 #verif données
 unique(cses_data_clean$inc)
 unique(cses_data_clean$type)
@@ -343,14 +369,21 @@ wvs_data <- wvs_data %>%
   rename(age = X003)
 
 wvs_data_clean <- wvs_data %>%
-  select(dataset_key,isoname,year, source, source_recode, type, inc, turnout, dataset_party_id)
+  select(isoname,year, source, source_recode, type, inc,gender,educ,age, turnout, dataset_party_id)
 
 #Filtre pour ne garder que les données valides sur le revenu, le vote, et les bonnes élections
-wvs_data_clean <- wvs_data_clean %>%
-  filter(inc >= 1)
+
 wvs_data_clean <- wvs_data_clean %>%
   filter(dataset_party_id >= 1)
 
+wvs_data_clean <- wvs_data_clean %>%
+  mutate(
+    gender = case_when(
+      gender == "1" ~ "men",   
+      gender == "2" ~ "women",
+      TRUE ~ as.character(gender)
+    )
+  )
 
 
 wvs_data_clean <- wvs_data_clean %>%
