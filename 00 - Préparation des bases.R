@@ -487,6 +487,9 @@ wvs_data_clean <- wvs_data_clean %>%
       partyfacts_id == "2380" & isoname == "Senegal" & year == 2012 ~ "4010",
       partyfacts_id == "5917" & isoname == "Iraq" & year == 2010 ~ "5919",
       partyfacts_id == "6303" & isoname == "Italy" & year == 2013  ~ "1626",
+      dataset_party_id == "12004" & isoname == "Algeria" & year == 2002  ~ "5222",
+      dataset_party_id == "32013" & isoname == "Argentina" & year == 1999  ~ "6116",
+      dataset_party_id == "32012" & isoname == "Argentina" & year == 2013  ~ "2530",
       TRUE ~ partyfacts_id
     )
   )
@@ -597,6 +600,8 @@ wvs_data_clean <- wvs_data_clean %>%
       TRUE ~ as.character(dataset_party_id)
     )
   )
+
+
 ###Export Base WVS ----
 write.csv(
   wvs_data_clean,

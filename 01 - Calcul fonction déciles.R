@@ -1147,7 +1147,15 @@ write.csv(
   row.names = FALSE
 )
 
-
+unique(Base_all_clivages$vote[Base_all_clivages$isoname == "Belarus" & Base_all_clivages$year == 1990 ] )
+Base_all_clivages <- Base_all_clivages %>%
+  mutate(
+    partyfacts_id = case_when(
+      vote == "112001" & isoname == "Belarus" & year == 1990 ~ "2030",
+      
+      TRUE ~ partyfacts_id
+    )
+  )
 #Traitement sur Base_all_clivages pour traiter tous les joins manquants entre bases 
 
 

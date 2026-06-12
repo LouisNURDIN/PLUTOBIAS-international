@@ -111,6 +111,7 @@ whogov_parties_bonnes_elections <- whogov_parties_bonnes_elections %>%
       partyfacts_id == "2956"&  isoname == "Turkey" ~ "Other",
       partyfacts_id == "1388"&  isoname == "United Kingdom" & year == 2010 ~ "540",
       partyfacts_id == "5766"&  isoname == "Senegal" & year == 2012 ~ "4010",
+      partyfacts_id == "2603"&  isoname == "Belarus" ~ "Other"
       TRUE ~ partyfacts_id
     )
   )
