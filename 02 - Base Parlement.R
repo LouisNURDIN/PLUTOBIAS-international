@@ -198,7 +198,7 @@ View(
     distinct(year,isoname,source_recode,election_couverture_seats)
 )
 
-#Lister les partis importants qui joinent mal
+#Lister les partis importants qui joinent mal entre la base parlement et la base agrégée
 View(Elections_global2 %>%
        filter(seats_share >= 10) %>%
        filter(year <= 2015) %>%

@@ -250,9 +250,6 @@ Base_complete <- Base_complete %>%
   ) %>%
   ungroup()
 
-unique(Base_complete$source_recode)
-
-
 
 #Liste des pays/années avec données incohérentes ----
 View(
@@ -272,15 +269,15 @@ View(
 View(
   Base_complete %>%
     ungroup() %>%
-    filter(election_couverture_ministers < 100) %>%
+    filter(election_couverture_ministers < 0.8) %>%
     distinct(year,isoname,election_couverture_seats,election_couverture_ministers,source_recode)
 )
 
 
 #Export des bases ----
 write.csv(
-  base_complete_dinc,
-  "data/final/final dataset all countries dinc method.csv",
+  Base_complete,
+  "data/final/final dataset all countries and clivages.csv",
   row.names = FALSE
 )
 

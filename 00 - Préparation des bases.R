@@ -351,6 +351,7 @@ wvs_data <- read.csv  ("data/raw/wvs/WVS_Time_Series_1981-2022_csv_v5_0.csv")
 
 wvs_data <- wvs_data %>%
   rename(isoname = COUNTRY_ALPHA)
+unique(wvs_data$isoname)
 wvs_data <- wvs_data %>%
   mutate(dataset_key= "wvs")
 wvs_data <- wvs_data %>%
@@ -398,7 +399,7 @@ wvs_data_clean <- wvs_data_clean %>%
 wvs_data_clean <- wvs_data_clean %>%
   mutate(
     dataset_party_id = case_when(
-      dataset_party_id == "1" ~ "Abstention",   #il s'agit des personnes qui n'ont pas le droit de vote, pour le moment je les mets dans Abstention mais on peut les retirer plus tard
+      dataset_party_id == "1" ~ "Abstention",   
       dataset_party_id == "2" ~ "Abstention",
       dataset_party_id == "3" ~ "Abstention",
       dataset_party_id == "4" ~ "Abstention",
