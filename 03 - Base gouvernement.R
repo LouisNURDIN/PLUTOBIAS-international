@@ -111,7 +111,13 @@ whogov_parties_bonnes_elections <- whogov_parties_bonnes_elections %>%
       partyfacts_id == "2956"&  isoname == "Turkey" ~ "Other",
       partyfacts_id == "1388"&  isoname == "United Kingdom" & year == 2010 ~ "540",
       partyfacts_id == "5766"&  isoname == "Senegal" & year == 2012 ~ "4010",
-      partyfacts_id == "2603"&  isoname == "Belarus" ~ "Other"
+      partyfacts_id == "2603"&  isoname == "Belarus" ~ "independent",
+      partyfacts_id == "2577"&  isoname == "Argentina" ~ "independent",
+      partyfacts_id == "2582"&  isoname == "Armenia" ~ "independent",
+      partyfacts_id == "2629"&  isoname == "Brazil" ~ "independent",
+      partyfacts_id == "2633"&  isoname == "Bulgaria" ~ "independent",
+      partyfacts_id == "482"&  isoname == "Bulgaria" & year == 2001 ~ "1183",
+      partyfacts_id == "6749"&  isoname == "Bulgaria" & year == 2001 ~ "1183",
       TRUE ~ partyfacts_id
     )
   )
@@ -131,6 +137,8 @@ Base_vote_parlement_global <- read.csv("data/intermediary/parliament/Elections a
 ##calcul bonne date pour le join ----
 
 #Lister les partis présents dans whogov mais pas la base complète 
+unique(Base_vote_parlement_global$partyfacts_id[Base_vote_parlement_global$isoname == "Brazil" & Base_vote_parlement_global$year ==1991 ] )
+unique(Base_vote_parlement_global$year[Base_vote_parlement_global$isoname == "Brazil" ] )
 View(whogov_parties_bonnes_elections %>%
        filter(ministers_share >= 0.10) %>%
        filter(year <= 2015) %>%

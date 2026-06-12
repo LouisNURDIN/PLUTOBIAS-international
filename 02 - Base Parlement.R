@@ -101,6 +101,12 @@ Elections_global <- Elections_global %>%
     partyfacts_id = case_when(
       party == "other (other-script)" ~ "Other",
       partyfacts_id == "1246" & isoname == "France" ~ "1083",
+      partyfacts_id == "1629" & isoname == "France" & year == 1956 ~ "737",
+      partyfacts_id == "2603"&  isoname == "Belarus" ~ "Other",
+      partyfacts_id == "3605"&  isoname == "Libya" ~ "Other",
+      partyfacts_id == "5766"&  isoname == "Senegal" & year == 2012 ~ "4010",
+      partyfacts_id == "2577"&  isoname == "Argentina" ~ "Other",
+      partyfacts_id == "2577"&  isoname == "Armenia" ~ "Other",
       TRUE ~ partyfacts_id
     )
   )
@@ -210,6 +216,10 @@ View(Elections_global2 %>%
        ))
 
 
+#Liste des élections dans Elections Global
+elections_dans_elections_global <- Elections_global2 %>%
+  group_by(isoname,year) %>%
+  summarise(.groups = "drop")
 
 #Export base avec méthode dinc
 write.csv(

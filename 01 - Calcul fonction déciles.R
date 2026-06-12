@@ -1147,12 +1147,45 @@ write.csv(
   row.names = FALSE
 )
 
-unique(Base_all_clivages$vote[Base_all_clivages$isoname == "Belarus" & Base_all_clivages$year == 1990 ] )
+unique(Base_all_clivages$vote[Base_all_clivages$isoname == "Argentina" & Base_all_clivages$year == 1995 ] )
 Base_all_clivages <- Base_all_clivages %>%
   mutate(
     partyfacts_id = case_when(
+      vote == "12004" & isoname == "Algeria" & year == 2002  ~ "5222",
+      vote == "32013" & isoname == "Argentina" & year == 1999  ~ "6116",
+      vote == "32012" & isoname == "Argentina" & year == 2013  ~ "2530",
       vote == "112001" & isoname == "Belarus" & year == 1990 ~ "2030",
-      
+      vote == "70029" & isoname == "Bosnia and Herzegovina" & year == 1998 ~ "1340",
+      vote == "152020" & isoname == "Chile" & year == 2005 ~ "6061",   #Attention pour le cas du Chili ce n'est peut-être pas le bon, parti
+      vote == "218001" & isoname == "Ecuador" & year == 2013 ~ "4044",
+      vote == "288001" & isoname == "Ghana" & year == 2012 ~ "2311",
+      vote == "288002" & isoname == "Ghana" & year == 2012 ~ "2312",
+      vote == "HU-Fidesz" & isoname == "Hungary" & year == 2010 ~ "6366",
+      vote == "HU-Fidesz" & isoname == "Hungary" & year == 2014 ~ "6366",
+      vote == "HU-Fidesz" & isoname == "Iran" & year == 2000 ~ "5359",
+      vote == "HU-Fidesz" & isoname == "Iran" & year == 2000 ~ "6875",
+      vote == "4280043" & isoname == "Latvia" & year == 2011 ~ "1704",
+      vote == "4280043" & isoname == "Latvia" & year == 2014 ~ "1704",
+      vote == "484003" & isoname == "Mexico" & year == 2000 ~ "1988",
+      vote == "499001" & isoname == "Montenegro" & year == 1996 ~ "3162",
+      vote == "499103" & isoname == "Montenegro" & year == 1996 ~ "3164",
+      vote == "499001" & isoname == "Montenegro" & year == 2001 ~ "3162",
+      vote == "499006" & isoname == "Montenegro" & year == 2001 ~ "3645",
+      vote == "499005" & isoname == "Montenegro" & year == 2001 ~ "3104",
+      vote == "504004" & isoname == "Morocco" & year == 2007 ~ "2480",
+      vote == "504004" & isoname == "Morocco" & year == 2011 ~ "2480",
+      vote == "NG-People's Democratic Party" & isoname == "Nigeria" & year == 1999 ~ "2313",
+      vote == "NO-Centrists-Liberals" & isoname == "Norway" & year == 1965 ~ "1072",
+      vote == "608004" & isoname == "Philippines" & year == 2001 ~ "2466",
+      vote == "616025" & isoname == "Poland" & year == 1989 ~ "1286",
+      vote == "616028" & isoname == "Poland" & year == 1989 ~ "767",
+      vote == "616007" & isoname == "Poland" & year == 1997 ~ "1566",
+      vote == "642055" & isoname == "Romania" & year == 2012 ~ "2474",
+      vote == "642063" & isoname == "Romania" & year == 2012 ~ "5940",
+      vote == "642008" & isoname == "Romania" & year == 2012 ~ "5941",
+      vote == "642052" & isoname == "Romania" & year == 2012 ~ "5941",
+      vote == "643018" & isoname == "Russia" & year == 1995 ~ "2247",
+      vote == "703018" & isoname == "Slovakia" & year == 1990 ~ "5",
       TRUE ~ partyfacts_id
     )
   )
