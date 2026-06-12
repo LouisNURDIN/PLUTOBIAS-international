@@ -203,11 +203,28 @@ Base_complete <- grid %>%
   group_by(source_recode,isoname,bias,category, partyfacts_id) %>%
   fill(
     survey, votes, pct_votes, nbr_obs, votes_valides,
-    taux_participation, election_date_date,
+    taux_participation,
     seats, seats_total, seats_share, election_couverture_seats,source_recode,
     .direction = "down"
   ) %>%
   ungroup()
+
+Base_complete <- Base_complete %>%
+  group_by(source_recode, isoname, year) %>%
+  fill(election_date_date, .direction = "downup") %>%
+  ungroup()
+
+
+Base_complete <- Base_complete %>%
+  arrange(source_recode, isoname, year) %>%
+  group_by(source_recode, isoname) %>%
+  fill(election_date_date, .direction = "down") %>%
+  ungroup()
+
+View(
+  Base_complete %>%
+    count(source_recode, isoname,election_date_date, year,bias))
+
 
 Base_complete <- Base_complete %>%
   left_join(
