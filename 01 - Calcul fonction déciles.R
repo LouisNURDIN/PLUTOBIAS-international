@@ -1157,7 +1157,7 @@ Base_all_clivages <- Base_all_clivages %>%
       vote == "112001" & isoname == "Belarus" & year == 1990 ~ "2030",
       vote == "70029" & isoname == "Bosnia and Herzegovina" & year == 1998 ~ "1340",
       vote == "152020" & isoname == "Chile" & year == 2005 ~ "6061",   #Attention pour le cas du Chili ce n'est peut-être pas le bon, parti
-      vote == "218001" & isoname == "Ecuador" & year == 2013 ~ "4044",
+      vote == "218001" & isoname == "Ecuador" ~ "4044",
       vote == "288001" & isoname == "Ghana" & year == 2012 ~ "2311",
       vote == "288002" & isoname == "Ghana" & year == 2012 ~ "2312",
       vote == "HU-Fidesz" & isoname == "Hungary" & year == 2010 ~ "6366",
@@ -1186,6 +1186,13 @@ Base_all_clivages <- Base_all_clivages %>%
       vote == "642052" & isoname == "Romania" & year == 2012 ~ "5941",
       vote == "643018" & isoname == "Russia" & year == 1995 ~ "2247",
       vote == "703018" & isoname == "Slovakia" & year == 1990 ~ "5",
+      vote == "152004" & isoname == "Chile"  ~ "390",
+      vote == "152005" & isoname == "Chile" & year == 1990 ~ "256",
+      vote == "152005" & isoname == "Chile" & year == 2000 ~ "256",
+      vote == "233003" & isoname == "Estonia" ~ "1556",
+      vote == "233005" & isoname == "Estonia" ~ "174",
+      vote == "268123"&  isoname == "Georgia" ~ "2988",
+      vote == "268107"&  isoname == "Georgia" ~ "5885",
       TRUE ~ partyfacts_id
     )
   )

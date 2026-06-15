@@ -284,6 +284,14 @@ cses_data_clean <- cses_data_clean %>%
     )
   )
 
+cses_data_clean <- cses_data_clean %>%
+  mutate(
+    isoname = case_when(
+      isoname == "Czech Republic/Czechia" ~ "Czech Republic",
+      TRUE ~ isoname
+    )
+  )
+
 #Traitement des partyfacts dans cses pour join 
 cses_data_clean <- cses_data_clean %>%
   mutate(
