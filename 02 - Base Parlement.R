@@ -190,7 +190,7 @@ Base_all_clivages <- Base_all_clivages %>%
 Base_vote_parlement_global <- Base_all_clivages %>%
   left_join(
     Elections_global2 %>%
-      select(isoname, survey_year, election_year,partyfacts_id,election_date,seats,seats_total,seats_share),
+      select(isoname, survey_year, election_year,partyfacts_id,party,election_date,seats,seats_total,seats_share),
     distinct(isoname, year,partyfacts_id),
     by = c("isoname", "survey_year","partyfacts_id")
   )
@@ -230,20 +230,28 @@ Base_vote_parlement_global <- Base_vote_parlement_global %>%
   )
 
 
+
+
 Base_vote_parlement_global <- Base_vote_parlement_global  %>% 
   group_by(source_recode,bias,category,isoname,year,)%>%
   mutate(election_couverture_seats = sum(seats_share, na.rm = TRUE))
 
-
+#Rcenser le nombre de sièges appartnenant aux partis "Other" pour recenser les élections que l'on ne pourra pas traiter
   Base_vote_parlement_global <- Base_vote_parlement_global %>%
     filter(year <= 2015)
-
+  
+  Base_vote_parlement_global <- Base_vote_parlement_global %>%
+    group_by(source_recode,isoname,survey_year,year) %>%
+    mutate(
+      other_seats = seats_share[partyfacts_id == "Other"][1]
+    ) %>%
+    ungroup()
 #Lister les élections problématiques 
 View(
   Base_vote_parlement_global %>%
     ungroup() %>%
-    filter(election_couverture_seats > 100) %>%
-    distinct(survey_year,year,isoname,source_recode,election_couverture_seats)
+    filter(election_couverture_seats < 80) %>%
+    distinct(survey_year,year,isoname,source_recode,election_couverture_seats,other_seats)
 )
 
 #Lister les partis importants qui joinent mal entre la base parlement et la base agrégée
@@ -279,7 +287,11 @@ write.csv(
   row.names = FALSE
 )
 
-
+write.csv(
+  elections_dans_elections_global2,
+  "data/intermediary/elections/valid legislative elections.csv",
+  row.names = FALSE
+)
 
 
 

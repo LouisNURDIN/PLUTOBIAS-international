@@ -6,8 +6,9 @@ library(lubridate)
 #Base avec données gouvernements
 whogov <- read.csv("data/raw/whogov/WhoGov_within_V3.1.csv", sep = ";")
 elections_legislatives_valides <- read.csv("data/intermediary/elections/valid elections.csv", sep = ",")
-pays_gmp_legislatives <- unique(elections_legislatives_valides$isoname)
-annees_gmp_legislatives <- unique(elections_legislatives_valides$year)
+elections_legislatives_valides2 <- read.csv("data/intermediary/elections/valid legislative elections.csv", sep = ",")
+pays_gmp_legislatives <- unique(elections_legislatives_valides2$isoname)
+annees_gmp_legislatives <- unique(elections_legislatives_valides2$year)
 
 #Calcul nombre de ministres par année
 whogov <- whogov %>%
@@ -35,7 +36,7 @@ whogov_parties <- whogov_parties %>%
 #voir les partis présents dans ma base whogov mais pas vote-parlement
 whogov_parties_bonnes_elections <- whogov_parties %>%
   semi_join(
-    elections_legislatives_valides %>%
+    elections_legislatives_valides2 %>%
       distinct(isoname, year),
     by = c("isoname", "year")
   )
@@ -127,10 +128,17 @@ whogov_parties_bonnes_elections <- whogov_parties_bonnes_elections %>%
       partyfacts_id == "2691"&  isoname == "Georgia" ~ "independent",
       partyfacts_id == "1731"&  isoname == "Germany" ~ "211",
       partyfacts_id == "1375"&  isoname == "Germany" ~ "211",
+      partyfacts_id == "2007"&  isoname == "Armenia" & year == 2012  ~ "Other",
+      partyfacts_id == "599"&  isoname == "Austria" & year == 2006 ~ "Other",
+      partyfacts_id == "2598"&  isoname == "Bangladesh" ~ "independent",
+      partyfacts_id == "1680"&  isoname == "Belgium" & year == 2007 ~ "756",
+      partyfacts_id == "2639"&  isoname == "Chile" ~ "Other",
+      partyfacts_id == "2650"&  isoname == "Croatia" ~ "Other",
+      partyfacts_id == "2652"&  isoname == "Cyprus" ~ "Other",
+      
       TRUE ~ partyfacts_id
     )
   )
-
 
 
 whogov_parties <- whogov_parties %>%
@@ -143,17 +151,20 @@ whogov_parties <- whogov_parties %>%
 
 #DINC ----
 Base_vote_parlement_global <- read.csv("data/intermediary/parliament/Elections and parliament global dataset.csv", sep = ",")
+unique(Base_vote_parlement_global$partyfacts_id[Base_vote_parlement_global$isoname == "Denmark" & Base_vote_parlement_global$year == 1990 ] )
+unique(Base_vote_parlement_global$party[Base_vote_parlement_global$isoname == "Denmark" & Base_vote_parlement_global$year == 1990 ] )
+unique(whogov$party[whogov$isoname == "Bangladesh" & whogov$year ==2007 ] )
 ##calcul bonne date pour le join ----
 
 #Lister les partis présents dans whogov mais pas la base complète 
-unique(Base_vote_parlement_global$vote[Base_vote_parlement_global$isoname == "Georgia" & Base_vote_parlement_global$year ==2014 ] )
+
 unique(Base_vote_parlement_global$year[Base_vote_parlement_global$isoname == "Brazil" ] )
 View(whogov_parties_bonnes_elections %>%
        filter(ministers_share >= 0.10) %>%
        filter(year <= 2015) %>%
        distinct(isoname, year, partyfacts_id,ministers_share) %>%
        anti_join(
-         Base_vote_parlement_global %>% distinct(isoname, year, partyfacts_id),
+         Base_vote_parlement_global %>% distinct(isoname, year, partyfacts_id,party),
          by = c("isoname", "year", "partyfacts_id")
        ))
 
@@ -206,7 +217,7 @@ party_life <- Base_vote_parlement_global2 %>%
 
 grid <- tidyr::expand_grid(
   Base_vote_parlement_global2 %>%
-    distinct(source_recode,isoname,bias,category, partyfacts_id),
+    distinct(source_recode,isoname,survey_year,bias,category, partyfacts_id),
   year = years
 ) %>%
   left_join(party_life, by = c("source_recode","isoname", "partyfacts_id")) %>%
@@ -215,7 +226,7 @@ grid <- tidyr::expand_grid(
 Base_complete <- grid %>%
   left_join(
     Base_vote_parlement_global2,
-    by = c("source_recode","isoname", "year", "bias", "category","partyfacts_id")
+    by = c("source_recode","isoname","survey_year" ,"year", "bias", "category","partyfacts_id")
   ) %>%
   arrange(source_recode,isoname,year,bias, category, partyfacts_id) %>%
   group_by(source_recode,isoname,bias,category, partyfacts_id) %>%
@@ -256,7 +267,7 @@ Base_complete <- Base_complete %>%
 Base_complete <- Base_complete[!is.na(Base_complete$year),]
 
 Base_complete <- Base_complete %>%
-  select(source, source_recode,survey,isoname, year, election_date_date,join_year,bias,category, partyfacts_id, votes, pct_votes,
+  select(source, source_recode,survey,isoname,survey_year, year, election_date_date,join_year,bias,category, partyfacts_id, votes, pct_votes,
          votes_valides, taux_participation, seats, seats_total, seats_share, ministers_party, total_ministers, ministers_share, election_couverture_seats
   )
 
