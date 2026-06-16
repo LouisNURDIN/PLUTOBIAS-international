@@ -107,6 +107,14 @@ Elections_global <- Elections_global %>%
       partyfacts_id == "5766"&  isoname == "Senegal" & year == 2012 ~ "4010",
       partyfacts_id == "2577"&  isoname == "Argentina" ~ "Other",
       partyfacts_id == "2577"&  isoname == "Armenia" ~ "Other",
+      partyfacts_id == "54"&  isoname == "Chile" & year == 1993 ~ "390",
+      partyfacts_id == "561"&  isoname == "Colombia" & year == 1993 ~ "759", #je les rattache à l'alliance principale pour cette élection
+      partyfacts_id == "2670"&  isoname == "Egypt" ~ "Other",
+      partyfacts_id == "1096"&  isoname == "Finland" & year > 1990 ~ "1044",
+      partyfacts_id == "524"&  isoname == "Guatemala" & year == 2007 ~ "538",
+      partyfacts_id == "6366"&  isoname == "Hungary" & year == 2010 ~ "1691",
+      partyfacts_id == "2560"&  isoname == "Indonesia" & year == 2004 ~ "Other", #Pour cette année-là, le parti n'est pas inclus dans WVS
+      partyfacts_id == "3593"&  isoname == "Jordan" ~ "Other",
       TRUE ~ partyfacts_id
     )
   )
@@ -117,16 +125,38 @@ Elections_global <- Elections_global  %>%
 
 
 #DINC ----
-Elections_global2 <- Elections_global %>%
-  semi_join(
-    Base_all_clivages %>%
+matching <- Base_all_clivages %>%
+  distinct(isoname, year) %>%
+  left_join(
+    Elections_global %>%
       distinct(isoname, year),
-    by = c("isoname", "year")
+    by = "isoname",
+    relationship = "many-to-many"
+  ) %>%
+  mutate(
+    diff_year = year.y - year.x
+  ) %>%
+  filter(diff_year >= 0) %>%
+  group_by(isoname, year.x) %>%
+  slice_min(diff_year, n = 1, with_ties = FALSE) %>%
+  ungroup() %>%
+  rename(
+    survey_year = year.x,
+    election_year = year.y
+  )
+
+Elections_global2 <- matching %>%
+  left_join(
+    Elections_global,
+    by = c(
+      "isoname" = "isoname",
+      "election_year" = "year"
+    )
   )
 
 ##Traitement sur données manquantes ----
 Elections_global2 <- Elections_global2 %>%
-  group_by(isoname, year, election_date) %>%
+  group_by(isoname, election_year, election_date) %>%
   mutate(
     seats = if_else(
       !is.na(alliance_seats),
@@ -147,14 +177,23 @@ Elections_global2 <- Elections_global2 %>%
     )
   )
 
+
+
+
 ## Join entre les bases ----
+Base_all_clivages <- Base_all_clivages %>%
+  rename(survey_year = year)
+
 Base_vote_parlement_global <- Base_all_clivages %>%
   left_join(
     Elections_global2 %>%
-      select(isoname, year,partyfacts_id,election_date,seats,seats_total,seats_share),
+      select(isoname, survey_year, election_year,partyfacts_id,election_date,seats,seats_total,seats_share),
     distinct(isoname, year,partyfacts_id),
-    by = c("isoname", "year","partyfacts_id")
+    by = c("isoname", "survey_year","partyfacts_id")
   )
+
+Base_vote_parlement_global <- Base_vote_parlement_global %>%
+  rename(year = election_year)
 
 ###Traitement pour avoir le taux de députés par partis sur l'ensemble des députéss
 
@@ -205,21 +244,30 @@ View(
 )
 
 #Lister les partis importants qui joinent mal entre la base parlement et la base agrégée
+Elections_global2 <- Elections_global2 %>%
+  rename(year = election_year)
+
 View(Elections_global2 %>%
        filter(seats_share >= 10) %>%
        filter(year <= 2015) %>%
-       distinct(isoname, year, partyfacts_id, seats_share) %>%
+       distinct(isoname,survey_year, year, partyfacts_id, seats_share) %>%
        anti_join(
-         Base_vote_parlement_global %>% distinct(source_recode,isoname, year, partyfacts_id,seats_share,election_couverture_seats),
-         by = c("isoname", "year", "partyfacts_id"
+         Base_vote_parlement_global %>% distinct(source_recode,isoname,survey_year, year, partyfacts_id,seats_share,election_couverture_seats),
+         by = c("isoname","survey_year", "year", "partyfacts_id"
                 )
        ))
 
 
 #Liste des élections dans Elections Global
-elections_dans_elections_global <- Elections_global2 %>%
+elections_dans_elections_global2 <- Elections_global2 %>%
   group_by(isoname,year) %>%
   summarise(.groups = "drop")
+
+elections_dans_elections_global <- Elections_global %>%
+  group_by(isoname,year) %>%
+  summarise(.groups = "drop")
+
+
 
 #Export base avec méthode dinc
 write.csv(
@@ -227,5 +275,8 @@ write.csv(
   "data/intermediary/parliament/Elections and parliament global dataset.csv",
   row.names = FALSE
 )
+
+
+
 
 

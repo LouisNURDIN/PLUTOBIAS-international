@@ -1147,13 +1147,16 @@ write.csv(
   row.names = FALSE
 )
 
-unique(Base_all_clivages$vote[Base_all_clivages$isoname == "Argentina" & Base_all_clivages$year == 1995 ] )
+#Rename des paryfacts pour les gros partis qui joinent mal entre bases
+unique(Base_all_clivages$vote[Base_all_clivages$isoname == "Malaysia" & Base_all_clivages$survey_year == 2012 ] )
+unique(Base_all_clivages$partyfacts_id[Base_all_clivages$isoname == "Latvia" & Base_all_clivages$survey_year == 1996 ] )
 Base_all_clivages <- Base_all_clivages %>%
   mutate(
     partyfacts_id = case_when(
       vote == "12004" & isoname == "Algeria" & year == 2002  ~ "5222",
       vote == "32013" & isoname == "Argentina" & year == 1999  ~ "6116",
       vote == "32012" & isoname == "Argentina" & year == 2013  ~ "2530",
+      vote == "32012" & isoname == "Argentina" & year == 2006  ~ "2530",
       vote == "112001" & isoname == "Belarus" & year == 1990 ~ "2030",
       vote == "70029" & isoname == "Bosnia and Herzegovina" & year == 1998 ~ "1340",
       vote == "152020" & isoname == "Chile" & year == 2005 ~ "6061",   #Attention pour le cas du Chili ce n'est peut-être pas le bon, parti
@@ -1193,6 +1196,34 @@ Base_all_clivages <- Base_all_clivages %>%
       vote == "233005" & isoname == "Estonia" ~ "174",
       vote == "268123"&  isoname == "Georgia" ~ "2988",
       vote == "268107"&  isoname == "Georgia" ~ "5885",
+      vote == "8002" & isoname == "Albania" & year == 1998 ~ "7075",
+      vote == "76001" & isoname == "Brazil" & year == 1991 ~ "654",
+      vote == "76001" & isoname == "Brazil" & year == 1997 ~ "654",
+      vote == "76003" & isoname == "Brazil" & year == 1991 ~ "4402",  #76003 ou 76021 pour celui-là, à vérifier
+      vote == "203019" & isoname == "Czech Republic" & year == 1991 ~ "3921",
+      vote == "203009" & isoname == "Czech Republic" & year == 1991 ~ "3921", #alliance civic democratic et christian democratic party
+      vote == "818128" & isoname == "Egypt" & year == 2013 ~ "5871",
+      vote == "233010" & isoname == "Estonia" & year == 1996 ~ "779",
+      vote == "233031" & isoname == "Estonia" & year == 1996 ~ "1150",
+      vote == "268002" & isoname == "Georgia" & year == 1996 ~ "2168",
+      vote == "276005" & isoname == "Germany" & year == 2006 ~ "1545",#le parti n'existait pas encore au momet de l'enquête donc je le rattache au parti qui l'a précédé
+      vote == "278001" & isoname == "Ghana" & year == 2007 ~ "2311",
+      vote == "288002" & isoname == "Ghana" & year == 2012 ~ "2312",
+      vote == "348018" & isoname == "Hungary" & year == 2009 ~ "42",
+      vote == "356068" & isoname == "India" & year == 1990 ~ "1207",
+      vote == "360007" & isoname == "Indonesia" & year == 2006 ~ "2560",
+      vote == "364012" & isoname == "Iran" & year == 2007 ~ "6322",
+      vote == "364011" & isoname == "Iran" & year == 2007 ~ "5358",
+      vote == "368003" & isoname == "Iraq" & year == 2006 ~ "5919",
+      vote == "368002" & isoname == "Iraq" & year == 2006 ~ "5897",
+      vote == "368018" & isoname == "Iraq" & year == 2013 ~ "5927",
+      vote == "376002" & isoname == "Israel"  ~ "615",
+      vote == "428032" & isoname == "Latvia" & year == 1996 ~ "1043",
+      vote == "428023" & isoname == "Latvia" & year == 1996 ~ "1704", #attention le parti à l'élection 1998 était dans une alliance qui n'existe pas encore au moment de l'enquête
+      vote == "428002" & isoname == "Latvia" & year == 1996 ~ "1719",
+      vote == "440013" & isoname == "Lithuania" & year == 1997 ~ "1357",
+      vote == "440005" & isoname == "Lithuania" & year == 1997 ~ "738",
+      vote == "458001" & isoname == "Malaysia" & year == 2012 ~ "2485",
       TRUE ~ partyfacts_id
     )
   )
