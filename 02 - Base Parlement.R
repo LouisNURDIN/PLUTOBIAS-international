@@ -115,6 +115,9 @@ Elections_global <- Elections_global %>%
       partyfacts_id == "6366"&  isoname == "Hungary" & year == 2010 ~ "1691",
       partyfacts_id == "2560"&  isoname == "Indonesia" & year == 2004 ~ "Other", #Pour cette année-là, le parti n'est pas inclus dans WVS
       partyfacts_id == "3593"&  isoname == "Jordan" ~ "Other",
+      partyfacts_id == "4601" & isoname == "Philippines" & year == 1996  ~ "2388",
+      partyfacts_id == "4802" & isoname == "Venezuela" & year == 1998  ~ "Other",
+      partyfacts_id == "2335" & isoname == "Zambia" & year == 2007  ~ "",
       TRUE ~ partyfacts_id
     )
   )
@@ -239,8 +242,8 @@ Base_vote_parlement_global <- Base_vote_parlement_global  %>%
 View(
   Base_vote_parlement_global %>%
     ungroup() %>%
-    filter(election_couverture_seats < 80) %>%
-    distinct(year,isoname,source_recode,election_couverture_seats)
+    filter(election_couverture_seats > 100) %>%
+    distinct(survey_year,year,isoname,source_recode,election_couverture_seats)
 )
 
 #Lister les partis importants qui joinent mal entre la base parlement et la base agrégée

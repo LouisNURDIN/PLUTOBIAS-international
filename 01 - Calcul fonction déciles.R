@@ -1148,7 +1148,7 @@ write.csv(
 )
 
 #Rename des paryfacts pour les gros partis qui joinent mal entre bases
-unique(Base_all_clivages$vote[Base_all_clivages$isoname == "Malaysia" & Base_all_clivages$survey_year == 2012 ] )
+unique(Base_all_clivages$vote[Base_all_clivages$isoname == "Zimbabwe" & Base_all_clivages$survey_year == 2012  ] )
 unique(Base_all_clivages$partyfacts_id[Base_all_clivages$isoname == "Latvia" & Base_all_clivages$survey_year == 1996 ] )
 Base_all_clivages <- Base_all_clivages %>%
   mutate(
@@ -1177,7 +1177,7 @@ Base_all_clivages <- Base_all_clivages %>%
       vote == "499005" & isoname == "Montenegro" & year == 2001 ~ "3104",
       vote == "504004" & isoname == "Morocco" & year == 2007 ~ "2480",
       vote == "504004" & isoname == "Morocco" & year == 2011 ~ "2480",
-      vote == "NG-People's Democratic Party" & isoname == "Nigeria" & year == 1999 ~ "2313",
+      vote == "NG-People's Democratic Party" & isoname == "Nigeria" & year == 1999 ~ "2354",
       vote == "NO-Centrists-Liberals" & isoname == "Norway" & year == 1965 ~ "1072",
       vote == "608004" & isoname == "Philippines" & year == 2001 ~ "2466",
       vote == "616025" & isoname == "Poland" & year == 1989 ~ "1286",
@@ -1224,6 +1224,40 @@ Base_all_clivages <- Base_all_clivages %>%
       vote == "440013" & isoname == "Lithuania" & year == 1997 ~ "1357",
       vote == "440005" & isoname == "Lithuania" & year == 1997 ~ "738",
       vote == "458001" & isoname == "Malaysia" & year == 2012 ~ "2485",
+      vote == "458005" & isoname == "Malaysia" & year == 2012 ~ "3637",
+      vote == "566002" & isoname == "Nigeria" & year == 2012 ~ "5538",#le parti n'existe pas encore au moment de l'enquête, donc je l'ai associé à son prédécesseur
+      vote == "586002" & isoname == "Pakistan" & year == 2001  ~ "2385",
+      vote == "604008" & isoname == "Peru" & year == 1996  ~ "5130",
+      vote == "604008" & isoname == "Peru" & year == 1996  ~ "5130",
+      vote == "608004" & isoname == "Philippines" & year == 2012  ~ "2466",
+      vote == "642003" & isoname == "Romania" & year == 2005  ~ "660",
+      vote == "642060" & isoname == "Romania" & year == 2005  ~ "481",
+      vote == "646109" & isoname == "Rwanda" & year == 2012  ~ "3658",
+      vote == "688001" & isoname == "Serbia" & year == 2001  ~ "2190", #je ne sais pas si il faut le relier au 2189 ou 2190, les noms sont très proches
+      vote == "68804" & isoname == "Serbia" & year == 2001  ~ "2175",
+      vote == "688001" & isoname == "Serbia" & year == 2006  ~ "2190", #je ne sais pas si il faut le relier au 2189 ou 2190, les noms sont très proches
+      vote == "68804" & isoname == "Serbia" & year == 2006 ~ "2175",
+      vote == "705006" & isoname == "Slovenia" & year == 1995 ~ "472",
+      vote == "705006" & isoname == "Slovenia" & year == 2005 ~ "472",
+      vote == "705003" & isoname == "Slovenia" & year == 2005 ~ "474",
+      vote == "710008" & isoname == "South Africa" & year == 1990 ~ "1630",
+      vote == "410002" & isoname == "South Korea" & year == 2005 ~ "2305",
+      vote == "410001" & isoname == "South Korea" & year == 2005 ~ "2307",
+      vote == "410002" & isoname == "South Korea" & year == 2010 ~ "2305",
+      vote == "410001" & isoname == "South Korea" & year == 2010 ~ "2307",
+      vote == "756022" & isoname == "Switzerland" & year == 1989 ~ "1808",
+      vote == "756026" & isoname == "Switzerland" & year == 1989 ~ "360",
+      vote == "756024" & isoname == "Switzerland" & year == 1989 ~ "308",
+      vote == "756023" & isoname == "Switzerland" & year == 1989 ~ "29",
+      vote == "788023" & isoname == "Tunisia" & year == 2003 ~ "5832",
+      vote == "788022" & isoname == "Tunisia" & year == 2003 ~ "4530",
+      vote == "792042" & isoname == "Turkey" & year == 1990 ~ "1253",
+      vote == "792015" & isoname == "Turkey" & year == 1996 ~ "1463", #le parti n'existait pas au moment de l'enquête je l'ai rattaché à son prédécesseur 
+      vote == "792025" & isoname == "Turkey" & year == 2001 ~ "306", #le parti n'existait pas au moment de l'enquête je l'ai rattaché à son prédécesseur 
+      vote == "716007" & isoname == "Zimbabwe" & year == 2001 ~ "3305",
+      vote == "716002" & isoname == "Zimbabwe" & year == 2012 ~ "3559",
+      vote == "716007" & isoname == "Zimbabwe" & year == 2001 ~ "3305",
+      
       TRUE ~ partyfacts_id
     )
   )
