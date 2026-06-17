@@ -259,7 +259,7 @@ unique(cses_data_clean$vote[cses_data_clean$isoname == "Albania"])
 cses_data_clean <- cses_data_clean %>%
   mutate(
     dataset_party_id = case_when(
-      turnout == "0" ~ "Abstention",
+      turnout == 0 ~ "Abstention",
       turnout == 9999993 ~ "Abstention",
       dataset_party_id == 9999993 ~ "Abstention",
       dataset_party_id == 9999988 ~ "Other",
