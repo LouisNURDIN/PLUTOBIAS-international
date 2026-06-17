@@ -230,6 +230,12 @@ View(
     distinct(source_recode,isoname,year,election_couverture_seats,election_couverture_ministers,source_recode)
 )
 
+#Export des bases ----
+write.csv(
+  Base_complete_index,
+  "data/final/dataset complete with index.csv",
+  row.names = FALSE
+)
 
 #Quelques tests de vérification
 
