@@ -251,3 +251,24 @@ ggplot(Base_complete_index,
     title = "Comparaison des ratios gouvernementaux"
   )
 
+
+#Regarder dans quels pays/années se situent les indices les plus élevés
+Base_complete_index %>%
+  filter(bias == "plutocracy") %>%
+  filter(ratio_gouvernement_top_bot == max(ratio_gouvernement_top_bot, na.rm = TRUE)) %>%
+  select(source_recode, isoname, year, ratio_gouvernement_top_bot)
+
+Base_complete_index %>%
+  filter(bias == "phallocracy") %>%
+  filter(ratio_gouvernement_top_bot == max(ratio_gouvernement_top_bot, na.rm = TRUE)) %>%
+  select(source_recode, isoname, year, ratio_gouvernement_top_bot)
+
+Base_complete_index %>%
+  filter(bias == "epistocracy") %>%
+  filter(ratio_gouvernement_top_bot == max(ratio_gouvernement_top_bot, na.rm = TRUE)) %>%
+  select(source_recode, isoname, year, ratio_gouvernement_top_bot)
+
+Base_complete_index %>%
+  filter(bias == "gerontocracy") %>%
+  filter(ratio_gouvernement_top_bot == max(ratio_gouvernement_top_bot, na.rm = TRUE)) %>%
+  select(source_recode, isoname, year, ratio_gouvernement_top_bot)
