@@ -28,7 +28,7 @@ build_votes_by_decile <- function(df){
   
   # 1. Votes par décile × parti (comptage simple)
   votes <- df %>%
-    group_by(isoname, year,dinc, vote, partyfacts_id) %>%
+    group_by(source, source_recode,isoname, year,dinc, vote, partyfacts_id) %>%
     summarise(
       votes = n(),
       .groups = "drop"
@@ -57,22 +57,16 @@ build_votes_by_decile <- function(df){
 }
 
 Base_legislatives_deciles2 <- Base_elections_legislatives %>%
-  group_by(isoname, year) %>%
+  group_by(source, source_recode,isoname, year) %>%
   group_split() %>%
   map_dfr(~ build_votes_by_decile(.x)) %>%
-  left_join(meta_info, by = c("isoname", "year"))
+  left_join(meta_info, by = c("source", "source_recode", "isoname", "year"))
 
 Base_legislatives_deciles2 <- Base_legislatives_deciles2 %>%
   filter(taux_participation != 100)
 Base_legislatives_deciles2 <- Base_legislatives_deciles2 %>%
   rename(category = dinc)
 
-Base_legislatives_deciles2 <- Base_legislatives_deciles2[!is.na(Base_legislatives_deciles2$category),]
-
-Base_legislatives_deciles2 <- Base_legislatives_deciles2 %>%
-  group_by(isoname, year, category, partyfacts_id) %>%
-  slice(1) %>%
-  ungroup()
 
 Base_legislatives_deciles2 <- Base_legislatives_deciles2 %>%
   mutate(bias = "plutocracy")
@@ -94,12 +88,12 @@ build_votes_by_gender <- function(df){
   
   # Votes par sexe × parti
   votes <- df %>%
-    group_by(isoname, year, gender, vote, partyfacts_id) %>%
+    group_by(source,source_recode,isoname, year, gender, vote, partyfacts_id) %>%
     summarise(
       votes = n(),
       .groups = "drop"
     ) %>%
-    group_by(isoname, year, gender) %>%
+    group_by(source, source_recode,isoname, year, gender) %>%
     mutate(
       pct_votes = votes / sum(votes) * 100
     ) %>%
@@ -107,7 +101,7 @@ build_votes_by_gender <- function(df){
   
   # Participation par sexe
   participation <- df %>%
-    group_by(isoname, year, gender) %>%
+    group_by(source, source_recode,isoname, year, gender) %>%
     summarise(
       nbr_obs = n(),
       votes_valides = sum(
@@ -121,17 +115,17 @@ build_votes_by_gender <- function(df){
   votes %>%
     left_join(
       participation,
-      by = c("isoname", "year", "gender")
+      by = c("source","source_recode", "isoname", "year", "gender")
     )
 }
 meta_info <- Base_elections_legislatives %>%
   distinct(isoname, year, survey, source, source_recode)
 
 Base_legislatives_gender <- Base_elections_legislatives_sexe %>%
-  group_by(isoname, year) %>%
+  group_by(source,source_recode,isoname, year) %>%
   group_split() %>%
   map_dfr(~ build_votes_by_gender(.x)) %>%
-  left_join(meta_info, by = c("isoname", "year"))
+  left_join(meta_info, by = c("source","source_recode", "isoname", "year"))
 
 Base_legislatives_gender <- Base_legislatives_gender %>%
   mutate(bias = "phallocracy")
@@ -190,7 +184,7 @@ build_votes_by_educ_fractional <- function(df){
   
   # 4. votes
   votes <- df_groups %>%
-    group_by(isoname, year, educ_group, vote, partyfacts_id) %>%
+    group_by(source, source_recode,isoname, year, educ_group, vote, partyfacts_id) %>%
     summarise(
       votes = sum(weight),
       .groups = "drop"
@@ -220,10 +214,10 @@ build_votes_by_educ_fractional <- function(df){
 }
 
 Base_legislatives_educ <- Base_elections_legislatives %>%
-  group_by(isoname, year) %>%
+  group_by(source, source_recode,isoname, year) %>%
   group_split() %>%
   map_dfr(~ build_votes_by_educ_fractional(.x)) %>%
-  left_join(meta_info, by = c("isoname", "year"))
+  left_join(meta_info, by = c("source","source_recode", "isoname", "year"))
 
 Base_legislatives_educ <- Base_legislatives_educ %>%
   mutate(bias = "epistocracy")
@@ -237,6 +231,7 @@ Base_legislatives_educ <- Base_legislatives_educ %>%
       TRUE ~ as.character(category)
     )
   )
+
 
 ##Calcul fonction age ----
 unique(Base_elections_legislatives$age)
@@ -291,7 +286,7 @@ build_votes_by_age_fractional <- function(df){
   
   # 4. votes
   votes <- df_groups %>%
-    group_by(isoname, year, age_group, vote, partyfacts_id) %>%
+    group_by(source, source_recode,isoname, year, age_group, vote, partyfacts_id) %>%
     summarise(
       votes = sum(weight),
       .groups = "drop"
@@ -321,10 +316,10 @@ build_votes_by_age_fractional <- function(df){
 }
 
 Base_legislatives_age <- Base_elections_legislatives %>%
-  group_by(isoname, year) %>%
+  group_by(source,source_recode,isoname, year) %>%
   group_split() %>%
   map_dfr(~ build_votes_by_age_fractional(.x)) %>%
-  left_join(meta_info, by = c("isoname", "year"))
+  left_join(meta_info, by = c("source","source_recode", "isoname", "year"))
 
 Base_legislatives_age <- Base_legislatives_age %>%
   mutate(bias = "gerontocracy")
@@ -718,7 +713,7 @@ wvs_data_clean <- read.csv("data/intermediary/elections/wvs elections dataset.cs
 wvs_data_clean_income <- wvs_data_clean %>%
   filter(inc >= 1)
 
-#calcul décile cses ----
+#calcul décile wvs ----
 build_wvs_base_long <- function(df, annee, country){
   
   # sécurité
@@ -1261,6 +1256,36 @@ Base_all_clivages <- Base_all_clivages %>%
       TRUE ~ partyfacts_id
     )
   )
+
+
+Base_all_clivages <- Base_all_clivages %>%
+  group_by(source, source_recode,survey, isoname, year, bias, category, vote,partyfacts_id) %>%
+  summarise(
+    votes = sum(votes, na.rm = TRUE),
+    nbr_obs = first(nbr_obs),
+    votes_valides = first(votes_valides),
+    taux_participation = first(taux_participation),
+    .groups = "drop"
+  ) %>%
+  group_by(source, source_recode, isoname, year, bias) %>%
+  mutate(
+    pct_votes = votes / sum(votes, na.rm = TRUE) * 100
+  ) %>%
+  ungroup()
+
+View(Base_all_clivages %>%
+       count(
+         source,
+         source_recode,
+         isoname,
+         year,
+         bias,
+         category,
+         partyfacts_id,
+         name = "n"
+       ) %>%
+       filter(n > 1) %>%
+       arrange(desc(n)))
 #Traitement sur Base_all_clivages pour traiter tous les joins manquants entre bases 
 
 
@@ -1269,3 +1294,18 @@ write.csv(
   "data/intermediary/elections/dataset with all clivages and elections.csv",
   row.names = FALSE
 )
+
+View(Base_all_clivages %>%
+       count(
+         source,
+         source_recode,
+         isoname,
+         year,
+         bias,
+         category,
+         partyfacts_id,
+         name = "n"
+       ) %>%
+       filter(n > 1) %>%
+       arrange(desc(n)))
+

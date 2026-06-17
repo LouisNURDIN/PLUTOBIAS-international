@@ -112,25 +112,25 @@ whogov_parties_bonnes_elections <- whogov_parties_bonnes_elections %>%
       partyfacts_id == "2956"&  isoname == "Turkey" ~ "Other",
       partyfacts_id == "1388"&  isoname == "United Kingdom" & year == 2010 ~ "540",
       partyfacts_id == "5766"&  isoname == "Senegal" & year == 2012 ~ "4010",
-      partyfacts_id == "2603"&  isoname == "Belarus" ~ "independent",
-      partyfacts_id == "2577"&  isoname == "Argentina" ~ "independent",
-      partyfacts_id == "2582"&  isoname == "Armenia" ~ "independent",
-      partyfacts_id == "2629"&  isoname == "Brazil" ~ "independent",
-      partyfacts_id == "2633"&  isoname == "Bulgaria" ~ "independent",
+      partyfacts_id == "2603"&  isoname == "Belarus" ~ "Other",
+      partyfacts_id == "2577"&  isoname == "Argentina" ~ "Other",
+      partyfacts_id == "2582"&  isoname == "Armenia" ~ "Other",
+      partyfacts_id == "2629"&  isoname == "Brazil" ~ "Other",
+      partyfacts_id == "2633"&  isoname == "Bulgaria" ~ "Other",
       partyfacts_id == "482"&  isoname == "Bulgaria" & year == 2001 ~ "1183",
       partyfacts_id == "6749"&  isoname == "Bulgaria" & year == 2001 ~ "1183",
       partyfacts_id == "623"&  isoname == "Argentina" & year == 2015 ~ "",
-      partyfacts_id == "2639"&  isoname == "Bulgaria" ~ "independent",
-      partyfacts_id == "2642"&  isoname == "Colombia" ~ "independent",
-      partyfacts_id == "2670"&  isoname == "Egypt" ~ "independent",
-      partyfacts_id == "2674"&  isoname == "El Salvador" ~ "independent",
-      partyfacts_id == "2567"&  isoname == "Estonia" ~ "independent",
-      partyfacts_id == "2691"&  isoname == "Georgia" ~ "independent",
+      partyfacts_id == "2639"&  isoname == "Bulgaria" ~ "Other",
+      partyfacts_id == "2642"&  isoname == "Colombia" ~ "Other",
+      partyfacts_id == "2670"&  isoname == "Egypt" ~ "Other",
+      partyfacts_id == "2674"&  isoname == "El Salvador" ~ "Other",
+      partyfacts_id == "2567"&  isoname == "Estonia" ~ "Other",
+      partyfacts_id == "2691"&  isoname == "Georgia" ~ "Other",
       partyfacts_id == "1731"&  isoname == "Germany" ~ "211",
       partyfacts_id == "1375"&  isoname == "Germany" ~ "211",
       partyfacts_id == "2007"&  isoname == "Armenia" & year == 2012  ~ "Other",
       partyfacts_id == "599"&  isoname == "Austria" & year == 2006 ~ "Other",
-      partyfacts_id == "2598"&  isoname == "Bangladesh" ~ "independent",
+      partyfacts_id == "2598"&  isoname == "Bangladesh" ~ "Other",
       partyfacts_id == "1680"&  isoname == "Belgium" & year == 2007 ~ "756",
       partyfacts_id == "2639"&  isoname == "Chile" ~ "Other",
       partyfacts_id == "2650"&  isoname == "Croatia" ~ "Other",
@@ -151,11 +151,23 @@ whogov_parties <- whogov_parties %>%
 
 #DINC ----
 Base_vote_parlement_global <- read.csv("data/intermediary/parliament/Elections and parliament global dataset.csv", sep = ",")
-unique(Base_vote_parlement_global$partyfacts_id[Base_vote_parlement_global$isoname == "Denmark" & Base_vote_parlement_global$year == 1990 ] )
-unique(Base_vote_parlement_global$party[Base_vote_parlement_global$isoname == "Denmark" & Base_vote_parlement_global$year == 1990 ] )
+unique(Base_vote_parlement_global$partyfacts_id[Base_vote_parlement_global$isoname == "Denmark" & Base_vote_parlement_global$year == 2011 ] )
+unique(Base_vote_parlement_global$party[Base_vote_parlement_global$isoname == "Denmark" & Base_vote_parlement_global$year == 2011 ] )
 unique(whogov$party[whogov$isoname == "Bangladesh" & whogov$year ==2007 ] )
 ##calcul bonne date pour le join ----
-
+View(Base_vote_parlement_global %>%
+  count(
+    source,
+    source_recode,
+    isoname,
+    year,
+    bias,
+    category,
+    partyfacts_id,
+    name = "n"
+  ) %>%
+  filter(n > 1) %>%
+  arrange(desc(n)))
 #Lister les partis présents dans whogov mais pas la base complète 
 
 unique(Base_vote_parlement_global$year[Base_vote_parlement_global$isoname == "Brazil" ] )
@@ -169,7 +181,7 @@ View(whogov_parties_bonnes_elections %>%
        ))
 
 Base_vote_parlement_global2 <- Base_vote_parlement_global %>%
-  group_by( source_recode, isoname, year,source) %>%
+  group_by(source, source_recode, isoname, survey_year,year) %>%
   mutate(
     election_date = na_if(election_date, ""),
     election_date = first(na.omit(election_date))
@@ -205,10 +217,10 @@ years <- seq(
 )
 
 base <- Base_vote_parlement_global2 %>%
-  distinct(source_recode,isoname,bias,category, partyfacts_id)
+  distinct(source,source_recode,isoname,bias,category, partyfacts_id)
 
 party_life <- Base_vote_parlement_global2 %>%
-  group_by(source_recode,isoname, partyfacts_id) %>%
+  group_by(source,source_recode,isoname, partyfacts_id) %>%
   summarise(
     first_year = min(year, na.rm = TRUE),
     last_year  = max(year, na.rm = TRUE),
@@ -217,19 +229,23 @@ party_life <- Base_vote_parlement_global2 %>%
 
 grid <- tidyr::expand_grid(
   Base_vote_parlement_global2 %>%
-    distinct(source_recode,isoname,survey_year,bias,category, partyfacts_id),
+    distinct(source,source_recode,isoname,survey_year,bias,category, partyfacts_id),
   year = years
 ) %>%
-  left_join(party_life, by = c("source_recode","isoname", "partyfacts_id")) %>%
+  left_join(party_life, by = c("source","source_recode","isoname", "partyfacts_id")) %>%
   filter(year >= first_year & year <= last_year)
+
+nrow(Base_vote_parlement_global2)
+nrow(grid)
+
 
 Base_complete <- grid %>%
   left_join(
     Base_vote_parlement_global2,
-    by = c("source_recode","isoname","survey_year" ,"year", "bias", "category","partyfacts_id")
+    by = c("source","source_recode","isoname","survey_year" ,"year", "bias", "category","partyfacts_id")
   ) %>%
-  arrange(source_recode,isoname,year,bias, category, partyfacts_id) %>%
-  group_by(source_recode,isoname,bias,category, partyfacts_id) %>%
+  arrange(source,source_recode,isoname,year,bias, category, partyfacts_id) %>%
+  group_by(source,source_recode,isoname,bias,category, partyfacts_id) %>%
   fill(
     survey, votes, pct_votes, nbr_obs, votes_valides,
     taux_participation,
@@ -239,20 +255,20 @@ Base_complete <- grid %>%
   ungroup()
 
 Base_complete <- Base_complete %>%
-  group_by(source_recode, isoname, year) %>%
+  group_by(source,source_recode, isoname, survey_year,year) %>%
   fill(election_date_date, .direction = "downup") %>%
   ungroup()
 
 
 Base_complete <- Base_complete %>%
-  arrange(source_recode, isoname, year) %>%
-  group_by(source_recode, isoname) %>%
+  arrange(source,source_recode, isoname,survey_year, year) %>%
+  group_by(source,source_recode, isoname) %>%
   fill(election_date_date, .direction = "down") %>%
   ungroup()
 
 View(
   Base_complete %>%
-    count(source_recode, isoname,election_date_date, year,bias))
+    count(source,source_recode, isoname,election_date_date, survey_year,year,bias))
 
 
 Base_complete <- Base_complete %>%
@@ -290,34 +306,42 @@ Base_complete <- Base_complete %>%
     total_ministers = coalesce(total_ministers, 0),
     ministers_share = coalesce(ministers_share, 0)
   ) %>%
-  group_by(source_recode,isoname, year,bias, category) %>%
+  group_by(source,source_recode,isoname,survey_year, year,bias, category) %>%
   mutate(
     election_couverture_ministers = sum(ministers_share, na.rm = TRUE)
   ) %>%
   ungroup()
 
-
+Base_complete <- Base_complete %>%
+  group_by(source,source_recode,isoname,survey_year,year,bias) %>%
+  mutate(
+    other_ministers = ministers_share[partyfacts_id == "Other"][1]
+  ) %>%
+  ungroup()
 #Liste des pays/années avec données incohérentes ----
 View(
   Base_complete %>%
     ungroup() %>%
     filter(election_couverture_ministers > 1) %>%
-    distinct(year,isoname,election_couverture_ministers,source_recode,bias)
+    distinct(survey_year,year,isoname,election_couverture_ministers,source,source_recode,bias)
 )
 
 View(
   Base_complete %>%
     ungroup() %>%
     filter(election_couverture_seats > 100) %>%
-    distinct(year,isoname,election_couverture_seats,source_recode,bias)
+    distinct(survey_year,year,isoname,election_couverture_seats,source,source_recode,bias)
 )
 ##Liste des pays/années où tous les ministres ne sont pas couverts ----
+
 View(
   Base_complete %>%
     ungroup() %>%
     filter(election_couverture_ministers < 0.8) %>%
-    distinct(year,isoname,election_couverture_seats,election_couverture_ministers,source_recode)
+    distinct(survey_year,year,isoname,election_couverture_seats,election_couverture_ministers,other_ministers,source,source_recode)
 )
+
+
 
 
 #Export des bases ----

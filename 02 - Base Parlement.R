@@ -129,7 +129,7 @@ Elections_global <- Elections_global  %>%
 
 #DINC ----
 matching <- Base_all_clivages %>%
-  distinct(isoname, year) %>%
+  distinct(source,source_recode,isoname, year) %>%
   left_join(
     Elections_global %>%
       distinct(isoname, year),
@@ -233,7 +233,7 @@ Base_vote_parlement_global <- Base_vote_parlement_global %>%
 
 
 Base_vote_parlement_global <- Base_vote_parlement_global  %>% 
-  group_by(source_recode,bias,category,isoname,year,)%>%
+  group_by(source,source_recode,bias,category,isoname,survey_year,year,)%>%
   mutate(election_couverture_seats = sum(seats_share, na.rm = TRUE))
 
 #Rcenser le nombre de sièges appartnenant aux partis "Other" pour recenser les élections que l'on ne pourra pas traiter
@@ -241,7 +241,7 @@ Base_vote_parlement_global <- Base_vote_parlement_global  %>%
     filter(year <= 2015)
   
   Base_vote_parlement_global <- Base_vote_parlement_global %>%
-    group_by(source_recode,isoname,survey_year,year) %>%
+    group_by(source,source_recode,isoname,survey_year,year) %>%
     mutate(
       other_seats = seats_share[partyfacts_id == "Other"][1]
     ) %>%
@@ -250,8 +250,8 @@ Base_vote_parlement_global <- Base_vote_parlement_global  %>%
 View(
   Base_vote_parlement_global %>%
     ungroup() %>%
-    filter(election_couverture_seats < 80) %>%
-    distinct(survey_year,year,isoname,source_recode,election_couverture_seats,other_seats)
+    filter(election_couverture_seats > 100) %>%
+    distinct(survey_year,year,isoname,source,source_recode,election_couverture_seats,other_seats)
 )
 
 #Lister les partis importants qui joinent mal entre la base parlement et la base agrégée
@@ -263,11 +263,13 @@ View(Elections_global2 %>%
        filter(year <= 2015) %>%
        distinct(isoname,survey_year, year, partyfacts_id, seats_share) %>%
        anti_join(
-         Base_vote_parlement_global %>% distinct(source_recode,isoname,survey_year, year, partyfacts_id,seats_share,election_couverture_seats),
+         Base_vote_parlement_global %>% distinct(source,source_recode,isoname,survey_year, year, partyfacts_id,seats_share,election_couverture_seats),
          by = c("isoname","survey_year", "year", "partyfacts_id"
                 )
        ))
 
+unique(Base_vote_parlement_global$party[Base_vote_parlement_global$isoname == "Colombia" & 
+                                          Base_vote_parlement_global$year == 1998])
 
 #Liste des élections dans Elections Global
 elections_dans_elections_global2 <- Elections_global2 %>%
