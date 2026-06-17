@@ -128,7 +128,7 @@ Base_legislatives_gender <- Base_elections_legislatives_sexe %>%
   left_join(meta_info, by = c("source","source_recode", "isoname", "year"))
 
 Base_legislatives_gender <- Base_legislatives_gender %>%
-  mutate(bias = "phallocracy")
+  mutate(bias = "androcracy")
 Base_legislatives_gender <- Base_legislatives_gender %>%
   rename(category = gender)
 
@@ -503,7 +503,7 @@ cses_dataset_gender <- cses_data_clean_sexe %>%
   left_join(meta_info_cses, by = c("isoname", "year"))
 
 cses_dataset_gender <- cses_dataset_gender %>%
-  mutate(bias = "phallocracy")
+  mutate(bias = "androcracy")
 cses_dataset_gender <- cses_dataset_gender %>%
   rename(category = gender)
 
@@ -877,7 +877,7 @@ wvs_dataset_gender <- wvs_data_clean_sexe %>%
   left_join(meta_info_wvs, by = c("isoname", "year"))
 
 wvs_dataset_gender <- wvs_dataset_gender %>%
-  mutate(bias = "phallocracy")
+  mutate(bias = "androcracy")
 wvs_dataset_gender <- wvs_dataset_gender %>%
   rename(category = gender)
 
@@ -1148,10 +1148,9 @@ unique(Base_all_clivages$partyfacts_id[Base_all_clivages$isoname == "Latvia" & B
 Base_all_clivages <- Base_all_clivages %>%
   mutate(
     partyfacts_id = case_when(
-      vote == "12004" & isoname == "Algeria" & year == 2002  ~ "5222",
+      vote == "12004" & isoname == "Algeria" & year >= 2002  ~ "5222",
       vote == "32013" & isoname == "Argentina" & year == 1999  ~ "6116",
-      vote == "32012" & isoname == "Argentina" & year == 2013  ~ "2530",
-      vote == "32012" & isoname == "Argentina" & year == 2006  ~ "2530",
+      vote == "32012" & isoname == "Argentina" & year >= 2006 & year <= 2013  ~ "2530",
       vote == "112001" & isoname == "Belarus" & year == 1990 ~ "2030",
       vote == "70029" & isoname == "Bosnia and Herzegovina" & year == 1998 ~ "1340",
       vote == "152020" & isoname == "Chile" & year == 2005 ~ "6061",   #Attention pour le cas du Chili ce n'est peut-être pas le bon, parti
@@ -1191,7 +1190,7 @@ Base_all_clivages <- Base_all_clivages %>%
       vote == "233005" & isoname == "Estonia" ~ "174",
       vote == "268123"&  isoname == "Georgia" ~ "2988",
       vote == "268107"&  isoname == "Georgia" ~ "5885",
-      vote == "8002" & isoname == "Albania" & year == 1998 ~ "7075",
+      vote == "8002" & isoname == "Albania" & year >= 1998 ~ "7075",
       vote == "76001" & isoname == "Brazil" & year == 1991 ~ "654",
       vote == "76001" & isoname == "Brazil" & year == 1997 ~ "654",
       vote == "76003" & isoname == "Brazil" & year == 1991 ~ "4402",  #76003 ou 76021 pour celui-là, à vérifier
@@ -1295,17 +1294,5 @@ write.csv(
   row.names = FALSE
 )
 
-View(Base_all_clivages %>%
-       count(
-         source,
-         source_recode,
-         isoname,
-         year,
-         bias,
-         category,
-         partyfacts_id,
-         name = "n"
-       ) %>%
-       filter(n > 1) %>%
-       arrange(desc(n)))
+
 

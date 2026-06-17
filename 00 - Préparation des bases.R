@@ -5,6 +5,7 @@ library(stringr)
 #Ouverture de la base ----
 GMP_inc <- read_dta("data/raw/wpid/gmp-inc.dta")
 
+
 GMP_inc <- GMP_inc %>%
   rename(dataset_party_id = vote)
 
@@ -17,6 +18,12 @@ unique(GMP_inc$type)  # type = type d'élection
 
 sum(GMP_inc$turnout == 1 & GMP_inc$vote == "", na.rm = TRUE)
 sum(GMP_inc$turnout == 0 & GMP_inc$vote != "", na.rm = TRUE) #a priori erreur dans PF, s'en référer à PF
+
+GMP_inc <- GMP_inc %>%
+  filter(source != "CSES")
+GMP_inc <- GMP_inc %>%
+  filter(source != "World Values Survey, Argentina")
+unique(GMP_inc$source)
 
 table(GMP_inc$dinc)
 #Ajout Partyfacts avedc id WPID ----
