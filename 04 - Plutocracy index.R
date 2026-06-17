@@ -62,7 +62,7 @@ Base_complete <- Base_complete %>%
 # 3. Agrégation PROPRE au niveau décile
 
 categories_index <- Base_complete %>%
-  group_by(source_recode, isoname, year, bias, category,category_recode1,category_recode2) %>%
+  group_by(source,source_recode, isoname,survey_year, year, bias, category,category_recode1,category_recode2) %>%
   summarise(
     taux_participation = first(na.omit(taux_participation)),
     total_sieges = sum(votes_en_siege, na.rm = TRUE),
@@ -75,7 +75,7 @@ categories_index <- Base_complete %>%
 # 4. Ratios 1 vs 10
 
 first_index <- categories_index %>%
-  group_by(source_recode,isoname, year,bias) %>%
+  group_by(source,source_recode,isoname,survey_year, year,bias) %>%
   summarise(
     
     ratio_participation_top_bot =
@@ -105,7 +105,7 @@ first_index <- categories_index %>%
 
 # 5. Ratios 50 / 50
 second_index <- categories_index %>%
-  group_by(source_recode,isoname, year,bias) %>%
+  group_by(source,source_recode,isoname,survey_year, year,bias) %>%
   summarise(
     
     ratio_participation_top_bot2 =
@@ -137,13 +137,13 @@ second_index <- categories_index %>%
 Base_complete <- Base_complete %>%
   left_join(
     categories_index %>%
-      select(source_recode,isoname,year,bias, category,category_recode1,category_recode2,total_sieges, total_ministres),
-    by = c("source_recode","isoname","year", "bias","category","category_recode1","category_recode2")
+      select(source,source_recode,isoname,survey_year,year,bias, category,category_recode1,category_recode2,total_sieges, total_ministres),
+    by = c("source","source_recode","isoname","survey_year","year", "bias","category","category_recode1","category_recode2")
   )
 
 Base_complete <- Base_complete %>%
-  left_join(first_index, by = c("source_recode","isoname", "year","bias")) %>%
-  left_join(second_index, by = c("source_recode","isoname", "year","bias"))
+  left_join(first_index, by = c("source","source_recode","isoname", "survey_year","year","bias")) %>%
+  left_join(second_index, by = c("source","source_recode","isoname","survey_year", "year","bias"))
 
 
 
@@ -162,7 +162,7 @@ Base_complete_clean <- Base_complete %>%
     
   ) %>%
   select(
-    source,source_recode,survey, isoname,year,
+    source,source_recode,survey, isoname,survey_year,year,
     election_date_date,bias,category,
     partyfacts_id,
     pct_votes, taux_participation,
@@ -185,7 +185,7 @@ cor(Base_complete_clean$ratio_gouvernement_top_bot2, Base_complete_clean$verif_r
 
 #base propre
 Base_complete_index <- Base_complete_clean  %>%
-  group_by(source_recode,isoname,year,election_date_date,bias) %>%
+  group_by(source,source_recode,isoname,survey_year,year,election_date_date,bias) %>%
   summarise(
     
     # identifiant survey (supposé constant)
@@ -212,17 +212,15 @@ Base_complete_index <- Base_complete_clean  %>%
 #Lister pays/années où mes indices se dupliquent (on est censé en avoir 4)
 View(
 Base_complete_index %>%
-  count(source_recode, isoname, year)%>%
+  count(source,source_recode, isoname, survey_year,year)%>%
   filter(n > 4))
 
 #L'objectif est d'arriver à une table où on a 4 lignes par 
 Base_complete_test_index <- Base_complete_index %>%
-  group_by(source_recode,isoname, year,bias) %>%
+  group_by(source,source_recode,isoname,survey_year, year,bias) %>%
   slice(1) %>%
-  ungroup()
-View(
-  Base_complete_test_index %>%
-    count(source_recode, isoname, year))
+  ungroup()  #on a bien atteint l'objectif avec une ligne = un pays, une enquête, une élection, un biais, et tous les ratios correspondants
+
 
 ##Liste des pays/années où tous les ministres ne sont pas couverts ----
 View(
@@ -239,9 +237,10 @@ View(
 library(ggplot2)
 library(ggrepel)
 
-ggplot(base_complete_legislative_dinc_index_group,
-       aes(x = ratio_gouvernement_1_10,
-           y = ratio_gouvernement_50_50,
+ggplot(Base_complete_index,
+       aes(x = ratio_gouvernement_top_bot,
+           y = ratio_gouvernement_top_bot2,
+           color = bias,
            label = paste(isoname, year))) +
   geom_point(alpha = 0.7) +
   geom_text_repel(size = 3, max.overlaps = 50) +
