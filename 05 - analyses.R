@@ -410,3 +410,18 @@ plot_top_bot_age <- ggplot(data_top_bot_age, aes(x = Indice, y = Value, fill = I
 
 grid::grid.newpage()
 plot_top_bot_age
+
+
+#Autres boxplot ----
+ggplot(
+  data_top_bot_gender %>%
+    filter(Indice == "Gouvernement"),
+  aes(x = source_recode, y = Value, fill = source_recode)
+) +
+  geom_boxplot() +
+  facet_wrap(~ isoname) +
+  scale_y_continuous(
+    trans = scales::log_trans(),
+    breaks = c(0.5, 0.75, 1, 1.25, 1.5, 1.75, 2)
+  ) +
+  coord_cartesian(ylim = c(0.5, 2))
