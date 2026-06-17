@@ -170,7 +170,86 @@ p_50_50
 
 grid::grid.newpage()
 p_10_10
+
 ##Box plot androcracy ----
+Base_gender_long <- Base_complete_index_gender %>%
+  pivot_longer(
+    cols = starts_with("ratio_") & !ends_with("top_bot"),
+    names_to = "Indice",
+    values_to = "Value"
+  ) 
+
+# 3. Séparation 10/10 et 50/50
+data_top_bot_gender <- Base_gender_long %>% filter(str_detect(Indice, "top_bot"))
+
+# 4. Recodage commun
+recodage <- function(df) {
+  df %>%
+    mutate(
+      Indice = recode(
+        Indice,
+        "ratio_participation_top_bot" = "Participation",
+        "ratio_votes_valides_en_sieges_top_bot" = "Votes → sièges",
+        "ratio_sieges_ministres_top_bot" = "Sièges → ministres",
+        "ratio_gouvernement_top_bot" = "Gouvernement"
+      ),
+      Indice = factor(Indice, levels = c(
+        "Participation",
+        "Votes → sièges",
+        "Sièges → ministres",
+        "Gouvernement")))
+}
+
+data_top_bot_gender <- recodage(data_top_bot_gender)
+
+### PLOT 50/50 ----
+plot_top_bot_gender <- ggplot(data_top_bot_gender, aes(x = Indice, y = Value, fill = Indice)) +
+  geom_boxplot(
+    position = position_nudge(x = -0.35),
+    width = 0.2,
+    alpha = 1,
+    color = "black",
+    size = 0.2,
+    outlier.size = 0) +
+  
+  geom_jitter(
+    aes(color = Indice),
+    position = position_jitter(width = 0.08, height = 0),
+    alpha = 0.1,
+    size = 2
+  ) +
+  
+  stat_summary(
+    position = position_nudge(x = 0),
+    geom = "pointrange",
+    fun.data = "mean_cl_boot",
+    size = 0.3,
+    color = "black"
+  ) +
+  
+  geom_hline(yintercept = 1, linetype = "dashed") +
+  facet_wrap(~ source_recode) +
+  scale_y_continuous(
+    trans = log_trans(),
+    breaks = c(0.5, 0.75, 1, 1.25, 1.5, 1.75, 2)) +
+  
+  coord_cartesian(ylim = c(0.5, 2)) +
+  
+  theme_minimal() +
+  theme(
+    legend.position = "bottom",
+    panel.grid.minor = element_blank(),
+    axis.text.x = element_blank(),
+    text = element_text(size = 14) ) +
+  
+  labs(
+    title = "Distribution des indices d'androcratie",
+    x = "",
+    y = "Poids électoral des hommes comparé à celui des femmes"
+  )
+
+grid::grid.newpage()
+plot_top_bot_gender
 
 ##Box plot epistocracy ----
 Base_educ_long <- Base_complete_index_educ %>%
