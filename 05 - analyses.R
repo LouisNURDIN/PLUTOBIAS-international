@@ -64,7 +64,7 @@ recodage <- function(df) {
         "Participation",
         "Votes → sièges",
         "Sièges → ministres",
-        "Gouvernement"))
+        "Gouvernement")))
 }
 
 data_50_50 <- recodage(data_50_50)
@@ -174,7 +174,7 @@ p_10_10
 ##Box plot androcracy ----
 Base_gender_long <- Base_complete_index_gender %>%
   pivot_longer(
-    cols = starts_with("ratio_") & !ends_with("top_bot"),
+    cols = starts_with("ratio_") & !ends_with("top_bot2"),
     names_to = "Indice",
     values_to = "Value"
   ) 

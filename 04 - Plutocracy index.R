@@ -265,7 +265,7 @@ Base_complete_index %>%
   select(source_recode, isoname, year, ratio_gouvernement_top_bot)
 
 Base_complete_index %>%
-  filter(bias == "gynocracy") %>%
+  filter(bias == "androcracy") %>%
   filter(ratio_gouvernement_top_bot == max(ratio_gouvernement_top_bot, na.rm = TRUE)) %>%
   select(source_recode, isoname, year, ratio_gouvernement_top_bot)
 
