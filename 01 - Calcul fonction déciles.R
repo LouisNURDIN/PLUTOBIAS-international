@@ -336,6 +336,7 @@ Base_legislatives_age <- Base_legislatives_age %>%
 #Autres bases ----
 #CSES ----
 cses_data_clean <- read.csv("data/intermediary/elections/cses elections dataset.csv")
+sum(cses_data_clean$partyfacts_id == "Abstention", na.rm = TRUE)
 cses_data_clean_income <- cses_data_clean %>%
   filter(inc <= 5)
 

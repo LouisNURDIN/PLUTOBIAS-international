@@ -125,6 +125,13 @@ Base_elections_legislatives <- Base_all_elections %>%
   filter(type == "Lower house")
 unique(GMP_inc$dinc)
 
+cor(Base_elections_legislatives$age, Base_elections_legislatives$educ, 
+    use = "complete.obs")
+cor(Base_elections_legislatives$age, Base_elections_legislatives$dinc, 
+    use = "complete.obs")
+cor(Base_elections_legislatives$educ, Base_elections_legislatives$dinc, 
+    use = "complete.obs")
+
 #Corrections partis problématiques
 Base_elections_legislatives <- Base_elections_legislatives %>%
   mutate(
@@ -229,6 +236,8 @@ cses_data <- cses_data %>%
 
 cses_data <- cses_data %>%
   mutate(survey = "?")
+
+
 #ne pas oublier de garder le weight 
 
 
@@ -249,6 +258,13 @@ cses_data_clean <- cses_data_clean %>%
       TRUE ~ as.character(gender)
     )
   )
+
+cor(cses_data_clean$age, cses_data_clean$educ, 
+    use = "complete.obs")
+cor(cses_data_clean$age, cses_data_clean$inc, 
+    use = "complete.obs")
+cor(cses_data_clean$educ, cses_data_clean$inc, 
+    use = "complete.obs")
 
 #verif données
 unique(cses_data_clean$inc)
@@ -272,7 +288,10 @@ cses_data_clean <- cses_data_clean %>%
     )
   )
 
-
+table(cses_data_clean$turnout)
+class(cses_data$turnout)
+table(cses_data$dataset_party_id)
+sum(cses_data_clean$dataset_party_id == "Abstention", na.rm = TRUE)
 #Join partyfacts dans cses
 cses_data_clean <- cses_data_clean %>%
   left_join(
@@ -354,6 +373,8 @@ cses_data_clean <- cses_data_clean %>%
       TRUE ~ partyfacts_id
     )
   )
+
+sum(cses_data_clean$partyfacts_id == "Abstention", na.rm = TRUE)
 ###Export Base CSES ----
 write.csv(
   cses_data_clean,
@@ -410,6 +431,12 @@ wvs_data_clean <- wvs_data_clean %>%
     )
   )
 
+cor(wvs_data_clean$age, wvs_data_clean$educ, 
+    use = "complete.obs")
+cor(wvs_data_clean$age, wvs_data_clean$inc, 
+    use = "complete.obs")
+cor(wvs_data_clean$educ, wvs_data_clean$inc, 
+    use = "complete.obs")
 
 wvs_data_clean <- wvs_data_clean %>%
   mutate(

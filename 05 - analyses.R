@@ -167,9 +167,15 @@ p_10_10 <- ggplot(data_10_10, aes(x = Indice, y = Value, fill = Indice)) +
 
 grid::grid.newpage()
 p_50_50
+ggsave(
+  filename = "results/figures/Boxplot global bias 50 50.jpg",
+  plot = p_50_50,width = 10,height = 6,dpi = 300)
 
 grid::grid.newpage()
 p_10_10
+ggsave(
+  filename = "results/figures/Boxplot global bias 50 50.jpg",
+  plot = p_10_10,width = 10,height = 6,dpi = 300)
 
 ##Box plot androcracy ----
 Base_gender_long <- Base_complete_index_gender %>%
@@ -250,6 +256,9 @@ plot_top_bot_gender <- ggplot(data_top_bot_gender, aes(x = Indice, y = Value, fi
 
 grid::grid.newpage()
 plot_top_bot_gender
+ggsave(
+  filename = "results/figures/Boxplot global bias 50 50.jpg",
+  plot = plot_top_bot_gender,width = 10,height = 6,dpi = 300)
 
 ##Box plot epistocracy ----
 Base_educ_long <- Base_complete_index_educ %>%
@@ -330,6 +339,9 @@ plot_top_bot_educ <- ggplot(data_top_bot_educ, aes(x = Indice, y = Value, fill =
 
 grid::grid.newpage()
 plot_top_bot_educ
+ggsave(
+  filename = "results/figures/Boxplot global bias 50 50.jpg",
+  plot = plot_top_bot_educ,width = 10,height = 6,dpi = 300)
 
 ##Box plot gerontocracy ----
 Base_age_long <- Base_complete_index_age %>%
@@ -362,7 +374,7 @@ recodage <- function(df) {
 
 data_top_bot_age <- recodage(data_top_bot_age)
 
-### PLOT 50/50 ----
+
 plot_top_bot_age <- ggplot(data_top_bot_age, aes(x = Indice, y = Value, fill = Indice)) +
   geom_boxplot(
     position = position_nudge(x = -0.35),
@@ -410,7 +422,62 @@ plot_top_bot_age <- ggplot(data_top_bot_age, aes(x = Indice, y = Value, fill = I
 
 grid::grid.newpage()
 plot_top_bot_age
+ggsave(
+  filename = "results/figures/Boxplot global bias 50 50.jpg",
+  plot = plot_top_bot_age,width = 10,height = 6,dpi = 300)
 
+#Box plot indice avec tous les biais ----
+plot_all_global_bias_50_50 <- ggplot(Base_complete_index, aes(x = bias, y = ratio_gouvernement_top_bot2, fill = bias)) +
+  geom_boxplot(
+    position = position_nudge(x = -0.35),
+    width = 0.2,
+    alpha = 1,
+    color = "black",
+    size = 0.2,
+    outlier.size = 0) +
+  
+  geom_jitter(
+    aes(color = bias),
+    position = position_jitter(width = 0.08, height = 0),
+    alpha = 0.1,
+    size = 2
+  ) +
+  
+  stat_summary(
+    position = position_nudge(x = 0),
+    geom = "pointrange",
+    fun.data = "mean_cl_boot",
+    size = 0.3,
+    color = "black"
+  ) +
+  
+  geom_hline(yintercept = 1, linetype = "dashed") +
+  facet_wrap(~ source_recode) +
+  scale_y_continuous(
+    trans = log_trans(),
+    breaks = c(0.5, 0.75, 1, 1.25, 1.5, 1.75, 2)) +
+  
+  coord_cartesian(ylim = c(0.5, 2)) +
+  
+  theme_minimal() +
+  theme(
+    legend.position = "bottom",
+    panel.grid.minor = element_blank(),
+    axis.text.x = element_blank(),
+    text = element_text(size = 14) ) +
+  
+  labs(
+    title = "Distribution des indices globaux par biais et sources",
+    x = "",
+    y = "Poids électoral top 50% / bottom 50%"
+  )
+
+grid::grid.newpage()
+plot_all_global_bias_50_50
+
+ggsave(
+filename = "results/figures/Boxplot global bias 50 50.jpg",
+plot = plot_all_global_bias_50_50,width = 10,height = 6,dpi = 300)
 
 #Autres boxplot ----
 ggplot(
