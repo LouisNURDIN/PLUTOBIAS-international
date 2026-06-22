@@ -14,16 +14,25 @@ annees_gmp_legislatives <- unique(elections_legislatives_valides2$year)
 whogov <- whogov %>%
   rename(isoname = country_name)
 
+whogov <- whogov %>%
+  filter(core >= 1)
+unique(whogov$core)
+
 whogov_parties <- whogov %>%
   group_by(isoname, year, partyfacts_id) %>%
   summarise(
     ministers_party = n(),
+    women_party = sum(gender == "Female", na.rm = TRUE),
+    
     prime_minister = first(name[position == "Prime Min."]),
     .groups = "drop_last"
   ) %>%
   mutate(
     total_ministers = sum(ministers_party),
-    ministers_share = ministers_party / total_ministers
+    total_women = sum(women_party),
+    ministers_share = ministers_party / total_ministers,
+    women_share_party = women_party / ministers_party,
+    women_share_government = total_women / total_ministers
   ) %>%
   ungroup()
 
