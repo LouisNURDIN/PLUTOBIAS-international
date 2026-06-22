@@ -282,6 +282,27 @@ elections_dans_elections_global <- Elections_global %>%
 
 
 
+
+
+#Ajout de parline 
+parline <- read.csv("data/raw/parline/share of women diputees accross all countries.csv", sep = ";")
+
+parline <- parline %>%
+  mutate(year = substr(date_from, nchar(date_from) - 3, nchar(date_from)))
+
+parline <- parline %>%
+  rename(isoname = Country)
+parline <- parline %>%
+  rename(Percentage.of.women.diputees = Percentage.of.women)
+parline <- parline %>%
+  mutate(year = as.integer(year))
+Base_vote_parlement_global <- Base_vote_parlement_global %>%
+  left_join(
+    parline  %>%
+      select(isoname,year,Percentage.of.women.diputees),
+    by= c("isoname","year")
+  )
+
 #Export base avec méthode dinc
 write.csv(
   Base_vote_parlement_global,
@@ -294,6 +315,3 @@ write.csv(
   "data/intermediary/elections/valid legislative elections.csv",
   row.names = FALSE
 )
-
-
-
