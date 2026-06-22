@@ -188,99 +188,14 @@ View(whogov_parties_bonnes_elections %>%
          Base_vote_parlement_global %>% distinct(isoname, year, partyfacts_id,party),
          by = c("isoname", "year", "partyfacts_id")
        ))
-
-Base_vote_parlement_global2 <- Base_vote_parlement_global %>%
-  group_by(source, source_recode, isoname, survey_year,year) %>%
-  mutate(
-    election_date = na_if(election_date, ""),
-    election_date = first(na.omit(election_date))
-  ) %>%
-  ungroup() %>%
-  mutate(
-    election_date_date = as.Date(str_replace_all(election_date, "\\.", "-")),
-    join_year = case_when(
-      is.na(election_date_date) ~ year,
-      month(election_date_date) < 7 ~ year(election_date_date),
-      TRUE ~ year(election_date_date) + 1
-    )
-  )
-
-###join whogov avec ma base élections/législatives ----
-Base_vote_parlement_global2 <- Base_vote_parlement_global2 %>%
-  mutate(
-    join_year = as.integer(join_year)
-  )
-
-whogov_parties_bonnes_elections <- whogov_parties_bonnes_elections %>%
-  mutate(
-    year = as.integer(year)
-  )
-
-
-library(dplyr)
-library(tidyr)
-years <- seq(
-  min(Base_vote_parlement_global2$year, na.rm = TRUE),
-  max(whogov_parties$year, na.rm = TRUE),
-  by = 1
-)
-
-base <- Base_vote_parlement_global2 %>%
-  distinct(source,source_recode,isoname,bias,category, partyfacts_id)
-
-party_life <- Base_vote_parlement_global2 %>%
-  group_by(source,source_recode,isoname, partyfacts_id) %>%
-  summarise(
-    first_year = min(year, na.rm = TRUE),
-    last_year  = max(year, na.rm = TRUE),
-    .groups = "drop"
-  )
-
-grid <- tidyr::expand_grid(
-  Base_vote_parlement_global2 %>%
-    distinct(source,source_recode,isoname,survey_year,bias,category, partyfacts_id),
-  year = years
-) %>%
-  left_join(party_life, by = c("source","source_recode","isoname", "partyfacts_id")) %>%
-  filter(year >= first_year & year <= last_year)
-
-nrow(Base_vote_parlement_global2)
-nrow(grid)
-
-
-Base_complete <- grid %>%
-  left_join(
-    Base_vote_parlement_global2,
-    by = c("source","source_recode","isoname","survey_year" ,"year", "bias", "category","partyfacts_id")
-  ) %>%
-  arrange(source,source_recode,isoname,year,bias, category, partyfacts_id) %>%
-  group_by(source,source_recode,isoname,bias,category, partyfacts_id) %>%
-  fill(
-    survey, votes, pct_votes, nbr_obs, votes_valides,
-    taux_participation,
-    seats, seats_total, seats_share, election_couverture_seats,source_recode,
-    .direction = "down"
-  ) %>%
-  ungroup()
-
-Base_complete <- Base_complete %>%
-  group_by(source,source_recode, isoname, survey_year,year) %>%
-  fill(election_date_date, .direction = "downup") %>%
-  ungroup()
-
-
-Base_complete <- Base_complete %>%
-  arrange(source,source_recode, isoname,survey_year, year) %>%
-  group_by(source,source_recode, isoname) %>%
-  fill(election_date_date, .direction = "down") %>%
-  ungroup()
+ 
 
 View(
   Base_complete %>%
     count(source,source_recode, isoname,election_date_date, survey_year,year,bias))
 
 
-Base_complete <- Base_complete %>%
+Base_complete <- Base_vote_parlement_global %>%
   left_join(
     whogov_parties_bonnes_elections,
     by = c("isoname","year","partyfacts_id"),
@@ -292,8 +207,8 @@ Base_complete <- Base_complete %>%
 Base_complete <- Base_complete[!is.na(Base_complete$year),]
 
 Base_complete <- Base_complete %>%
-  select(source, source_recode,survey,isoname,survey_year, year, election_date_date,join_year,bias,category, partyfacts_id, votes, pct_votes,
-         votes_valides, taux_participation, seats, seats_total, seats_share, ministers_party, total_ministers, ministers_share, election_couverture_seats
+  select(source, source_recode,survey,isoname,survey_year, year, election_date,bias,category, partyfacts_id, votes, pct_votes,
+         votes_valides, taux_participation, seats, seats_total, seats_share, ministers_party, total_ministers, ministers_share,women_party,women_share_party,Percentage.of.women.diputees,women_share_government, election_couverture_seats
   )
 
 #Traiter les cas où les ministres se dupliquent car plusieurs fois le même PF dans une élection ----

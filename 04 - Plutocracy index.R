@@ -5,7 +5,7 @@ Base_complete <-  read.csv("data/final/final dataset all countries and clivages.
 
 Base_complete <- Base_complete[!is.na(Base_complete$category),]
 Base_complete <- Base_complete[!is.na(Base_complete$partyfacts_id),]
-Base_complete<- Base_complete[!is.na(Base_complete$election_date_date),]
+Base_complete<- Base_complete[!is.na(Base_complete$election_date),]
 Base_complete<- Base_complete %>%
   filter(Base_complete$partyfacts_id != "Other")
 Base_complete <- Base_complete %>%
@@ -163,7 +163,7 @@ Base_complete_clean <- Base_complete %>%
   ) %>%
   select(
     source,source_recode,survey, isoname,survey_year,year,
-    election_date_date,bias,category,
+    election_date,bias,category,
     partyfacts_id,
     pct_votes, taux_participation,
     seats_share, votes_en_siege,
@@ -173,7 +173,7 @@ Base_complete_clean <- Base_complete %>%
     ratio_sieges_ministres_top_bot,ratio_gouvernement_top_bot,
     verif_ratio_top_bot, ratio_participation_top_bot2, ratio_votes_valides_en_sieges_top_bot2,
     ratio_sieges_ministres_top_bot2, ratio_gouvernement_top_bot2, verif_ratio_top_bot2,election_couverture_seats,
-    election_couverture_ministers, 
+    election_couverture_ministers,Percentage.of.women.diputees,women_share_party,women_share_government
   ) 
 
 cor(Base_complete_clean$ratio_gouvernement_top_bot, Base_complete_clean$verif_ratio_top_bot, 
@@ -185,7 +185,7 @@ cor(Base_complete_clean$ratio_gouvernement_top_bot2, Base_complete_clean$verif_r
 
 #base propre
 Base_complete_index <- Base_complete_clean  %>%
-  group_by(source,source_recode,isoname,survey_year,year,election_date_date,bias) %>%
+  group_by(source,source_recode,isoname,survey_year,year,election_date,bias) %>%
   summarise(
     
     # identifiant survey (supposé constant)
@@ -203,6 +203,8 @@ Base_complete_index <- Base_complete_clean  %>%
     verif_ratio_top_bot2 = mean(verif_ratio_top_bot2, na.rm = TRUE),
     election_couverture_seats = mean(election_couverture_seats, na.rm = TRUE),
     election_couverture_ministers = mean(election_couverture_ministers, na.rm = TRUE),
+    Percentage.of.women.diputees = mean(Percentage.of.women.diputees, na.rm = TRUE),
+    women_share_government = mean(women_share_government, na.rm = TRUE),
     # sécurité diagnostic
     
     

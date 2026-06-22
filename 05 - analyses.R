@@ -492,3 +492,85 @@ ggplot(
     breaks = c(0.5, 0.75, 1, 1.25, 1.5, 1.75, 2)
   ) +
   coord_cartesian(ylim = c(0.5, 2))
+
+
+#Test androcracy ----
+cor(Base_complete_index_gender$women_share_government, Base_complete_index_gender$Percentage.of.women.diputees, 
+    use = "complete.obs")
+
+
+#Box-plot représentation des femmes dans les institutions par pays  ----
+Base_complete_index_gender <- Base_complete_index_gender %>%
+  mutate(women_share_government = women_share_government * 100)
+
+women_representation <- Base_complete_index_gender %>%
+  pivot_longer(
+    cols = c(Percentage.of.women.diputees, women_share_government),
+    names_to = "Indice",
+    values_to = "Value"
+  )
+
+
+
+
+plot_women_representation <- ggplot(
+  women_representation,
+  aes(x = year,y = Value,color = Indice,group = Indice
+  )
+) +
+  geom_line(linewidth = 1) +
+  geom_hline(yintercept = 50, linetype = "dashed", color = "grey50") +
+  facet_wrap(~ isoname) +
+  coord_cartesian(ylim = c(0, 100)) +
+  scale_color_manual(
+    values = c(
+      "Percentage.of.women.diputees" = "blue",
+      "women_share_government" = "orange"),
+    labels = c(
+      "Percentage.of.women.diputees" = "Proportion de femmes élues au Parlement (%)",
+      "women_share_government" = "Proportion de femmes ministres (%)"
+    )) +
+  labs(
+    x = "Année",y = "% de femmes dans les institutions",color = "Indice"
+  ) +
+  
+  theme_minimal()
+print(plot_women_representation)
+
+#Régression entre androcracy et représentation des femmes dans les institutions
+ggplot(
+  Base_complete_index_gender,
+  aes(
+    x = ratio_gouvernement_top_bot,
+    y = women_share_government
+  )
+) +
+  geom_point(alpha = 0.4) +
+  geom_smooth(method = "lm", se = TRUE) +
+  labs(
+    x = "Ratio gouvernement top/bottom",
+    y = "Part des femmes au gouvernement (%)"
+  ) +
+  theme_minimal()
+
+
+library(modelsummary)
+reg_androcracy_femmes_ministres <- lm(
+  women_share_government ~ ratio_gouvernement_top_bot2 + year,
+  data = Base_complete_index_gender
+)
+summary(reg_androcracy_femmes_ministres)
+modelsummary(
+  reg_androcracy_femmes_ministres,
+  coef_map = c(
+    "(Intercept)" = "Intercept",
+    "ratio_gouvernement_top_bot2" = "Indice global d'androcratie",
+    "year" = "Année"
+  ),
+  statistic = "std.error",
+  stars = c('*' = .05, '**' = .01, '***' = .001),
+  fmt = 3,
+  title = "Effet de l'androcratie sur le taux de femmes ministres, en contrôlant par l'année"
+)
+
+
