@@ -204,6 +204,50 @@ write.csv(
 
 
 #Ajout de nouvelles bases ----
+#ESS ----
+ess_data <- read.csv("data/raw/ess/Datafile-subset/Datafile-subset.csv")
+
+ess_data <- ess_data %>%
+mutate(ess_id = case_when( cntry %in% c("DE", "LT") & str_detect(variable, "prtv") ~
+                             paste( cntry, essround, party_id, substr(variable, 4, 4), 
+                                    str_sub(variable, -3, -1), sep = "-" ), T ~ paste( cntry, essround, 
+                                                                                       party_id, substr(variable, 4, 4), sep = "-" ) ) )
+
+###Identifier les variables qui nous intéressent pour les harmoniser----
+ess_data <- cses_data %>%
+  rename(isoname = cntry)
+
+ess_data <- ess_data %>%
+  rename(source = name)
+ess_data <- ess_data %>%
+  mutate(source_recode = "ESS")
+ess_data <- ess_data %>%
+  rename(year = IMD1008_YEAR)
+ess_data <- ess_data %>%
+  rename(turnout = vote)
+ess_data <- ess_data %>%
+  rename(dataset_party_id = ess_id)
+ess_data <- ess_data %>%
+  rename(type = IMD1009)
+ess_data <- ess_data %>%
+  rename(inc = hinctnta)
+ess_data <- ess_data %>%
+  rename(gender = gndr)
+ess_data <- ess_data %>%
+  rename(educ = eisced)
+
+
+sum(is.na(ess_data$edulvla))
+sum(is.na(ess_data$edulvlb))
+sum(is.na(ess_data$hinctnta))
+
+ess_data <- ess_data %>%
+  rename(age = agea)
+
+ess_data <- ess_data %>%
+  mutate(survey = "Post-electoral")
+
+
 
 #CSES ----
 cses_data <- read.csv("data/raw/cses/cses_imd.csv")
