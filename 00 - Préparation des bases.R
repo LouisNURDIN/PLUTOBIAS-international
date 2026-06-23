@@ -28,7 +28,7 @@ unique(GMP_inc$source)
 table(GMP_inc$dinc)
 #Ajout Partyfacts avedc id WPID ----
 Partyfacts_id <- read.csv("data/raw/partyfacts-external-parties (1).csv", sep = ";")
-
+unique(Partyfacts_id$dataset_key)
 Partyfacts_id_wpidmicro <- Partyfacts_id %>%
   filter(dataset_key == "wpidmicro")
 
@@ -40,6 +40,9 @@ Partyfacts_id_cses <- Partyfacts_id %>%
 
 Partyfacts_id_wvs <- Partyfacts_id %>%
   filter(dataset_key == "wvs")
+
+Partyfacts_id_ess <- Partyfacts_id %>%
+  filter(dataset_key == "essprtv")
 
 #2ème méthode = on enlève les élections où turnout = NA + les élections où Turnout = NA et/ou toujours la même valeur----
 GMP_inc_2 <- GMP_inc %>%
@@ -205,47 +208,219 @@ write.csv(
 
 #Ajout de nouvelles bases ----
 #ESS ----
-ess_data <- read.csv("data/raw/ess/Datafile-subset/Datafile-subset.csv")
+ess_data <- read.csv("data/raw/ess/Datafile-subset.csv")
 
 ess_data <- ess_data %>%
-mutate(ess_id = case_when( cntry %in% c("DE", "LT") & str_detect(variable, "prtv") ~
-                             paste( cntry, essround, party_id, substr(variable, 4, 4), 
-                                    str_sub(variable, -3, -1), sep = "-" ), T ~ paste( cntry, essround, 
-                                                                                       party_id, substr(variable, 4, 4), sep = "-" ) ) )
+  select(-age)
+ess_data_long <- ess_data %>%
+  pivot_longer(cols = starts_with("prtv"),names_to = "variable",values_to = "party_id")
+unique(ess_data_long$party_id)
+ess_data_long <- ess_data_long %>%
+  mutate(
+    ess_id = case_when(
+      cntry %in% c("DE", "LT") ~paste( cntry,essround,party_id,substr(variable, 4, 4),str_sub(variable, -3, -1),
+          sep = "-"),
+      TRUE ~paste(cntry,essround,party_id,substr(variable, 4, 4),sep = "-" )) )                                                                       party_id, substr(variable, 4, 4), sep = "-" ) ) )
 
 ###Identifier les variables qui nous intéressent pour les harmoniser----
-ess_data <- cses_data %>%
+ess_data_long <- ess_data_long %>%
   rename(isoname = cntry)
 
-ess_data <- ess_data %>%
+ess_data_long <- ess_data_long %>%
   rename(source = name)
-ess_data <- ess_data %>%
+ess_data_long <- ess_data_long %>%
   mutate(source_recode = "ESS")
-ess_data <- ess_data %>%
-  rename(year = IMD1008_YEAR)
-ess_data <- ess_data %>%
+ess_data_long <- ess_data_long %>%
+  rename(year = essround)
+ess_data_long <- ess_data_long %>%
   rename(turnout = vote)
-ess_data <- ess_data %>%
+ess_data_long <- ess_data_long %>%
   rename(dataset_party_id = ess_id)
-ess_data <- ess_data %>%
-  rename(type = IMD1009)
-ess_data <- ess_data %>%
+ess_data_long <- ess_data_long %>%
+  mutate(type = "?")
+ess_data_long <- ess_data_long %>%
   rename(inc = hinctnta)
-ess_data <- ess_data %>%
+ess_data_long <- ess_data_long %>%
   rename(gender = gndr)
-ess_data <- ess_data %>%
+ess_data_long <- ess_data_long %>%
   rename(educ = eisced)
 
-
-sum(is.na(ess_data$edulvla))
-sum(is.na(ess_data$edulvlb))
-sum(is.na(ess_data$hinctnta))
-
-ess_data <- ess_data %>%
+ess_data_long <- ess_data_long %>%
   rename(age = agea)
 
-ess_data <- ess_data %>%
+ess_data_long <- ess_data_long %>%
   mutate(survey = "Post-electoral")
+
+#Filtrer mes données sur le vote
+ess_data_long <- ess_data_long %>%
+  filter(!stringr::str_detect(dataset_party_id, "NA"))
+
+ess_data_long <- ess_data_long %>%
+  filter(!str_detect(dataset_party_id, "66|77|88|99"))
+table(ess_data_long$turnout)
+ess_data_long <- ess_data_long %>%
+  filter(turnout < 7)
+
+ess_data_clean <- ess_data_long %>%
+  select(isoname,year, source, source_recode,survey, type, inc,gender,educ,age, turnout, dataset_party_id)
+
+
+#Join partyfacts dans cses
+ess_data_clean <- ess_data_clean %>%
+  left_join(
+    Partyfacts_id_ess %>%
+      dplyr::select(dataset_party_id,partyfacts_id),
+    by = "dataset_party_id"
+  )
+
+ess_data_clean <- ess_data_clean %>%
+  mutate(
+    dataset_party_id = case_when(
+      turnout == 2 ~ "Abstention",
+      turnout == 3 ~ "Abstention",
+      TRUE ~ as.character(dataset_party_id)
+    )
+  )
+
+ess_data_clean <- ess_data_clean %>%
+  mutate(
+    gender = case_when(
+      gender == "1" ~ "men",   
+      gender == "2" ~ "women",
+      TRUE ~ as.character(gender)
+    )
+  )
+
+ess_data_clean <- ess_data_clean %>%
+  mutate(
+    year = case_when(
+      year == "1" ~ "2002",   
+      year == "2" ~ "2004",
+      year == "3" ~ "2006",
+      year == "4" ~ "2008",
+      year == "5" ~ "2010",
+      year == "6" ~ "2012",
+      year == "7" ~ "2014",
+      year == "8" ~ "2016",
+      year == "9" ~ "2018",
+      year == "10" ~ "2020",
+      year == "11" ~ "2023",
+      
+      TRUE ~ as.character(year)))
+unique(ess_data_clean$survey_year)
+
+ess_data_clean <- ess_data_clean %>%
+  mutate(
+    isoname = case_when(
+      isoname == "AL" ~ "Albania",   
+      isoname == "AT" ~ "Austria",
+      isoname == "BE" ~ "Belgium",
+      isoname == "BG" ~ "Bulgaria",
+      isoname == "CH" ~ "Switzerland",
+      isoname == "CY" ~ "Cyprus",
+      isoname == "CZ" ~ "Czech Republic",   
+      isoname == "DE" ~ "Germany",
+      isoname == "DK" ~ "Denmark",
+      isoname == "EE" ~ "Estonia",
+      isoname == "ES" ~ "Spain",
+      isoname == "FI" ~ "Finland",
+      isoname == "FR" ~ "France",   
+      isoname == "GE" ~ "Georgia",
+      isoname == "GB" ~ "United Kingdom",
+      isoname == "GR" ~ "Greece",
+      isoname == "HR" ~ "Croatia",
+      isoname == "HU" ~ "Hungaria",
+      isoname == "IE" ~ "Ireland",   
+      isoname == "IS" ~ "Island",
+      isoname == "IL" ~ "Israel",
+      isoname == "IT" ~ "Italy",
+      isoname == "LT" ~ "Lithuania",
+      isoname == "LU" ~ "Luxembourg",
+      isoname == "LV" ~ "Latvia",  
+      isoname == "ME" ~ "Montenegro",
+      isoname == "MK" ~ "North Macedonia",
+      isoname == "NL" ~ "Netherlands",
+      isoname == "NO" ~ "Norway",
+      isoname == "PL" ~ "Poland",
+      isoname == "PT" ~ "Portugal",  
+      isoname == "RO" ~ "Romania",
+      isoname == "RS" ~ "Serbia",
+      isoname == "RU" ~ "Russia",
+      isoname == "SE" ~ "Serbia",
+      isoname == "SI" ~ "Slovenia",
+      isoname == "SK" ~ "Slovakia",   
+      isoname == "TR" ~ "Turkey",
+      isoname == "UA" ~ "Ukraine",
+      isoname == "XK" ~ "Kosovo",
+      
+      TRUE ~ as.character(isoname)))
+
+
+
+#Traitement des partyfacts dans cses pour join 
+ess_data_clean <- ess_data_clean %>%
+  mutate(
+    partyfacts_id = case_when(
+      partyfacts_id == "1388" & isoname == "United Kingdom" ~ "540",
+      partyfacts_id == "1231" & isoname == "Switzerland" ~ "360",
+      partyfacts_id == "7415" & isoname == "Sweden" ~ "199",
+      partyfacts_id == "5750" & isoname == "Spain" ~ "441",
+      partyfacts_id == "8814" & isoname == "Spain" ~ "441",
+      partyfacts_id == "1004" & isoname == "Canada" & year <= 2003 ~ "232",
+      partyfacts_id == "1004" & isoname == "Canada" & year >= 2003 ~ "1004" ,
+      partyfacts_id == "1044" & isoname == "Finland" ~ "1096" ,
+      partyfacts_id == "4785" & isoname == "France" ~ "1478" ,
+      partyfacts_id == "5514" & isoname == "France" ~ "1083" ,
+      partyfacts_id == "8041" & isoname == "France" ~ "1083" ,
+      partyfacts_id == "Other" & isoname == "India" & year == 1977  ~ "4788" ,
+      partyfacts_id == "1332" & isoname == "Canada" & year == 2000 ~ "1757",
+      dataset_party_id == "BW-Umbrella for Democratic Change" & isoname == "Botswana" & year == 2014 ~ "4832",
+      partyfacts_id == "604" & isoname == "Belgium" & year == 2007 ~ "756",
+      partyfacts_id == "604" & isoname == "Belgium" & year == 2003 ~ "622",
+      partyfacts_id == "604" & isoname == "Belgium" & year == 2010 ~ "622",
+      partyfacts_id == "604" & isoname == "Belgium" & year == 2014 ~ "622",
+      partyfacts_id == "8259" & isoname == "Belgium" & year == 1999 ~ "554",
+      partyfacts_id == "1680" & isoname == "Belgium" & year == 2003 ~ "1586",
+      partyfacts_id == "500" & isoname == "Belgium" & year <= 1977  ~ "480",
+      partyfacts_id == "1626" & isoname == "Italy" & year == 2001 ~ "6241",
+      partyfacts_id == "813" & isoname == "Italy" & year == 2001 ~ "6241",
+      partyfacts_id == "1221" & isoname == "Italy" & year == 2001 ~ "6241",
+      partyfacts_id == "962" & isoname == "Italy" & year == 2001 ~ "6241",
+      partyfacts_id == "1626" & isoname == "Italy" & year == 2006 ~ "6241",
+      partyfacts_id == "813" & isoname == "Italy" & year == 2006 ~ "6241",
+      partyfacts_id == "1221" & isoname == "Italy" & year == 2006 ~ "6241",
+      partyfacts_id == "878" & isoname == "Italy" & year == 2001 ~ "1737",
+      partyfacts_id == "279" & isoname == "Italy" & year == 2001 ~ "1737",
+      partyfacts_id == "1635" & isoname == "Italy" & year == 2001 ~ "1737",
+      partyfacts_id == "1737" & isoname == "Italy" & year == 2006 ~ "1372",
+      partyfacts_id == "279" & isoname == "Italy" & year == 2006 ~ "1372",
+      partyfacts_id == "1711" & isoname == "Italy" & year == 2006 ~ "1372",
+      partyfacts_id == "3956" & isoname == "Italy" & year == 2006 ~ "1372",
+      partyfacts_id == "1404" & isoname == "Italy" & year == 2006 ~ "1372",
+      partyfacts_id == "4107" & isoname == "Japan" ~ "3",
+      partyfacts_id == "6183" & isoname == "Poland" & year == 2001 ~ "57",
+      partyfacts_id == "7594" & isoname == "Iraq" & year == 2010 ~ "5615",
+      partyfacts_id == "7594" & isoname == "Iraq" & year == 2014 ~ "5615",
+      partyfacts_id == "6561" & isoname == "South Korea" & year == 2000 ~ "2548",
+      partyfacts_id == "6561" & isoname == "South Korea" & year == 2008 ~ "2305",
+      partyfacts_id == "6561" & isoname == "South Korea" & year == 2012 ~ "2305",
+      partyfacts_id == "5766" & isoname == "Senegal" & year == 2012 ~ "4010",
+      partyfacts_id == "2379" & isoname == "Senegal" & year == 2012 ~ "4010",
+      partyfacts_id == "2380" & isoname == "Senegal" & year == 2012 ~ "4010",
+      partyfacts_id == "5917" & isoname == "Iraq" & year == 2010 ~ "5919",
+      partyfacts_id == "6303" & isoname == "Italy" & year == 2013  ~ "1626",
+      TRUE ~ as.character(partyfacts_id)
+    )
+  )
+
+class(ess_data_clean$partyfacts_id)
+
+###Export Base ESS ----
+write.csv(
+  ess_data_clean,
+  "data/intermediary/elections/ess elections dataset.csv",
+  row.names = FALSE
+)
 
 
 
@@ -521,64 +696,6 @@ wvs_data_clean <- wvs_data_clean %>%
     )
   )
 
-#Traitement des partyfacts dans cses pour join 
-wvs_data_clean <- wvs_data_clean %>%
-  mutate(
-    partyfacts_id = case_when(
-      partyfacts_id == "1388" & isoname == "United Kingdom" ~ "540",
-      partyfacts_id == "1231" & isoname == "Switzerland" ~ "360",
-      partyfacts_id == "7415" & isoname == "Sweden" ~ "199",
-      partyfacts_id == "5750" & isoname == "Spain" ~ "441",
-      partyfacts_id == "8814" & isoname == "Spain" ~ "441",
-      partyfacts_id == "1004" & isoname == "Canada" & year <= 2003 ~ "232",
-      partyfacts_id == "1004" & isoname == "Canada" & year >= 2003 ~ "1004" ,
-      partyfacts_id == "1044" & isoname == "Finland" ~ "1096" ,
-      partyfacts_id == "4785" & isoname == "France" ~ "1478" ,
-      partyfacts_id == "5514" & isoname == "France" ~ "1083" ,
-      partyfacts_id == "8041" & isoname == "France" ~ "1083" ,
-      partyfacts_id == "Other" & isoname == "India" & year == 1977  ~ "4788" ,
-      partyfacts_id == "1332" & isoname == "Canada" & year == 2000 ~ "1757",
-      dataset_party_id == "BW-Umbrella for Democratic Change" & isoname == "Botswana" & year == 2014 ~ "4832",
-      partyfacts_id == "604" & isoname == "Belgium" & year == 2007 ~ "756",
-      partyfacts_id == "604" & isoname == "Belgium" & year == 2003 ~ "622",
-      partyfacts_id == "604" & isoname == "Belgium" & year == 2010 ~ "622",
-      partyfacts_id == "604" & isoname == "Belgium" & year == 2014 ~ "622",
-      partyfacts_id == "8259" & isoname == "Belgium" & year == 1999 ~ "554",
-      partyfacts_id == "1680" & isoname == "Belgium" & year == 2003 ~ "1586",
-      partyfacts_id == "500" & isoname == "Belgium" & year <= 1977  ~ "480",
-      partyfacts_id == "1626" & isoname == "Italy" & year == 2001 ~ "6241",
-      partyfacts_id == "813" & isoname == "Italy" & year == 2001 ~ "6241",
-      partyfacts_id == "1221" & isoname == "Italy" & year == 2001 ~ "6241",
-      partyfacts_id == "962" & isoname == "Italy" & year == 2001 ~ "6241",
-      partyfacts_id == "1626" & isoname == "Italy" & year == 2006 ~ "6241",
-      partyfacts_id == "813" & isoname == "Italy" & year == 2006 ~ "6241",
-      partyfacts_id == "1221" & isoname == "Italy" & year == 2006 ~ "6241",
-      partyfacts_id == "878" & isoname == "Italy" & year == 2001 ~ "1737",
-      partyfacts_id == "279" & isoname == "Italy" & year == 2001 ~ "1737",
-      partyfacts_id == "1635" & isoname == "Italy" & year == 2001 ~ "1737",
-      partyfacts_id == "1737" & isoname == "Italy" & year == 2006 ~ "1372",
-      partyfacts_id == "279" & isoname == "Italy" & year == 2006 ~ "1372",
-      partyfacts_id == "1711" & isoname == "Italy" & year == 2006 ~ "1372",
-      partyfacts_id == "3956" & isoname == "Italy" & year == 2006 ~ "1372",
-      partyfacts_id == "1404" & isoname == "Italy" & year == 2006 ~ "1372",
-      partyfacts_id == "4107" & isoname == "Japan" ~ "3",
-      partyfacts_id == "6183" & isoname == "Poland" & year == 2001 ~ "57",
-      partyfacts_id == "7594" & isoname == "Iraq" & year == 2010 ~ "5615",
-      partyfacts_id == "7594" & isoname == "Iraq" & year == 2014 ~ "5615",
-      partyfacts_id == "6561" & isoname == "South Korea" & year == 2000 ~ "2548",
-      partyfacts_id == "6561" & isoname == "South Korea" & year == 2008 ~ "2305",
-      partyfacts_id == "6561" & isoname == "South Korea" & year == 2012 ~ "2305",
-      partyfacts_id == "5766" & isoname == "Senegal" & year == 2012 ~ "4010",
-      partyfacts_id == "2379" & isoname == "Senegal" & year == 2012 ~ "4010",
-      partyfacts_id == "2380" & isoname == "Senegal" & year == 2012 ~ "4010",
-      partyfacts_id == "5917" & isoname == "Iraq" & year == 2010 ~ "5919",
-      partyfacts_id == "6303" & isoname == "Italy" & year == 2013  ~ "1626",
-
-      TRUE ~ partyfacts_id
-    )
-  )
-
-unique(wvs_data_clean$isoname)
 wvs_data_clean <- wvs_data_clean %>%
   mutate(
     isoname = case_when(
@@ -679,11 +796,71 @@ wvs_data_clean <- wvs_data_clean %>%
       isoname == "ZAF" ~ "South Africa",
       isoname == "ZMB" ~ "Zambia",
       isoname == "ZWE" ~ "Zimbabwe",   
-
       
-      TRUE ~ as.character(dataset_party_id)
+      
+      TRUE ~ as.character(isoname)
     )
   )
+
+
+#Traitement des partyfacts dans cses pour join 
+wvs_data_clean <- wvs_data_clean %>%
+  mutate(
+    partyfacts_id = case_when(
+      partyfacts_id == "1388" & isoname == "United Kingdom" ~ "540",
+      partyfacts_id == "1231" & isoname == "Switzerland" ~ "360",
+      partyfacts_id == "7415" & isoname == "Sweden" ~ "199",
+      partyfacts_id == "5750" & isoname == "Spain" ~ "441",
+      partyfacts_id == "8814" & isoname == "Spain" ~ "441",
+      partyfacts_id == "1004" & isoname == "Canada" & year <= 2003 ~ "232",
+      partyfacts_id == "1004" & isoname == "Canada" & year >= 2003 ~ "1004" ,
+      partyfacts_id == "1044" & isoname == "Finland" ~ "1096" ,
+      partyfacts_id == "4785" & isoname == "France" ~ "1478" ,
+      partyfacts_id == "5514" & isoname == "France" ~ "1083" ,
+      partyfacts_id == "8041" & isoname == "France" ~ "1083" ,
+      partyfacts_id == "Other" & isoname == "India" & year == 1977  ~ "4788" ,
+      partyfacts_id == "1332" & isoname == "Canada" & year == 2000 ~ "1757",
+      dataset_party_id == "BW-Umbrella for Democratic Change" & isoname == "Botswana" & year == 2014 ~ "4832",
+      partyfacts_id == "604" & isoname == "Belgium" & year == 2007 ~ "756",
+      partyfacts_id == "604" & isoname == "Belgium" & year == 2003 ~ "622",
+      partyfacts_id == "604" & isoname == "Belgium" & year == 2010 ~ "622",
+      partyfacts_id == "604" & isoname == "Belgium" & year == 2014 ~ "622",
+      partyfacts_id == "8259" & isoname == "Belgium" & year == 1999 ~ "554",
+      partyfacts_id == "1680" & isoname == "Belgium" & year == 2003 ~ "1586",
+      partyfacts_id == "500" & isoname == "Belgium" & year <= 1977  ~ "480",
+      partyfacts_id == "1626" & isoname == "Italy" & year == 2001 ~ "6241",
+      partyfacts_id == "813" & isoname == "Italy" & year == 2001 ~ "6241",
+      partyfacts_id == "1221" & isoname == "Italy" & year == 2001 ~ "6241",
+      partyfacts_id == "962" & isoname == "Italy" & year == 2001 ~ "6241",
+      partyfacts_id == "1626" & isoname == "Italy" & year == 2006 ~ "6241",
+      partyfacts_id == "813" & isoname == "Italy" & year == 2006 ~ "6241",
+      partyfacts_id == "1221" & isoname == "Italy" & year == 2006 ~ "6241",
+      partyfacts_id == "878" & isoname == "Italy" & year == 2001 ~ "1737",
+      partyfacts_id == "279" & isoname == "Italy" & year == 2001 ~ "1737",
+      partyfacts_id == "1635" & isoname == "Italy" & year == 2001 ~ "1737",
+      partyfacts_id == "1737" & isoname == "Italy" & year == 2006 ~ "1372",
+      partyfacts_id == "279" & isoname == "Italy" & year == 2006 ~ "1372",
+      partyfacts_id == "1711" & isoname == "Italy" & year == 2006 ~ "1372",
+      partyfacts_id == "3956" & isoname == "Italy" & year == 2006 ~ "1372",
+      partyfacts_id == "1404" & isoname == "Italy" & year == 2006 ~ "1372",
+      partyfacts_id == "4107" & isoname == "Japan" ~ "3",
+      partyfacts_id == "6183" & isoname == "Poland" & year == 2001 ~ "57",
+      partyfacts_id == "7594" & isoname == "Iraq" & year == 2010 ~ "5615",
+      partyfacts_id == "7594" & isoname == "Iraq" & year == 2014 ~ "5615",
+      partyfacts_id == "6561" & isoname == "South Korea" & year == 2000 ~ "2548",
+      partyfacts_id == "6561" & isoname == "South Korea" & year == 2008 ~ "2305",
+      partyfacts_id == "6561" & isoname == "South Korea" & year == 2012 ~ "2305",
+      partyfacts_id == "5766" & isoname == "Senegal" & year == 2012 ~ "4010",
+      partyfacts_id == "2379" & isoname == "Senegal" & year == 2012 ~ "4010",
+      partyfacts_id == "2380" & isoname == "Senegal" & year == 2012 ~ "4010",
+      partyfacts_id == "5917" & isoname == "Iraq" & year == 2010 ~ "5919",
+      partyfacts_id == "6303" & isoname == "Italy" & year == 2013  ~ "1626",
+
+      TRUE ~ partyfacts_id
+    )
+  )
+
+
 
 
 ###Export Base WVS ----

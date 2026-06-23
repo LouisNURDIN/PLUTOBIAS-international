@@ -129,19 +129,24 @@ Elections_global <- Elections_global  %>%
 
 #DINC ----
 matching <- Base_all_clivages %>%
-  distinct(source,source_recode,isoname, year) %>%
+  distinct(source, source_recode, isoname, year) %>%
   left_join(
-    Elections_global %>%
-      distinct(isoname, year),
+    Elections_global %>% distinct(isoname, year),
     by = "isoname",
     relationship = "many-to-many"
   ) %>%
   mutate(
     diff_year = year.y - year.x
   ) %>%
-  filter(diff_year >= 0) %>%
-  group_by(isoname, year.x) %>%
-  slice_min(diff_year, n = 1, with_ties = FALSE) %>%
+  filter(
+    (source_recode == "ESS" & diff_year <= 0) |
+      (source_recode != "ESS" & diff_year >= 0)
+  ) %>%
+  group_by(isoname, year.x, source_recode) %>%
+  mutate(
+    abs_diff = abs(diff_year)
+  ) %>%
+  slice_min(abs_diff, n = 1, with_ties = FALSE) %>%
   ungroup() %>%
   rename(
     survey_year = year.x,
