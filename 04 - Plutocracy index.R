@@ -211,6 +211,9 @@ Base_complete_index <- Base_complete_clean  %>%
     .groups = "drop"
   )
 
+Base_complete_index <- Base_complete_index %>%
+  arrange(isoname, year)
+
 #Lister pays/années où mes indices se dupliquent (on est censé en avoir 4)
 View(
 Base_complete_index %>%
@@ -228,7 +231,7 @@ Base_complete_test_index <- Base_complete_index %>%
 View(
   Base_complete_index %>%
     ungroup() %>%
-    filter(election_couverture_ministers < 80) %>%
+    filter(election_couverture_ministers < 0.80) %>%
     distinct(source_recode,isoname,year,election_couverture_seats,election_couverture_ministers,source_recode)
 )
 

@@ -234,12 +234,15 @@ Base_vote_parlement_global <- Base_vote_parlement_global %>%
     )
   )
 
+Base_vote_parlement_global <- Base_vote_parlement_global %>%
+  distinct(source,source_recode,isoname,survey_year,year,partyfacts_id,bias,
+    category,.keep_all = TRUE)
 
-
-
-Base_vote_parlement_global <- Base_vote_parlement_global  %>% 
-  group_by(source,source_recode,bias,category,isoname,survey_year,year,)%>%
-  mutate(election_couverture_seats = sum(seats_share, na.rm = TRUE))
+Base_vote_parlement_global <- Base_vote_parlement_global %>%
+  group_by(source,source_recode,isoname,survey_year,bias,category) %>%
+  mutate(
+    election_couverture_seats = sum(seats_share, na.rm = TRUE)) %>%
+  ungroup()
 
 #Rcenser le nombre de sièges appartnenant aux partis "Other" pour recenser les élections que l'on ne pourra pas traiter
   Base_vote_parlement_global <- Base_vote_parlement_global %>%
@@ -286,9 +289,6 @@ elections_dans_elections_global <- Elections_global %>%
   summarise(.groups = "drop")
 
 
-
-
-
 #Ajout de parline 
 parline <- read.csv("data/raw/parline/share of women diputees accross all countries.csv", sep = ";")
 
@@ -307,6 +307,14 @@ Base_vote_parlement_global <- Base_vote_parlement_global %>%
       select(isoname,year,Percentage.of.women.diputees),
     by= c("isoname","year")
   )
+
+Base_vote_parlement_global <- Base_vote_parlement_global %>%
+  distinct(source,source_recode,isoname,survey_year,year,partyfacts_id,bias,
+           category,.keep_all = TRUE)
+
+Base_vote_parlement_global <- Base_vote_parlement_global %>%
+  arrange(isoname, year)
+
 
 #Export base avec méthode dinc
 write.csv(

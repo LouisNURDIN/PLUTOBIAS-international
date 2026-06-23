@@ -62,7 +62,7 @@ whogov_parties <- whogov_parties %>%
   )
       
       
-whogov_parties_bonnes_elections <- whogov_parties_bonnes_elections %>%
+whogov_parties <- whogov_parties %>%
   mutate(
     partyfacts_id = case_when(
       partyfacts_id == "480" & isoname == "Belgium" & year > 1977  ~ "500",
@@ -177,6 +177,8 @@ View(Base_vote_parlement_global %>%
   ) %>%
   filter(n > 1) %>%
   arrange(desc(n)))
+
+
 #Lister les partis présents dans whogov mais pas la base complète 
 
 unique(Base_vote_parlement_global$year[Base_vote_parlement_global$isoname == "Brazil" ] )
@@ -196,20 +198,68 @@ View(
 
 
 Base_complete <- Base_vote_parlement_global %>%
-  left_join(
-    whogov_parties_bonnes_elections,
+  full_join(whogov_parties,
     by = c("isoname","year","partyfacts_id"),
-    relationship = "many-to-many"
-  )
+    relationship = "many-to-many")
+
+
 #code original ----
 
 ###mise au propre de la base ----
 Base_complete <- Base_complete[!is.na(Base_complete$year),]
 
 Base_complete <- Base_complete %>%
-  select(source, source_recode,survey,isoname,survey_year, year, election_date,bias,category, partyfacts_id, votes, pct_votes,
+  select(isoname,year, survey_year, source, source_recode,survey, election_date,bias,category, partyfacts_id, votes, pct_votes,
          votes_valides, taux_participation, seats, seats_total, seats_share, ministers_party, total_ministers, ministers_share,women_party,women_share_party,Percentage.of.women.diputees,women_share_government, election_couverture_seats
   )
+Base_complete <- Base_complete %>%
+  arrange(isoname, year)
+
+Base_complete <- Base_complete %>%
+  distinct(source,source_recode,isoname,survey_year,year,partyfacts_id,bias,
+           category,.keep_all = TRUE)
+
+
+cols_check <- c(
+  "election_date", "bias", "category",
+  "votes", "pct_votes", "votes_valides",
+  "taux_participation", "seats_share",
+  "seats_total", "election_couverture_seats"
+)
+
+# 1. Années valides (IMPORTANT: pas de source ici)
+valid_years <- Base_complete %>%
+  group_by(isoname, year) %>%
+  summarise(
+    ok = !all(is.na(across(all_of(cols_check)))),
+    .groups = "drop"
+  ) %>%
+  filter(ok)
+
+# 2. Dernière année valide par pays
+last_year <- valid_years %>%
+  group_by(isoname) %>%
+  summarise(last_year = max(year), .groups = "drop")
+
+# 3. Template = dernière élection complète (toutes sources conservées)
+templates <- Base_complete %>%
+  inner_join(last_year, by = "isoname") %>%
+  filter(year == last_year)
+
+# 4. Années manquantes
+missing_years <- Base_complete %>%
+  distinct(isoname, year) %>%
+  anti_join(valid_years, by = c("isoname", "year"))
+
+# 5. Réplication propre des sources
+to_add <- missing_years %>%
+  inner_join(templates, by = "isoname") %>%
+  mutate(year = year.x) %>%
+  select(-year.x)
+
+# 6. Dataset final
+Base_complete_filled <- bind_rows(Base_complete, to_add)
+
 
 #Traiter les cas où les ministres se dupliquent car plusieurs fois le même PF dans une élection ----
 Base_complete <- Base_complete %>%
@@ -254,15 +304,21 @@ View(
   Base_complete %>%
     ungroup() %>%
     filter(election_couverture_seats > 100) %>%
-    distinct(survey_year,year,isoname,election_couverture_seats,source,source_recode,bias)
-)
+    distinct(survey_year,year,isoname,election_couverture_seats,source,source_recode,bias))
+
+
+View(
+  Base_complete %>%
+    ungroup() %>%
+    filter(election_couverture_seats > 100) %>%
+    distinct(survey_year,year,isoname,election_couverture_seats,source,source_recode,bias))
 ##Liste des pays/années où tous les ministres ne sont pas couverts ----
 
 View(
   Base_complete %>%
     ungroup() %>%
     filter(election_couverture_ministers < 0.8) %>%
-    distinct(survey_year,year,isoname,election_couverture_seats,election_couverture_ministers,other_ministers,source,source_recode)
+    distinct(survey_year,year,isoname,bias,election_couverture_seats,election_couverture_ministers,other_ministers,source,source_recode)
 )
 
 
