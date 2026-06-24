@@ -9,6 +9,7 @@ elections_legislatives_valides <- read.csv("data/intermediary/elections/valid le
 
 Base_all_clivages <- read.csv("data/intermediary/elections/dataset with all clivages and elections.csv", sep = ",")
 
+
 Base_all_clivages <- Base_all_clivages %>%
   filter(isoname != "Hong Kong")
 Base_all_clivages <- Base_all_clivages %>%
@@ -118,6 +119,7 @@ Elections_global <- Elections_global %>%
       partyfacts_id == "4601" & isoname == "Philippines" & year == 1996  ~ "2388",
       partyfacts_id == "4802" & isoname == "Venezuela" & year == 1998  ~ "Other",
       partyfacts_id == "2335" & isoname == "Zambia" & year == 2007  ~ "",
+      partyfacts_id == "730" & isoname == "Slovakia" & year == 2006  ~ "560",
       TRUE ~ partyfacts_id
     )
   )
@@ -266,6 +268,9 @@ View(
 Elections_global2 <- Elections_global2 %>%
   rename(year = election_year)
 
+Base_all_clivages <- Base_all_clivages %>%
+  filter(Base_all_clivages$survey_year < 2020)
+
 manquants <- Elections_global2 %>%
        filter(seats_share >= 10) %>%
        filter(year <= 2015) %>%
@@ -279,8 +284,9 @@ View(
 left_join(Base_vote_parlement_global %>%distinct(isoname, survey_year, year,source, source_recode),
                by = c("isoname", "survey_year", "year")))
 unique(Base_vote_parlement_global$source_recode)
-unique(Base_vote_parlement_global$party[Base_vote_parlement_global$isoname == "Colombia" & 
-                                          Base_vote_parlement_global$year == 1998])
+unique(Base_vote_parlement_global$party[Base_vote_parlement_global$isoname == "Belgium" & 
+                                          Base_vote_parlement_global$year == 2003
+                                        & Base_vote_parlement_global$source_recode == "ESS"])
 
 #Liste des élections dans Elections Global
 elections_dans_elections_global2 <- Elections_global2 %>%

@@ -394,54 +394,22 @@ ess_data_clean <- ess_data_clean %>%
 ess_data_clean <- ess_data_clean %>%
   mutate(
     partyfacts_id = case_when(
-      partyfacts_id == "1388" & isoname == "United Kingdom" ~ "540",
-      partyfacts_id == "1231" & isoname == "Switzerland" ~ "360",
-      partyfacts_id == "7415" & isoname == "Sweden" ~ "199",
-      partyfacts_id == "5750" & isoname == "Spain" ~ "441",
-      partyfacts_id == "8814" & isoname == "Spain" ~ "441",
-      partyfacts_id == "1004" & isoname == "Canada" & year <= 2003 ~ "232",
-      partyfacts_id == "1004" & isoname == "Canada" & year >= 2003 ~ "1004" ,
-      partyfacts_id == "1044" & isoname == "Finland" ~ "1096" ,
-      partyfacts_id == "4785" & isoname == "France" ~ "1478" ,
-      partyfacts_id == "5514" & isoname == "France" ~ "1083" ,
-      partyfacts_id == "8041" & isoname == "France" ~ "1083" ,
-      partyfacts_id == "Other" & isoname == "India" & year == 1977  ~ "4788" ,
-      partyfacts_id == "1332" & isoname == "Canada" & year == 2000 ~ "1757",
-      dataset_party_id == "BW-Umbrella for Democratic Change" & isoname == "Botswana" & year == 2014 ~ "4832",
-      partyfacts_id == "604" & isoname == "Belgium" & year == 2007 ~ "756",
-      partyfacts_id == "604" & isoname == "Belgium" & year == 2003 ~ "622",
-      partyfacts_id == "604" & isoname == "Belgium" & year == 2010 ~ "622",
-      partyfacts_id == "604" & isoname == "Belgium" & year == 2014 ~ "622",
-      partyfacts_id == "8259" & isoname == "Belgium" & year == 1999 ~ "554",
-      partyfacts_id == "1680" & isoname == "Belgium" & year == 2003 ~ "1586",
-      partyfacts_id == "500" & isoname == "Belgium" & year <= 1977  ~ "480",
-      partyfacts_id == "1626" & isoname == "Italy" & year == 2001 ~ "6241",
-      partyfacts_id == "813" & isoname == "Italy" & year == 2001 ~ "6241",
-      partyfacts_id == "1221" & isoname == "Italy" & year == 2001 ~ "6241",
-      partyfacts_id == "962" & isoname == "Italy" & year == 2001 ~ "6241",
-      partyfacts_id == "1626" & isoname == "Italy" & year == 2006 ~ "6241",
-      partyfacts_id == "813" & isoname == "Italy" & year == 2006 ~ "6241",
-      partyfacts_id == "1221" & isoname == "Italy" & year == 2006 ~ "6241",
-      partyfacts_id == "878" & isoname == "Italy" & year == 2001 ~ "1737",
-      partyfacts_id == "279" & isoname == "Italy" & year == 2001 ~ "1737",
-      partyfacts_id == "1635" & isoname == "Italy" & year == 2001 ~ "1737",
-      partyfacts_id == "1737" & isoname == "Italy" & year == 2006 ~ "1372",
-      partyfacts_id == "279" & isoname == "Italy" & year == 2006 ~ "1372",
-      partyfacts_id == "1711" & isoname == "Italy" & year == 2006 ~ "1372",
-      partyfacts_id == "3956" & isoname == "Italy" & year == 2006 ~ "1372",
-      partyfacts_id == "1404" & isoname == "Italy" & year == 2006 ~ "1372",
-      partyfacts_id == "4107" & isoname == "Japan" ~ "3",
-      partyfacts_id == "6183" & isoname == "Poland" & year == 2001 ~ "57",
-      partyfacts_id == "7594" & isoname == "Iraq" & year == 2010 ~ "5615",
-      partyfacts_id == "7594" & isoname == "Iraq" & year == 2014 ~ "5615",
-      partyfacts_id == "6561" & isoname == "South Korea" & year == 2000 ~ "2548",
-      partyfacts_id == "6561" & isoname == "South Korea" & year == 2008 ~ "2305",
-      partyfacts_id == "6561" & isoname == "South Korea" & year == 2012 ~ "2305",
-      partyfacts_id == "5766" & isoname == "Senegal" & year == 2012 ~ "4010",
-      partyfacts_id == "2379" & isoname == "Senegal" & year == 2012 ~ "4010",
-      partyfacts_id == "2380" & isoname == "Senegal" & year == 2012 ~ "4010",
-      partyfacts_id == "5917" & isoname == "Iraq" & year == 2010 ~ "5919",
-      partyfacts_id == "6303" & isoname == "Italy" & year == 2013  ~ "1626",
+      partyfacts_id == "BG-5-1-V" & isoname == "Bulgaria" & year >= 2010 ~ "760", #*
+      partyfacts_id == "HR-9-3-V" & isoname == "Croatia" & year >= 2018 ~ "4865", #*
+      partyfacts_id == "CZ-1-9-V" & isoname == "Czech Republic" & year >= 2008 ~ "1728", #*
+      partyfacts_id == "CZ-5-5-V" & isoname == "Czech Republic" & year >= 2010 ~ "223", #*
+      partyfacts_id == "CZ-7-4-V" & isoname == "Czech Republic" & year >= 2014 ~ "2141", #*
+      partyfacts_id == "CZ-5-6-V" & isoname == "Czech Republic" & year == 2012 ~ "1202", #*
+      partyfacts_id == "FI-1-9-V" & isoname == "Finland" & year >= 2012 ~ "1303", #*
+      partyfacts_id == "IT-6-4-V" & isoname == "Italy" & year >= 2016 ~ "2046", #*
+      partyfacts_id == "NL-4-11-V" & isoname == "Netherlands" & year >= 2014 ~ "298", #*
+      partyfacts_id == "RU-3-3-V" & isoname == "Russia" ~ "2245", #*
+      partyfacts_id == "SK-6-1-V" & isoname == "Slovakia" ~ "2130", #*
+      partyfacts_id == "SI-4-9-V" & isoname == "Slovenia" ~ "474", #*
+      partyfacts_id == "SI-6-7-V" & isoname == "Slovenia" ~ "1773", #*
+      partyfacts_id == "SI-7-8-v" & isoname == "Slovenia" ~ "3098", #*
+      partyfacts_id == "UA-3-1-V" & isoname == "Ukraine" ~ "2234", #*
+      partyfacts_id == "UA-2-10-V" & isoname == "Ukraine" ~ "2228", #*
       TRUE ~ as.character(partyfacts_id)
     )
   )

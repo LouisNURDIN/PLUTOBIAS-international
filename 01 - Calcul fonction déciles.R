@@ -1528,7 +1528,10 @@ write.csv(
 
 #Rename des paryfacts pour les gros partis qui joinent mal entre bases
 unique(Base_all_clivages$vote[Base_all_clivages$isoname == "Zimbabwe" & Base_all_clivages$survey_year == 2012  ] )
-unique(Base_all_clivages$partyfacts_id[Base_all_clivages$isoname == "Latvia" & Base_all_clivages$survey_year == 1996 ] )
+unique(Base_all_clivages$partyfacts_id[Base_all_clivages$isoname == "Latvia" & Base_all_clivages$survey_year == 1996 ]) 
+  
+
+       
 Base_all_clivages <- Base_all_clivages %>%
   mutate(
     partyfacts_id = case_when(
@@ -1635,10 +1638,46 @@ Base_all_clivages <- Base_all_clivages %>%
       vote == "716007" & isoname == "Zimbabwe" & year == 2001 ~ "3305",
       vote == "716002" & isoname == "Zimbabwe" & year == 2012 ~ "3559",
       vote == "716007" & isoname == "Zimbabwe" & year == 2001 ~ "3305",
+      vote == "BE-1-3-V" & isoname == "Belgium" & year == 2004 & year == 2006  ~ "1586",
+      vote == "BE-1-13-V" & isoname == "Belgium" & year == 2002 ~ "554", 
+      vote == "BG-3-1-V" & isoname == "Bulgaria" & year >= 2010 ~ "1665",
+      vote == "CZ-1-10-V" & isoname == "Czech Republic" & year == 2004 ~ "676",
+      vote == "CZ-1-2-V" & isoname == "Czech Republic" & year == 2008 ~ "466",
+      vote == "EE-2-4-V" & isoname == "Estonia" & year >= 2008 ~ "685",
+      vote == "IT-1-8-V" & isoname == "Italy" & year == 2002 ~ "6241",
+      #compléter pour cette année là en Italie
+      vote == "IT-1-1-V" & isoname == "Italy" & year == 2002 ~ "1737",
+      #compléter pour cette année là en Italie
+      vote == "IT-1-1-V" & isoname == "Italy" & year >= 2016 ~ "802",
+      vote == "PL-1-1-V" & isoname == "Poland" & year >= 2002 & year <= 2004 ~ "57",
+      vote == "PL-1-6-V" & isoname == "Poland" & year >= 2002 & year == 2006 ~ "1117",
+      vote == "PL-1-1-V" & isoname == "Poland" & year >= 2008 & year <= 2010 ~ "1588",
+      vote == "PT-1-11-V" & isoname == "Portugal" & year >= 2016  ~ "655",
+      vote == "RO-4-2-V" & isoname == "Romania" & year == 2008  ~ "120",
       
+      vote == "BG-5-1-V" & isoname == "Bulgaria" & year >= 2010 ~ "760", #*
+      vote == "HR-9-3-V" & isoname == "Croatia" & year >= 2018 ~ "4865", #*
+      vote == "CZ-1-9-V" & isoname == "Czech Republic" & year >= 2008 ~ "1728", #*
+      vote == "CZ-5-5-V" & isoname == "Czech Republic" & year >= 2010 ~ "223", #*
+      vote == "CZ-7-4-V" & isoname == "Czech Republic" & year >= 2014 ~ "2141", #*
+      vote == "CZ-5-6-V" & isoname == "Czech Republic" & year == 2012 ~ "1202", #*
+      vote == "FI-1-9-V" & isoname == "Finland" & year >= 2012 ~ "1303", #*
+      vote == "IT-6-4-V" & isoname == "Italy" & year >= 2016 ~ "2046", #*
+      vote == "NL-4-11-V" & isoname == "Netherlands" & year >= 2014 ~ "298", #*
+      vote == "RU-3-3-V" & isoname == "Russia" ~ "2245", #*
+      vote == "SK-6-1-V" & isoname == "Slovakia" ~ "2130", #*
+      vote == "SI-4-9-V" & isoname == "Slovenia" ~ "474", #*
+      vote == "SI-6-7-V" & isoname == "Slovenia" ~ "1773", #*
+      vote == "SI-7-8-v" & isoname == "Slovenia" ~ "3098", #*
+      vote == "UA-3-1-V" & isoname == "Ukraine" ~ "2234", #*
+      vote == "UA-2-10-V" & isoname == "Ukraine" ~ "2228", #*
       TRUE ~ partyfacts_id
     )
   )
+
+unique(Base_all_clivages$vote[Base_all_clivages$isoname == "Italy" & 
+                                          Base_all_clivages$year == 2012
+                                        & Base_all_clivages$source_recode == "ESS"])
 
 
 Base_all_clivages <- Base_all_clivages %>%
