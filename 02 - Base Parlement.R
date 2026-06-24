@@ -266,16 +266,19 @@ View(
 Elections_global2 <- Elections_global2 %>%
   rename(year = election_year)
 
-View(Elections_global2 %>%
+manquants <- Elections_global2 %>%
        filter(seats_share >= 10) %>%
        filter(year <= 2015) %>%
        distinct(isoname,survey_year, year, partyfacts_id, seats_share) %>%
        anti_join(
          Base_vote_parlement_global %>% distinct(source,source_recode,isoname,survey_year, year, partyfacts_id,seats_share,election_couverture_seats),
          by = c("isoname","survey_year", "year", "partyfacts_id"
-                )
-       ))
-
+                ))
+View(
+ manquants %>%
+left_join(Base_vote_parlement_global %>%distinct(isoname, survey_year, year,source, source_recode),
+               by = c("isoname", "survey_year", "year")))
+unique(Base_vote_parlement_global$source_recode)
 unique(Base_vote_parlement_global$party[Base_vote_parlement_global$isoname == "Colombia" & 
                                           Base_vote_parlement_global$year == 1998])
 

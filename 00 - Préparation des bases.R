@@ -221,13 +221,14 @@ ess_data <- ess_data %>%
 ess_data_long <- ess_data %>%
   pivot_longer(cols = starts_with("prtv"),names_to = "variable",values_to = "party_id")
 unique(ess_data_long$party_id)
+unique(ess_data_long$cntry)
 ess_data_long <- ess_data_long %>%
   mutate(
     ess_id = case_when(
       cntry %in% c("DE", "LT") ~paste( cntry,essround,party_id,substr(variable, 4, 4),str_sub(variable, -3, -1),
           sep = "-"),
       TRUE ~paste(cntry,essround,party_id,substr(variable, 4, 4),sep = "-" )) )                                                                       party_id, substr(variable, 4, 4), sep = "-" ) ) )
-
+sum(is.na(ess_data_long$ess_id))
 ###Identifier les variables qui nous intéressent pour les harmoniser----
 ess_data_long <- ess_data_long %>%
   rename(isoname = cntry)
@@ -270,6 +271,11 @@ ess_data_long <- ess_data_long %>%
 ess_data_clean <- ess_data_long %>%
   select(isoname,year, source, source_recode,survey, type, inc,gender,educ,age, turnout, dataset_party_id)
 
+ess_data_clean <- ess_data_clean %>% mutate(dataset_party_id = trimws(dataset_party_id))
+Partyfacts_id_ess <- Partyfacts_id_ess %>% mutate(dataset_party_id = trimws(dataset_party_id)) 
+
+ ess_data_clean <- ess_data_clean %>% mutate(dataset_party_id = toupper(dataset_party_id))
+ Partyfacts_id_ess <- Partyfacts_id_ess %>% mutate(dataset_party_id = toupper(dataset_party_id))
 
 #Join partyfacts dans cses
 ess_data_clean <- ess_data_clean %>%
@@ -279,6 +285,8 @@ ess_data_clean <- ess_data_clean %>%
     by = "dataset_party_id"
   )
 
+sum(is.na(ess_data_clean$partyfacts_id))
+
 ess_data_clean <- ess_data_clean %>%
   mutate(
     dataset_party_id = case_when(
@@ -287,6 +295,16 @@ ess_data_clean <- ess_data_clean %>%
       TRUE ~ as.character(dataset_party_id)
     )
   )
+
+#Problème de join 
+#Diagnostic
+mean(ess_data_clean$dataset_party_id %in% Partyfacts_id_ess$dataset_party_id)
+View(ess_data_clean %>%
+  anti_join(Partyfacts_id_ess, by = "dataset_party_id") %>%
+  count(dataset_party_id, sort = TRUE))
+Partyfacts_id_ess %>%
+  head(20)
+names(Partyfacts_id_ess)
 
 ess_data_clean <- ess_data_clean %>%
   mutate(
@@ -598,7 +616,8 @@ cses_data_clean <- cses_data_clean %>%
       TRUE ~ partyfacts_id
     )
   )
-
+table(cses_data_clean$turnout[cses_data$isoname == "Albania"])
+table(cses_data_clean$turnout[cses_data$isoname == "Belgium"])
 sum(cses_data_clean$partyfacts_id == "Abstention", na.rm = TRUE)
 ###Export Base CSES ----
 write.csv(
