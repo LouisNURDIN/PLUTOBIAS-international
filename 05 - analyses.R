@@ -4,18 +4,15 @@ library(stringr)
 library(ggplot2)
 library(scales)
 Base_complete_index <-  read.csv("data/final/dataset complete with index.csv", sep = ",")
+Base_regimes_presidentiels_index <-  read.csv("data/final/dataset complete regimes presidentiels.csv", sep = ",")
 
-Base_complete_index_income <- Base_complete_index %>%
-  filter(Base_complete_index$bias == "plutocracy")
+Base_complete_index_income <- Base_complete_index %>%filter(Base_complete_index$bias == "plutocracy")
 
-Base_complete_index_gender<- Base_complete_index %>%
-  filter(Base_complete_index$bias == "androcracy")
+Base_complete_index_gender<- Base_complete_index %>%filter(Base_complete_index$bias == "androcracy")
 
-Base_complete_index_educ <- Base_complete_index%>%
-  filter(Base_complete_index$bias == "epistocracy")
+Base_complete_index_educ <- Base_complete_index%>%filter(Base_complete_index$bias == "epistocracy")
 
-Base_complete_index_age <- Base_complete_index %>%
-  filter(Base_complete_index$bias == "gerontocracy")
+Base_complete_index_age <- Base_complete_index %>%filter(Base_complete_index$bias == "gerontocracy")
 
 #Filtre pour travailler sur des bases propres
 Base_complete_index_income <- Base_complete_index_income %>%

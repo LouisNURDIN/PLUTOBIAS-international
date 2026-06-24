@@ -23,6 +23,12 @@ GMP_inc <- GMP_inc %>%
   filter(source != "CSES")
 GMP_inc <- GMP_inc %>%
   filter(source != "World Values Survey, Argentina")
+GMP_inc <- GMP_inc %>%
+  filter(source != "WVS")
+GMP_inc <- GMP_inc %>%
+  filter(source != "ESS")
+GMP_inc <- GMP_inc %>%
+  filter(!str_starts(source, "European Social Survey"))
 unique(GMP_inc$source)
 
 table(GMP_inc$dinc)
@@ -422,7 +428,7 @@ write.csv(
   row.names = FALSE
 )
 
-
+unique(Base_all_elections$source)
 
 #CSES ----
 cses_data <- read.csv("data/raw/cses/cses_imd.csv")
