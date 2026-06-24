@@ -220,14 +220,19 @@ ess_data <- ess_data %>%
   select(-age)
 ess_data_long <- ess_data %>%
   pivot_longer(cols = starts_with("prtv"),names_to = "variable",values_to = "party_id")
-unique(ess_data_long$party_id)
-unique(ess_data_long$cntry)
+
+ess_data_long <- ess_data_long %>%
+  group_by(cntry, party_id) %>%
+  mutate(first_essround = min(essround, na.rm = TRUE)) %>%
+  ungroup()
+
 ess_data_long <- ess_data_long %>%
   mutate(
     ess_id = case_when(
-      cntry %in% c("DE", "LT") ~paste( cntry,essround,party_id,substr(variable, 4, 4),str_sub(variable, -3, -1),
-          sep = "-"),
-      TRUE ~paste(cntry,essround,party_id,substr(variable, 4, 4),sep = "-" )) )                                                                       party_id, substr(variable, 4, 4), sep = "-" ) ) )
+      cntry %in% c("DE", "LT") ~ paste(cntry,first_essround,party_id,substr(variable, 4, 4),str_sub(variable, -3, -1),
+        sep = "-"
+      ),TRUE ~ paste( cntry, first_essround,party_id,substr(variable, 4, 4),sep = "-")))  
+
 sum(is.na(ess_data_long$ess_id))
 ###Identifier les variables qui nous intéressent pour les harmoniser----
 ess_data_long <- ess_data_long %>%
@@ -282,8 +287,7 @@ ess_data_clean <- ess_data_clean %>%
   left_join(
     Partyfacts_id_ess %>%
       dplyr::select(dataset_party_id,partyfacts_id),
-    by = "dataset_party_id"
-  )
+    by = "dataset_party_id")
 
 sum(is.na(ess_data_clean$partyfacts_id))
 
@@ -295,16 +299,21 @@ ess_data_clean <- ess_data_clean %>%
       TRUE ~ as.character(dataset_party_id)
     )
   )
+unique(ess_data_clean$dataset_party_id)
+unique(Partyfacts_id_ess$dataset_party_id)
 
 #Problème de join 
 #Diagnostic
+##moyenne de partis qui joinent
 mean(ess_data_clean$dataset_party_id %in% Partyfacts_id_ess$dataset_party_id)
+#liste des partis ess qui ne trouvent pas d'id partyfacts
 View(ess_data_clean %>%
   anti_join(Partyfacts_id_ess, by = "dataset_party_id") %>%
   count(dataset_party_id, sort = TRUE))
 Partyfacts_id_ess %>%
   head(20)
 names(Partyfacts_id_ess)
+
 
 ess_data_clean <- ess_data_clean %>%
   mutate(
