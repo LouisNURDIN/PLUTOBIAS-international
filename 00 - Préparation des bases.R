@@ -482,13 +482,25 @@ cses_data <- cses_data %>%
 
 
 #Filtre pour ne garder que les données valides sur le revenu, le vote, et les bonnes élections
+sum(cses_data$turnout == 0, na.rm = TRUE) #56048 ont turnout = 0 dans la base
+
+cses_data <- cses_data %>% filter(turnout < 9999996) 
+
 cses_data <- cses_data %>%
-  filter(dataset_party_id < 9999996)
+  filter(!dataset_party_id %in% c(9999996, 9999997, 9999998))
+
+sum(cses_data$turnout == 0, na.rm = TRUE) 
+
+
 cses_data <- cses_data %>%
   filter(type <= 13)
 
+
+
 cses_data_clean <- cses_data %>%
   select(isoname,year, source, source_recode,survey, type, inc,gender,educ,age, turnout, dataset_party_id,weight)
+
+sum(cses_data_clean$turnout == 0, na.rm = TRUE)
 
 cses_data_clean <- cses_data_clean %>%
   mutate(
@@ -509,7 +521,7 @@ cor(cses_data_clean$educ, cses_data_clean$inc,
 #verif données
 unique(cses_data_clean$inc)
 unique(cses_data_clean$type)
-unique(cses_data_clean$vote[cses_data_clean$isoname == "Albania"])
+unique(cses_data_clean$dataset_party_id[cses_data_clean$isoname == "Albania"])
 
 #Ajout de l'abstention
 cses_data_clean <- cses_data_clean %>%
@@ -517,6 +529,7 @@ cses_data_clean <- cses_data_clean %>%
     dataset_party_id = case_when(
       turnout == 0 ~ "Abstention",
       turnout == 9999993 ~ "Abstention",
+      dataset_party_id == 9999999 ~ "Abstention",
       dataset_party_id == 9999993 ~ "Abstention",
       dataset_party_id == 9999988 ~ "Other",
       dataset_party_id == 9999989 ~ "Other",
@@ -532,6 +545,8 @@ table(cses_data_clean$turnout)
 class(cses_data$turnout)
 table(cses_data$dataset_party_id)
 sum(cses_data_clean$dataset_party_id == "Abstention", na.rm = TRUE)
+
+table(cses_data_clean$dataset_party_id[cses_data_clean$isoname == "Albania"])
 #Join partyfacts dans cses
 cses_data_clean <- cses_data_clean %>%
   left_join(
