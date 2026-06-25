@@ -105,7 +105,7 @@ unique(GMP_inc_2$educ)
 unique(GMP_inc_2$age)
 
 GMP_inc_2_clean <- GMP_inc_2 %>%
-  select(isoname,year, source, source_recode, survey,type, dinc,gender,educ, age, turnout,dataset_party_id)
+  select(isoname,year, source, source_recode, survey,type, dinc,gender,educ, age, turnout,dataset_party_id,weight)
 ##Join Partyfacts dans GMP inc ----
 Base_all_elections <- GMP_inc_2_clean %>%
   left_join(
@@ -241,6 +241,8 @@ ess_data_long <- ess_data_long %>%
 ess_data_long <- ess_data_long %>%
   rename(source = name)
 ess_data_long <- ess_data_long %>%
+  rename(weight = pspwght)
+ess_data_long <- ess_data_long %>%
   mutate(source_recode = "ESS")
 ess_data_long <- ess_data_long %>%
   rename(year = essround)
@@ -274,7 +276,7 @@ ess_data_long <- ess_data_long %>%
   filter(turnout < 7)
 
 ess_data_clean <- ess_data_long %>%
-  select(isoname,year, source, source_recode,survey, type, inc,gender,educ,age, turnout, dataset_party_id)
+  select(isoname,year, source, source_recode,survey, type, inc,gender,educ,age, turnout, dataset_party_id,weight)
 
 ess_data_clean <- ess_data_clean %>% mutate(dataset_party_id = trimws(dataset_party_id))
 Partyfacts_id_ess <- Partyfacts_id_ess %>% mutate(dataset_party_id = trimws(dataset_party_id)) 
@@ -453,6 +455,8 @@ cses_data <- cses_data %>%
 cses_data <- cses_data %>%
   mutate(source_recode = "CSES")
 cses_data <- cses_data %>%
+  mutate(weight = IMD1010_2)
+cses_data <- cses_data %>%
   rename(year = IMD1008_YEAR)
 cses_data <- cses_data %>%
   rename(turnout = IMD3001_LH)
@@ -484,7 +488,7 @@ cses_data <- cses_data %>%
   filter(type <= 13)
 
 cses_data_clean <- cses_data %>%
-  select(isoname,year, source, source_recode,survey, type, inc,gender,educ,age, turnout, dataset_party_id)
+  select(isoname,year, source, source_recode,survey, type, inc,gender,educ,age, turnout, dataset_party_id,weight)
 
 cses_data_clean <- cses_data_clean %>%
   mutate(
@@ -621,6 +625,11 @@ write.csv(
 
 #WVS ----
 wvs_data <- read.csv  ("data/raw/wvs/WVS_Time_Series_1981-2022_csv_v5_0.csv")
+unique(wvs_data$S018)
+
+mean(wvs_data$S018, na.rm = TRUE)
+sum(wvs_data$S018, na.rm = TRUE)
+
 
 wvs_data <- wvs_data %>%
   rename(isoname = COUNTRY_ALPHA)
@@ -631,6 +640,8 @@ wvs_data <- wvs_data %>%
   mutate(source = "WVS")
 wvs_data <- wvs_data %>%
   mutate(source_recode = "WVS")
+wvs_data <- wvs_data %>%
+  mutate(weight = S018)
 wvs_data <- wvs_data %>%
   rename(year = S020)
 wvs_data <- wvs_data %>%
@@ -652,7 +663,7 @@ wvs_data <- wvs_data %>%
   mutate(survey = "Pre-electoral")
 
 wvs_data_clean <- wvs_data %>%
-  select(isoname,year, source, source_recode,survey, type, inc,gender,educ,age, turnout, dataset_party_id)
+  select(isoname,year, source, source_recode,survey, type, inc,gender,educ,age, turnout, dataset_party_id,weight)
 
 #Filtre pour ne garder que les données valides sur le revenu, le vote, et les bonnes élections
 
