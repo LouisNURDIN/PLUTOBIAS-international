@@ -269,7 +269,11 @@ Elections_global2 <- Elections_global2 %>%
   rename(year = election_year)
 
 Base_all_clivages <- Base_all_clivages %>%
-  filter(Base_all_clivages$survey_year < 2020)
+  filter(survey_year < 2020,
+    !(isoname %in% c("Netherlands", "Slovakia", "Spain") &
+        survey_year >= 2018))
+
+
 
 manquants <- Elections_global2 %>%
        filter(seats_share >= 10) %>%
@@ -283,6 +287,8 @@ View(
  manquants %>%
 left_join(Base_vote_parlement_global %>%distinct(isoname, survey_year, year,source, source_recode),
                by = c("isoname", "survey_year", "year")))
+
+
 unique(Base_vote_parlement_global$source_recode)
 unique(Base_vote_parlement_global$party[Base_vote_parlement_global$isoname == "Belgium" & 
                                           Base_vote_parlement_global$year == 2003

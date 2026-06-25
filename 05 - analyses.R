@@ -534,6 +534,8 @@ plot_women_representation <- ggplot(
   theme_minimal()
 print(plot_women_representation)
 
+
+
 #Régression entre androcracy et représentation des femmes dans les institutions
 ggplot(
   Base_complete_index_gender,

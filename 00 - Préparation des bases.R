@@ -291,6 +291,19 @@ ess_data_clean <- ess_data_clean %>%
 
 sum(is.na(ess_data_clean$partyfacts_id))
 
+
+
+ess_data_clean <- ess_data_clean %>%
+  mutate(
+    partyfacts_id = as.character(partyfacts_id),
+    partyfacts_id = case_when(
+      dataset_party_id == "Abstention" ~ "Abstention",
+      str_detect(dataset_party_id, "Other$") ~ "Other",
+      TRUE ~ partyfacts_id
+    )
+  )
+
+
 ess_data_clean <- ess_data_clean %>%
   mutate(
     dataset_party_id = case_when(
@@ -414,7 +427,10 @@ ess_data_clean <- ess_data_clean %>%
     )
   )
 
-class(ess_data_clean$partyfacts_id)
+unique(ess_data_clean$dataset_party_id[ess_data_clean$isoname == "Ukraine" & 
+                                ess_data_clean$year == 2012
+                              & ess_data_clean$source_recode == "ESS"])
+
 
 ###Export Base ESS ----
 write.csv(

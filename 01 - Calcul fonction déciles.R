@@ -1640,14 +1640,17 @@ Base_all_clivages <- Base_all_clivages %>%
       vote == "716007" & isoname == "Zimbabwe" & year == 2001 ~ "3305",
       vote == "BE-1-3-V" & isoname == "Belgium" & year == 2004 & year == 2006  ~ "1586",
       vote == "BE-1-13-V" & isoname == "Belgium" & year == 2002 ~ "554", 
-      vote == "BG-3-1-V" & isoname == "Bulgaria" & year >= 2010 ~ "1665",
+      vote == "BG-3-1-V" & isoname == "Bulgaria" & year >= 2006 ~ "1665",
       vote == "CZ-1-10-V" & isoname == "Czech Republic" & year == 2004 ~ "676",
       vote == "CZ-1-2-V" & isoname == "Czech Republic" & year == 2008 ~ "466",
       vote == "EE-2-4-V" & isoname == "Estonia" & year >= 2008 ~ "685",
       vote == "IT-1-8-V" & isoname == "Italy" & year == 2002 ~ "6241",
-      #compléter pour cette année là en Italie
+      vote == "IT-1-9-V" & isoname == "Italy" & year == 2002 ~ "6241",
+      vote == "IT-1-11-V" & isoname == "Italy" & year == 2002 ~ "6241",
+      vote == "IT-1-10-V" & isoname == "Italy" & year == 2002 ~ "6241",
       vote == "IT-1-1-V" & isoname == "Italy" & year == 2002 ~ "1737",
-      #compléter pour cette année là en Italie
+      vote == "IT-1-2-V" & isoname == "Italy" & year == 2002 ~ "1737",
+      vote == "IT-1-3-V" & isoname == "Italy" & year == 2002 ~ "1737",
       vote == "IT-1-1-V" & isoname == "Italy" & year >= 2016 ~ "802",
       vote == "PL-1-1-V" & isoname == "Poland" & year >= 2002 & year <= 2004 ~ "57",
       vote == "PL-1-6-V" & isoname == "Poland" & year >= 2002 & year == 2006 ~ "1117",
@@ -1655,6 +1658,7 @@ Base_all_clivages <- Base_all_clivages %>%
       vote == "PT-1-11-V" & isoname == "Portugal" & year >= 2016  ~ "655",
       vote == "RO-4-2-V" & isoname == "Romania" & year == 2008  ~ "120",
       
+      #Cas plus problématique de join dans ESS
       vote == "BG-5-1-V" & isoname == "Bulgaria" & year >= 2010 ~ "760", #*
       vote == "HR-9-3-V" & isoname == "Croatia" & year >= 2018 ~ "4865", #*
       vote == "CZ-1-9-V" & isoname == "Czech Republic" & year >= 2008 ~ "1728", #*
@@ -1675,8 +1679,8 @@ Base_all_clivages <- Base_all_clivages %>%
     )
   )
 
-unique(Base_all_clivages$vote[Base_all_clivages$isoname == "Italy" & 
-                                          Base_all_clivages$year == 2012
+unique(Base_all_clivages$vote[Base_all_clivages$isoname == "Bulgaria" & 
+                                          Base_all_clivages$survey_year == 2006
                                         & Base_all_clivages$source_recode == "ESS"])
 
 
