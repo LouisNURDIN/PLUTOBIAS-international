@@ -1719,8 +1719,7 @@ View(Base_all_clivages %>%
 write.csv(
   Base_all_clivages,
   "data/intermediary/elections/dataset with all clivages and elections.csv",
-  row.names = FALSE
-)
+  row.names = FALSE)
 
 
 

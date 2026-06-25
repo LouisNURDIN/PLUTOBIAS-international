@@ -213,6 +213,9 @@ write.csv(
 
 
 #Ajout de nouvelles bases ----
+#Je le mets ici en attendant de voir
+ess_data_long <- ess_data_long %>%
+  rename(weight = pspwght)
 #ESS ----
 ess_data <- read.csv("data/raw/ess/Datafile-subset.csv")
 
@@ -240,8 +243,7 @@ ess_data_long <- ess_data_long %>%
 
 ess_data_long <- ess_data_long %>%
   rename(source = name)
-ess_data_long <- ess_data_long %>%
-  rename(weight = pspwght)
+
 ess_data_long <- ess_data_long %>%
   mutate(source_recode = "ESS")
 ess_data_long <- ess_data_long %>%
@@ -273,7 +275,7 @@ ess_data_long <- ess_data_long %>%
   filter(!stringr::str_detect(dataset_party_id, "NA"))
 
 ess_data_long <- ess_data_long %>%
-  filter(!str_detect(dataset_party_id, "66|77|88|99"))
+  filter(!str_detect(dataset_party_id, "77|88|99"))
 
 sum(ess_data_long$turnout == 2, na.rm = TRUE)
 sum(ess_data_long$turnout == 3, na.rm = TRUE)  #Après avoir filtré sur la variable précédente, on passe à seulement 32 qui ont turnout 2 ou 3
@@ -284,7 +286,7 @@ ess_data_long <- ess_data_long %>%
   filter(turnout < 7) 
 
 ess_data_clean <- ess_data_long %>%
-  select(isoname,year, source, source_recode,survey, type, inc,gender,educ,age, turnout, dataset_party_id,weight)
+  select(isoname,year, source, source_recode,survey, type, inc,gender,educ,age, turnout, dataset_party_id)
 
 ess_data_clean <- ess_data_clean %>% mutate(dataset_party_id = trimws(dataset_party_id))
 Partyfacts_id_ess <- Partyfacts_id_ess %>% mutate(dataset_party_id = trimws(dataset_party_id)) 

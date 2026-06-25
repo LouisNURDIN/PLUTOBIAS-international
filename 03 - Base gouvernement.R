@@ -53,7 +53,7 @@ whogov_parties_bonnes_elections <- whogov_parties %>%
 
 #Correctifs de mes partis dans whogov pouyr faire les bons joins ----
 
-whogov_parties <- whogov_parties %>%
+whogov_parties_bonnes_elections <- whogov_parties_bonnes_elections %>%
   mutate(
     isoname = case_when(
       isoname == "Czechia" ~ "Czech Republic",
@@ -62,7 +62,7 @@ whogov_parties <- whogov_parties %>%
   )
       
       
-whogov_parties <- whogov_parties %>%
+whogov_parties_bonnes_elections <- whogov_parties_bonnes_elections %>%
   mutate(
     partyfacts_id = case_when(
       partyfacts_id == "480" & isoname == "Belgium" & year > 1977  ~ "500",
@@ -77,12 +77,11 @@ whogov_parties <- whogov_parties %>%
       partyfacts_id == "2688"&  isoname == "France" & year == 1973   ~ "Other",
       partyfacts_id == "8041"&  isoname == "France" ~ "1083",
       partyfacts_id == "2688"&  isoname == "France" & year == 1978   ~ "Other",
-      partyfacts_id == "2719"&  isoname == "Hungary" & year == 1998   ~ "Other",
-      partyfacts_id == "2719"&  isoname == "Hungary" & year == 2002   ~ "Other",
+      partyfacts_id == "2719"&  isoname == "Hungary" ~ "Other",
       partyfacts_id == "2722"&  isoname == "Iceland" & year ==2009 ~ "Other",
       partyfacts_id == "2726"&  isoname == "India" & year == 1967 ~ "Other",
-      partyfacts_id == "1207"&  isoname == "India" & year == 1996 ~ "6321",   #attention pour le cas de l'INde
-      partyfacts_id == "2491"&  isoname == "India" & year == 1996 ~ "6321", #attention pour le cas de l'INde
+      partyfacts_id == "1207"&  isoname == "India" & year == 1996 ~ "Other",   #attention pour le cas de l'INde
+      partyfacts_id == "2491"&  isoname == "India" & year == 1996 ~ "Other", #attention pour le cas de l'INde
       partyfacts_id == "2731"&  isoname == "Indonesia"  ~ "Other",
       partyfacts_id == "3433"&  isoname == "Iraq" ~ "Other",
       partyfacts_id == "5619"&  isoname == "Iraq" & year == 2010 ~ "5897",
@@ -144,13 +143,39 @@ whogov_parties <- whogov_parties %>%
       partyfacts_id == "2639"&  isoname == "Chile" ~ "Other",
       partyfacts_id == "2650"&  isoname == "Croatia" ~ "Other",
       partyfacts_id == "2652"&  isoname == "Cyprus" ~ "Other",
+      partyfacts_id == "623"&  isoname == "Argentina" & year >= 2006 ~ "2530",
+      partyfacts_id == "757"&  isoname == "Bulgaria" ~ "1665",
+      partyfacts_id == "757"&  isoname == "Bulgaria" ~ "1665",
+      partyfacts_id == "54"&  isoname == "Chile" & year >= 2005 & year <= 2009 ~ "4550",
+      partyfacts_id == "390"&  isoname == "Chile" & year >= 2005 & year <= 2009 ~ "4550", #Attention aux lignes qui se dupliquent
+      partyfacts_id == "1507"&  isoname == "Denmark" & year >= 1990 & year <= 2001 ~ "1204",
+      partyfacts_id == "1507"&  isoname == "Denmark" & year ==2015 ~ "1204",
+      partyfacts_id == "536"&  isoname == "Denmark" & year ==2011 ~ "1204", #Il s'agit d'une alliance entre le 536 et le 1204 pour cette année là
+      partyfacts_id == "2708"&  isoname == "Greece" ~ "Other",
+      partyfacts_id == "2560"&  isoname == "Indonesia" & year ==2004 ~ "Other", #vérifier si le parti est présent dans WPID
+      partyfacts_id == "3593"&  isoname == "Jordan" ~ "Other",
+      partyfacts_id == "3605"&  isoname == "Libya" ~ "Other",
+      partyfacts_id == "671"&  isoname == "Latvia" & year ==1998 ~ "1704",
+      partyfacts_id == "1531"&  isoname == "Latvia" & year == 2010 ~ "852",
+      partyfacts_id == "7619"&  isoname == "Latvia" & year == 2010 ~ "1704",
+      partyfacts_id == "193"&  isoname == "Lithuania" & year == 2000 ~ "1357",
+      partyfacts_id == "2778"&  isoname == "Lithuania" ~ "Other",
+      partyfacts_id == "2794"&  isoname == "Mali" ~ "Other",
+      partyfacts_id == "2806"&  isoname == "Mexico" ~ "Other",
+      partyfacts_id == "3185"&  isoname == "Montenegro" & year >= 2001 & year <= 2006 ~ "3162", #Attention aux lignes qui se dupliquent il s'agit d'une alliance
+      partyfacts_id == "3162"&  isoname == "Montenegro" & year == 2012  ~ "4767",  #Ãttention lignes qui se dupliquent
+      partyfacts_id == "3185"&  isoname == "Montenegro" & year == 2012  ~ "4767",  #Attention lignes qui se dupliquent
+      partyfacts_id == "2825"&  isoname == "Morocco" ~ "Other",
       
       TRUE ~ partyfacts_id
     )
   )
 
+unique(Base_vote_parlement_global$partyfacts_id[Base_vote_parlement_global$isoname == "Netherlands" & 
+                                                  Base_vote_parlement_global$year == 2010] )
 
-whogov_parties <- whogov_parties %>%
+
+whogov_parties_bonnes_elections <- whogov_parties_bonnes_elections %>%
   group_by(isoname, year) %>%
   mutate(
     other_ministers = ministers_share[partyfacts_id == "Other"][1]
@@ -160,7 +185,7 @@ whogov_parties <- whogov_parties %>%
 
 #DINC ----
 Base_vote_parlement_global <- read.csv("data/intermediary/parliament/Elections and parliament global dataset.csv", sep = ",")
-unique(Base_vote_parlement_global$partyfacts_id[Base_vote_parlement_global$isoname == "Denmark" & Base_vote_parlement_global$year == 2011 ] )
+
 unique(Base_vote_parlement_global$party[Base_vote_parlement_global$isoname == "Denmark" & Base_vote_parlement_global$year == 2011 ] )
 unique(whogov$party[whogov$isoname == "Bangladesh" & whogov$year ==2007 ] )
 ##calcul bonne date pour le join ----
@@ -180,17 +205,21 @@ View(Base_vote_parlement_global %>%
 
 
 #Lister les partis présents dans whogov mais pas la base complète 
+missing_parties <- whogov_parties_bonnes_elections %>%
+  filter(ministers_share >= 0.20,
+         year <= 2015) %>%
+  distinct(isoname, year, partyfacts_id, ministers_share) %>%
+  anti_join(
+    Base_vote_parlement_global %>%
+      distinct(isoname, year, partyfacts_id),
+    by = c("isoname", "year", "partyfacts_id"))
 
-unique(Base_vote_parlement_global$year[Base_vote_parlement_global$isoname == "Brazil" ] )
-View(whogov_parties_bonnes_elections %>%
-       filter(ministers_share >= 0.10) %>%
-       filter(year <= 2015) %>%
-       distinct(isoname, year, partyfacts_id,ministers_share) %>%
-       anti_join(
-         Base_vote_parlement_global %>% distinct(isoname, year, partyfacts_id,party),
-         by = c("isoname", "year", "partyfacts_id")
-       ))
- 
+View(missing_parties %>%
+    left_join(
+      Base_vote_parlement_global %>%
+        distinct(isoname, year, source_recode, source),
+      by = c("isoname", "year")))
+
 
 View(
   Base_complete %>%

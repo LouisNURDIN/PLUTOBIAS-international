@@ -423,10 +423,11 @@ ggsave(
   filename = "results/figures/Boxplot global bias 50 50.jpg",
   plot = plot_top_bot_age,width = 10,height = 6,dpi = 300)
 
+
+#Box plot indice avec tous les biais ----
 Base_complete_index_filtre <- Base_complete_index %>%
   filter(election_couverture_seats >= 80 & election_couverture_ministers >= 0.80)
 
-#Box plot indice avec tous les biais ----
 plot_all_global_bias_50_50 <- ggplot(Base_complete_index_filtre, aes(x = bias, y = ratio_gouvernement_top_bot2, fill = bias)) +
   geom_boxplot(
     position = position_nudge(x = -0.35),
