@@ -266,14 +266,22 @@ ess_data_long <- ess_data_long %>%
   mutate(survey = "Post-electoral")
 
 #Filtrer mes données sur le vote
+sum(ess_data_long$turnout == 2, na.rm = TRUE)
+sum(ess_data_long$turnout == 3, na.rm = TRUE) #32 989 422 ont turnout 2 ou turnout 3 dans ma base
+
 ess_data_long <- ess_data_long %>%
   filter(!stringr::str_detect(dataset_party_id, "NA"))
 
 ess_data_long <- ess_data_long %>%
   filter(!str_detect(dataset_party_id, "66|77|88|99"))
+
+sum(ess_data_long$turnout == 2, na.rm = TRUE)
+sum(ess_data_long$turnout == 3, na.rm = TRUE)  #Après avoir filtré sur la variable précédente, on passe à seulement 32 qui ont turnout 2 ou 3
+
+
 table(ess_data_long$turnout)
 ess_data_long <- ess_data_long %>%
-  filter(turnout < 7)
+  filter(turnout < 7) 
 
 ess_data_clean <- ess_data_long %>%
   select(isoname,year, source, source_recode,survey, type, inc,gender,educ,age, turnout, dataset_party_id,weight)
@@ -316,7 +324,7 @@ ess_data_clean <- ess_data_clean %>%
   )
 unique(ess_data_clean$dataset_party_id)
 unique(Partyfacts_id_ess$dataset_party_id)
-
+sum(ess_data_clean$dataset_party_id == "Abstention", na.rm = TRUE) #seulement 32
 #Problème de join 
 #Diagnostic
 ##moyenne de partis qui joinent
@@ -443,6 +451,9 @@ write.csv(
 
 unique(Base_all_elections$source)
 
+#je le mets ici en attendant
+cses_data <- cses_data %>%
+  mutate(weight = IMD1010_2)
 #CSES ----
 cses_data <- read.csv("data/raw/cses/cses_imd.csv")
 ###Identifier les variables qui nous intéressent pour les harmoniser----
@@ -454,8 +465,7 @@ cses_data <- cses_data %>%
   mutate(source = "CSES")
 cses_data <- cses_data %>%
   mutate(source_recode = "CSES")
-cses_data <- cses_data %>%
-  mutate(weight = IMD1010_2)
+
 cses_data <- cses_data %>%
   rename(year = IMD1008_YEAR)
 cses_data <- cses_data %>%
@@ -498,7 +508,7 @@ cses_data <- cses_data %>%
 
 
 cses_data_clean <- cses_data %>%
-  select(isoname,year, source, source_recode,survey, type, inc,gender,educ,age, turnout, dataset_party_id,weight)
+  select(isoname,year, source, source_recode,survey, type, inc,gender,educ,age, turnout, dataset_party_id)
 
 sum(cses_data_clean$turnout == 0, na.rm = TRUE)
 
