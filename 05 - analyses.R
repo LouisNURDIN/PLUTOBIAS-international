@@ -467,7 +467,7 @@ plot_all_global_bias_50_50 <- ggplot(Base_complete_index_filtre, aes(x = bias, y
     text = element_text(size = 14) ) +
   
   labs(
-    title = "Distribution des indices globaux par biais et sources",
+    title = "Distribution des indices globaux par biais et sources > 80% des députés et ministres)",
     x = "",
     y = "Poids électoral top 50% / bottom 50%"
   )
