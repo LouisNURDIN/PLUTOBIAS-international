@@ -9,6 +9,8 @@ elections_legislatives_valides <- read.csv("data/intermediary/elections/valid el
 elections_legislatives_valides2 <- read.csv("data/intermediary/elections/valid legislative elections.csv", sep = ",")
 pays_gmp_legislatives <- unique(elections_legislatives_valides2$isoname)
 annees_gmp_legislatives <- unique(elections_legislatives_valides2$year)
+all_elections <- read.csv ("data/intermediary/elections/list all elections.csv", sep = ",")
+
 
 #Calcul nombre de ministres par année
 whogov <- whogov %>%
@@ -242,14 +244,21 @@ View(
   Base_complete %>%
     count(source,source_recode, isoname,election_date_date, survey_year,year,bias))
 
+
 #Créer la bonne année de join dans whogov
 whogov_parties <- whogov_parties %>%
   mutate(join_year = year)
 
-
-
+#Test pour rajouter toutes les années sans élections dans notre base parlement
+# Liste des élections officielles
+library(dplyr)
 library(purrr)
-library(tidyr)
+
+# Liste des élections officielles
+all_elections <- all_elections %>%
+  distinct(isoname, year) %>%
+  arrange(isoname, year)
+
 Base_vote_parlement_global <- Base_vote_parlement_global %>%
   arrange(isoname, source, source_recode, year)
 
@@ -257,32 +266,42 @@ rows_to_add <- Base_vote_parlement_global %>%
   group_by(isoname, source, source_recode) %>%
   group_modify(~{
     
-    dat <- .x %>%
-      arrange(year)
-     years <- sort(unique(dat$year))
+    dat <- arrange(.x, year)
+    country <- .y$isoname
     
-    if(length(years) < 2) return(tibble())
-    map_dfr(seq_len(length(years) - 1), function(i){
+    map_dfr(sort(unique(dat$year)), function(y1){
       
-      y1 <- years[i]
-      y2 <- years[i + 1]
+      # Première élection officielle après y1
+      next_election <- all_elections %>%
+        filter(isoname == country, year > y1) %>%
+        summarise(next_year = min(year, na.rm = TRUE)) %>%
+        pull(next_year)
       
-      bloc <- dat %>%
-        filter(year == y1)
+      # S'il n'y a plus d'élection officielle, on ne propage pas
+      if(length(next_election) == 0 || is.infinite(next_election))
+        return(tibble())
       
-      new_years <- seq(y1 + 1, y2 - 1)
+      # Années à créer
+      new_years <- seq(y1 + 1, next_election - 1)
       
-      if(length(new_years) == 0) return(tibble())
+      if(length(new_years) == 0)
+        return(tibble())
       
-      map_dfr(new_years, function(y) {
-        bloc %>%
-          mutate(year = y)
-      })
-    })}) %>%ungroup()
+      bloc <- filter(dat, year == y1)
+      
+      map_dfr(new_years, ~ mutate(bloc, year = .x))
+    })
+    
+  }) %>%
+  ungroup()
 
 Base_vote_parlement_global <- bind_rows(
   Base_vote_parlement_global,
-  rows_to_add) %>% arrange(isoname,source, source_recode,year)
+  rows_to_add
+) %>%
+  distinct() %>%
+  arrange(isoname, source, source_recode, year)
+
 
 #Créer la bonne année de join pour mes élections
 
@@ -322,6 +341,21 @@ Base_complete <- Base_vote_parlement_global %>%
     relationship = "many-to-many"
   )
 
+missing_parties <- whogov_parties %>%
+  filter(ministers_share >= 0.20,
+         year <= 2015) %>%
+  distinct(isoname, year, partyfacts_id, ministers_share) %>%
+  anti_join(
+    Base_vote_parlement_global %>%
+      distinct(isoname, year, partyfacts_id),
+    by = c("isoname", "year", "partyfacts_id"))
+
+View(missing_parties %>%
+       left_join(
+         Base_complete %>%
+           distinct(isoname, year, source_recode, source),
+         by = c("isoname", "year")))
+
 
 #code original ----
 
@@ -350,9 +384,8 @@ Base_complete <- Base_complete %>%
       partyfacts_id == "6241" & isoname == "Italy" & year == 2001  ~ 0.05859375,
       partyfacts_id == "1372" & isoname == "Italy" & year == 2006  ~ 0.0392857138,
       
-      TRUE ~ ministers_share
-    )
-  )
+      TRUE ~ ministers_share))
+
 #####verif nombre de ministres couverts par élection ----
 Base_complete <- Base_complete %>%
   mutate(
@@ -377,8 +410,7 @@ View(
   Base_complete %>%
     ungroup() %>%
     filter(election_couverture_ministers > 1) %>%
-    distinct(survey_year,year,isoname,election_couverture_ministers,source,source_recode,bias)
-)
+    distinct(survey_year,year,isoname,election_couverture_ministers,source,source_recode,bias))
 
 View(
   Base_complete %>%
@@ -387,19 +419,13 @@ View(
     distinct(survey_year,year,isoname,election_couverture_seats,source,source_recode,bias))
 
 
-View(
-  Base_complete %>%
-    ungroup() %>%
-    filter(election_couverture_seats > 100) %>%
-    distinct(survey_year,year,isoname,election_couverture_seats,source,source_recode,bias))
 ##Liste des pays/années où tous les ministres ne sont pas couverts ----
 
 View(
   Base_complete %>%
     ungroup() %>%
     filter(election_couverture_ministers < 0.8) %>%
-    distinct(survey_year,year,isoname,bias,election_couverture_seats,election_couverture_ministers,other_ministers,source,source_recode)
-)
+    distinct(survey_year,year,isoname,bias,election_couverture_seats,election_couverture_ministers,other_ministers,source,source_recode))
 
 
 
@@ -408,8 +434,8 @@ View(
 write.csv(
   Base_complete,
   "data/final/final dataset all countries and clivages.csv",
-  row.names = FALSE
-)
+  row.names = FALSE)
+
 
 
 

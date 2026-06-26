@@ -343,3 +343,8 @@ write.csv(
   "data/intermediary/elections/valid legislative elections.csv",
   row.names = FALSE
 )
+
+write.csv(
+  elections_dans_elections_global,
+  "data/intermediary/elections/list all elections.csv",
+  row.names = FALSE)
