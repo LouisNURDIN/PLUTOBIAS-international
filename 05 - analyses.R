@@ -3,6 +3,8 @@ library(tidyr)
 library(stringr)
 library(ggplot2)
 library(scales)
+install.packages("fixest")
+library(fixest)
 Base_complete_index <-  read.csv("data/final/dataset complete with index.csv", sep = ",")
 Base_regimes_presidentiels_index <-  read.csv("data/final/dataset complete regimes presidentiels.csv", sep = ",")
 
@@ -540,29 +542,45 @@ print(plot_women_representation)
 
 
 
-#Régression entre androcracy et représentation des femmes dans les institutions
+#Bias et femmes ministres----
+##Graphiques ----
 ggplot(
   Base_complete_index_gender,
-  aes(
-    x = ratio_gouvernement_top_bot,
-    y = women_share_government
-  )
-) +
+  aes(x = ratio_gouvernement_top_bot,y = women_share_government)) +
   geom_point(alpha = 0.4) +
   geom_smooth(method = "lm", se = TRUE) +
-  labs(
-    x = "Ratio gouvernement top/bottom",
-    y = "Part des femmes au gouvernement (%)"
-  ) +
+  labs(x = "Ratio gouvernement top/bottom",y = "Part des femmes au gouvernement (%)") +
+  theme_minimal()
+
+ggplot(Base_complete_index_educ,
+  aes(x = ratio_gouvernement_top_bot2, y = women_share_government)) +
+  geom_point(alpha = 0.4) +
+  geom_smooth(method = "lm", se = TRUE) +
+  labs(x = "Ratio gouvernement éducation top/bottom",y = "Part des femmes au gouvernement (%)") +
+  theme_minimal()
+
+ggplot(Base_complete_index_income,
+       aes(x = ratio_gouvernement_top_bot2,y = women_share_government)) +
+  geom_point(alpha = 0.4) +
+  geom_smooth(method = "lm", se = TRUE) +
+  labs(x = "Ratio gouvernement revenu top/bottom",y = "Part des femmes au gouvernement (%)") +
+  theme_minimal()
+
+ggplot(Base_complete_index_age,
+       aes(x = ratio_gouvernement_top_bot2,y = women_share_government)) +
+  geom_point(alpha = 0.4) +
+  geom_smooth(method = "lm", se = TRUE) +
+  labs(x = "Ratio gouvernement âge top/bottom", y = "Part des femmes au gouvernement (%)") +
   theme_minimal()
 
 
+#Régression entre les biais et la proportion de femmes ministres ----
 library(modelsummary)
 reg_androcracy_femmes_ministres <- lm(
-  women_share_government ~ ratio_gouvernement_top_bot2 + year,
-  data = Base_complete_index_gender
-)
+  women_share_government ~ ratio_gouvernement_top_bot2 + year + factor(isoname),
+  data = Base_complete_index_gender)
 summary(reg_androcracy_femmes_ministres)
+
 modelsummary(
   reg_androcracy_femmes_ministres,
   coef_map = c(
@@ -573,7 +591,54 @@ modelsummary(
   statistic = "std.error",
   stars = c('*' = .05, '**' = .01, '***' = .001),
   fmt = 3,
-  title = "Effet de l'androcratie sur le taux de femmes ministres, en contrôlant par l'année"
-)
+  title = "Effet de l'androcratie sur le taux de femmes ministres, en contrôlant par l'année")
 
 
+reg_androcracy_femmes_ministres2 <- feols(
+  women_share_government ~ ratio_gouvernement_top_bot2 | isoname + year,
+  data = Base_complete_index_gender)
+summary(reg_androcracy_femmes_ministres2)
+
+##Test avec d'autres biais ----
+### Education et femmes ministres ----
+reg_epistocracy_femmes_ministres <- lm(
+  women_share_government ~ ratio_gouvernement_top_bot2 + year + factor(isoname),
+  data = Base_complete_index_educ)
+modelsummary(
+  reg_epistocracy_femmes_ministres,
+  coef_map = c(
+    "(Intercept)" = "Intercept",
+    "ratio_gouvernement_top_bot2" = "Indice global d'épistocratie",
+    "year" = "Année"),
+  statistic = "std.error", stars = c('*' = .05, '**' = .01, '***' = .001),
+  fmt = 3,title = "Effet de l'épistocratie sur le taux de femmes ministres, en contrôlant par l'année")
+
+### Revenu et femmes ministres ----
+reg_plutocracy_femmes_ministres <- lm(
+  women_share_government ~ ratio_gouvernement_top_bot2 + year + factor(isoname),
+  data = Base_complete_index_income)
+summary(reg_plutocracy_femmes_ministres)
+modelsummary(
+  reg_plutocracy_femmes_ministres,
+  coef_map = c(
+    "(Intercept)" = "Intercept",
+    "ratio_gouvernement_top_bot2" = "Indice global de ploutocratie",
+    "year" = "Année"),
+  statistic = "std.error", stars = c('*' = .05, '**' = .01, '***' = .001),
+  fmt = 3,title = "Effet de la ploutocratie sur le taux de femmes ministres, en contrôlant par l'année")
+
+
+
+### Age et femmes ministres ----
+reg_gerontocracy_femmes_ministres <- lm(
+  women_share_government ~ ratio_gouvernement_top_bot2 + year + factor(isoname),
+  data = Base_complete_index_age)
+summary(reg_gerontocracy_femmes_ministres)
+
+modelsummary(reg_gerontocracy_femmes_ministres,
+  coef_map = c(
+    "(Intercept)" = "Intercept",
+    "ratio_gouvernement_top_bot2" = "Indice global de gérontocratie",
+    "year" = "Année"),
+  statistic = "std.error", stars = c('*' = .05, '**' = .01, '***' = .001),
+  fmt = 3,title = "Effet de la gérontocratie sur le taux de femmes ministres, en contrôlant par l'année")

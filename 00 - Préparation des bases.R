@@ -91,15 +91,7 @@ GMP_inc_2 <- GMP_inc_2 %>%
 GMP_inc_2 <- GMP_inc_2 %>%
   rename(gender = sex)
 
-GMP_inc_2 <- GMP_inc_2 %>%
-  mutate(
-    gender = as.character(gender),
-    gender = case_when(
-      gender == "0" ~ "men",
-      gender == "1" ~ "women",
-      TRUE ~ gender
-    )
-  )
+
 
 unique(GMP_inc_2$educ)
 unique(GMP_inc_2$age)
@@ -134,12 +126,26 @@ Base_elections_legislatives <- Base_all_elections %>%
   filter(type == "Lower house")
 unique(GMP_inc$dinc)
 
-cor(Base_elections_legislatives$age, Base_elections_legislatives$educ, 
-    use = "complete.obs")
-cor(Base_elections_legislatives$age, Base_elections_legislatives$dinc, 
-    use = "complete.obs")
-cor(Base_elections_legislatives$educ, Base_elections_legislatives$dinc, 
-    use = "complete.obs")
+cor(Base_elections_legislatives$age, Base_elections_legislatives$educ, use = "complete.obs")
+# - 0,1678806
+cor(Base_elections_legislatives$age, Base_elections_legislatives$dinc,  use = "complete.obs")
+# - 0,1616936
+cor(Base_elections_legislatives$educ, Base_elections_legislatives$dinc, use = "complete.obs")
+#0,3013959
+cor(Base_elections_legislatives$gender, Base_elections_legislatives$dinc, use = "complete.obs")
+#0,1089327
+cor(Base_elections_legislatives$gender, Base_elections_legislatives$educ, use = "complete.obs")
+#0,04249539
+
+GMP_inc_2 <- GMP_inc_2 %>%
+  mutate(
+    gender = as.character(gender),
+    gender = case_when(
+      gender == "0" ~ "men",
+      gender == "1" ~ "women",
+      TRUE ~ gender
+    )
+  )
 
 #Corrections partis problématiques
 Base_elections_legislatives <- Base_elections_legislatives %>%
@@ -326,7 +332,20 @@ ess_data_clean <- ess_data_clean %>%
   )
 unique(ess_data_clean$dataset_party_id)
 unique(Partyfacts_id_ess$dataset_party_id)
-sum(ess_data_clean$dataset_party_id == "Abstention", na.rm = TRUE) #seulement 32
+sum(ess_data_clean$dataset_party_id == "Abstention", na.rm = TRUE) 
+
+cor(ess_data_clean$age, ess_data_clean$educ, use = "complete.obs")
+# 0,2033454
+cor(ess_data_clean$age, ess_data_clean$inc,  use = "complete.obs")
+# 0,05312431
+cor(ess_data_clean$educ, ess_data_clean$inc, use = "complete.obs")
+#0,08093405
+cor(ess_data_clean$gender, ess_data_clean$inc, use = "complete.obs")
+# 0,04490973
+cor(ess_data_clean$gender, ess_data_clean$educ, use = "complete.obs")
+# 0,1391624
+
+
 #Problème de join 
 #Diagnostic
 ##moyenne de partis qui joinent
@@ -514,6 +533,18 @@ cses_data_clean <- cses_data %>%
 
 sum(cses_data_clean$turnout == 0, na.rm = TRUE)
 
+
+cor(cses_data_clean$age, cses_data_clean$educ, use = "complete.obs")
+# 0,04659434
+cor(cses_data_clean$age, cses_data_clean$inc, use = "complete.obs")
+#- 0,007372758
+cor(cses_data_clean$educ, cses_data_clean$inc, use = "complete.obs")
+#0,165427
+cor(cses_data_clean$gender, cses_data_clean$inc, use = "complete.obs")
+# - 0,001865792
+cor(cses_data_clean$gender, cses_data_clean$educ, use = "complete.obs")
+#0,009916835
+
 cses_data_clean <- cses_data_clean %>%
   mutate(
     gender = case_when(
@@ -523,12 +554,7 @@ cses_data_clean <- cses_data_clean %>%
     )
   )
 
-cor(cses_data_clean$age, cses_data_clean$educ, 
-    use = "complete.obs")
-cor(cses_data_clean$age, cses_data_clean$inc, 
-    use = "complete.obs")
-cor(cses_data_clean$educ, cses_data_clean$inc, 
-    use = "complete.obs")
+
 
 #verif données
 unique(cses_data_clean$inc)
@@ -697,6 +723,43 @@ wvs_data_clean <- wvs_data %>%
 wvs_data_clean <- wvs_data_clean %>%
   filter(dataset_party_id >= 1)
 
+
+
+#Corrélation dans WVS
+cor(wvs_data_clean$age, wvs_data_clean$educ, use = "complete.obs")
+# - 0,1278877
+cor(wvs_data_clean$age, wvs_data_clean$inc, use = "complete.obs")
+# - 0,05413639
+cor(wvs_data_clean$educ, wvs_data_clean$inc, use = "complete.obs")
+# 0,03074062
+cor(wvs_data_clean$gender, wvs_data_clean$inc, use = "complete.obs")
+# - 0,03311197
+cor(wvs_data_clean$gender, wvs_data_clean$educ, use = "complete.obs")
+#- 0,02759841
+
+#Corrélation au sein de wvs par pays année
+cor_age_educ_wvs <- wvs_data_clean %>%
+  group_by(isoname, year) %>%
+  summarise(cor_age_educ = cor(age, educ, use = "complete.obs"),
+            n = sum(complete.cases(age, educ)),.groups = "drop")
+
+cor_age_inc_wvs <- wvs_data_clean %>%
+  group_by(isoname, year) %>%
+  summarise(cor_age_educ = cor(age, inc, use = "complete.obs"),
+            n = sum(complete.cases(age, inc)),.groups = "drop")
+
+cor_educ_inc_wvs <- wvs_data_clean %>%
+  group_by(isoname, year) %>%
+  summarise(cor_educ_inc = cor(educ, inc, use = "complete.obs"),
+            n = sum(complete.cases(educ, inc)),.groups = "drop")
+
+cor_gender_inc_wvs <- wvs_data_clean %>%
+  group_by(isoname, year) %>%
+  summarise(cor_educ_inc = cor(gender, inc, use = "complete.obs"),
+            n = sum(complete.cases(gender, inc)),.groups = "drop")
+
+
+
 wvs_data_clean <- wvs_data_clean %>%
   mutate(
     gender = case_when(
@@ -706,12 +769,14 @@ wvs_data_clean <- wvs_data_clean %>%
     )
   )
 
-cor(wvs_data_clean$age, wvs_data_clean$educ, 
-    use = "complete.obs")
-cor(wvs_data_clean$age, wvs_data_clean$inc, 
-    use = "complete.obs")
-cor(wvs_data_clean$educ, wvs_data_clean$inc, 
-    use = "complete.obs")
+
+
+
+
+
+
+
+
 
 wvs_data_clean <- wvs_data_clean %>%
   mutate(
