@@ -60,9 +60,12 @@ whogov_parties_bonnes_elections <- whogov_parties_bonnes_elections %>%
       TRUE ~ isoname
     )
   )
+
+whogov_parties <- whogov_parties %>%
+  filter(isoname %in% pays_gmp_legislatives)  
+  
       
-      
-whogov_parties_bonnes_elections <- whogov_parties_bonnes_elections %>%
+whogov_parties <- whogov_parties %>%
   mutate(
     partyfacts_id = case_when(
       partyfacts_id == "480" & isoname == "Belgium" & year > 1977  ~ "500",
@@ -166,16 +169,29 @@ whogov_parties_bonnes_elections <- whogov_parties_bonnes_elections %>%
       partyfacts_id == "3162"&  isoname == "Montenegro" & year == 2012  ~ "4767",  #Ãttention lignes qui se dupliquent
       partyfacts_id == "3185"&  isoname == "Montenegro" & year == 2012  ~ "4767",  #Attention lignes qui se dupliquent
       partyfacts_id == "2825"&  isoname == "Morocco" ~ "Other",
+      partyfacts_id == "1173"&  isoname == "Norway" & year == 1973  ~ "1072",
+      partyfacts_id == "2867"&  isoname == "Pakistan" ~ "Other",
+      partyfacts_id == "2879"&  isoname == "Peru" ~ "Other",
+      partyfacts_id == "4219"&  isoname == "Peru" & year == 2000  ~ "5130",
+      partyfacts_id == "2884"&  isoname == "Philippines" ~ "Other",
+      partyfacts_id == "120"&  isoname == "Romania" & year == 2004  ~ "1347",
+      partyfacts_id == "120"&  isoname == "Romania" & year == 2012  ~ "5941",
+      partyfacts_id == "2894"&  isoname == "Romania" ~ "Other",
+      partyfacts_id == "2897"&  isoname == "Russia" ~ "Other",
+      partyfacts_id == "2919"&  isoname == "Slovenia" ~ "Other",
+      partyfacts_id == "2951"&  isoname == "Thailand" ~ "Other",
+      partyfacts_id == "3611"&  isoname == "Tunisia" ~ "Other",
+      partyfacts_id == "2960"&  isoname == "Ukraine" ~ "Other",
+      partyfacts_id == "2974"&  isoname == "Venezuela" ~ "Other",
+      
       
       TRUE ~ partyfacts_id
     )
   )
 
-unique(Base_vote_parlement_global$partyfacts_id[Base_vote_parlement_global$isoname == "Netherlands" & 
-                                                  Base_vote_parlement_global$year == 2010] )
 
 
-whogov_parties_bonnes_elections <- whogov_parties_bonnes_elections %>%
+whogov_parties <- whogov_parties %>%
   group_by(isoname, year) %>%
   mutate(
     other_ministers = ministers_share[partyfacts_id == "Other"][1]
@@ -186,8 +202,9 @@ whogov_parties_bonnes_elections <- whogov_parties_bonnes_elections %>%
 #DINC ----
 Base_vote_parlement_global <- read.csv("data/intermediary/parliament/Elections and parliament global dataset.csv", sep = ",")
 
-unique(Base_vote_parlement_global$party[Base_vote_parlement_global$isoname == "Denmark" & Base_vote_parlement_global$year == 2011 ] )
-unique(whogov$party[whogov$isoname == "Bangladesh" & whogov$year ==2007 ] )
+unique(Base_vote_parlement_global$partyfacts_id[Base_vote_parlement_global$isoname == "Zimbabwe" & 
+                                                  Base_vote_parlement_global$year == 2013] )
+
 ##calcul bonne date pour le join ----
 View(Base_vote_parlement_global %>%
   count(
@@ -205,7 +222,7 @@ View(Base_vote_parlement_global %>%
 
 
 #Lister les partis présents dans whogov mais pas la base complète 
-missing_parties <- whogov_parties_bonnes_elections %>%
+missing_parties <- whogov_parties %>%
   filter(ministers_share >= 0.20,
          year <= 2015) %>%
   distinct(isoname, year, partyfacts_id, ministers_share) %>%
@@ -225,11 +242,85 @@ View(
   Base_complete %>%
     count(source,source_recode, isoname,election_date_date, survey_year,year,bias))
 
+#Créer la bonne année de join dans whogov
+whogov_parties <- whogov_parties %>%
+  mutate(join_year = year)
 
+
+
+library(purrr)
+library(tidyr)
+Base_vote_parlement_global <- Base_vote_parlement_global %>%
+  arrange(isoname, source, source_recode, year)
+
+rows_to_add <- Base_vote_parlement_global %>%
+  group_by(isoname, source, source_recode) %>%
+  group_modify(~{
+    
+    dat <- .x %>%
+      arrange(year)
+     years <- sort(unique(dat$year))
+    
+    if(length(years) < 2) return(tibble())
+    map_dfr(seq_len(length(years) - 1), function(i){
+      
+      y1 <- years[i]
+      y2 <- years[i + 1]
+      
+      bloc <- dat %>%
+        filter(year == y1)
+      
+      new_years <- seq(y1 + 1, y2 - 1)
+      
+      if(length(new_years) == 0) return(tibble())
+      
+      map_dfr(new_years, function(y) {
+        bloc %>%
+          mutate(year = y)
+      })
+    })}) %>%ungroup()
+
+Base_vote_parlement_global <- bind_rows(
+  Base_vote_parlement_global,
+  rows_to_add) %>% arrange(isoname,source, source_recode,year)
+
+#Créer la bonne année de join pour mes élections
+
+Base_vote_parlement_global <- Base_vote_parlement_global %>%
+  mutate(
+    election_date = ymd(gsub("\\.", "-", election_date)),
+    
+    join_year = case_when(
+      
+      # Si ce n'est pas une année d'élection, on garde simplement year
+      year != year(election_date) ~ year,
+      
+      # Exception 1966
+      year(election_date) == 1966 &
+        month(election_date) > 9 ~ year + 1,
+      
+      # Exception 1970
+      year(election_date) == 1970 &
+        month(election_date) > 1 ~ year + 1,
+      
+      # Règle générale
+      month(election_date) > 7 ~ year + 1,
+      
+      # Sinon
+      TRUE ~ year
+    )
+  )
+      
+
+
+#Join whogov dans ma base vote parlement ----
 Base_complete <- Base_vote_parlement_global %>%
-  full_join(whogov_parties,
-    by = c("isoname","year","partyfacts_id"),
-    relationship = "many-to-many")
+  left_join(
+    whogov_parties %>%
+      select(-year),
+    by = c("isoname", "join_year", "partyfacts_id"),
+    relationship = "many-to-many"
+  )
 
 
 #code original ----
@@ -238,56 +329,16 @@ Base_complete <- Base_vote_parlement_global %>%
 Base_complete <- Base_complete[!is.na(Base_complete$year),]
 
 Base_complete <- Base_complete %>%
-  select(isoname,year, survey_year, source, source_recode,survey, election_date,bias,category, partyfacts_id, votes, pct_votes,
+  select(isoname,year, survey_year,join_year, source, source_recode,survey, election_date,bias,category, partyfacts_id, votes, pct_votes,
          votes_valides, taux_participation, seats, seats_total, seats_share, ministers_party, total_ministers, ministers_share,women_party,women_share_party,Percentage.of.women.diputees,women_share_government, election_couverture_seats
   )
 Base_complete <- Base_complete %>%
   arrange(isoname, year)
 
+#vérifier ici
 Base_complete <- Base_complete %>%
   distinct(source,source_recode,isoname,survey_year,year,partyfacts_id,bias,
            category,.keep_all = TRUE)
-
-
-cols_check <- c(
-  "election_date", "bias", "category",
-  "votes", "pct_votes", "votes_valides",
-  "taux_participation", "seats_share",
-  "seats_total", "election_couverture_seats"
-)
-
-# 1. Années valides (IMPORTANT: pas de source ici)
-valid_years <- Base_complete %>%
-  group_by(isoname, year) %>%
-  summarise(
-    ok = !all(is.na(across(all_of(cols_check)))),
-    .groups = "drop"
-  ) %>%
-  filter(ok)
-
-# 2. Dernière année valide par pays
-last_year <- valid_years %>%
-  group_by(isoname) %>%
-  summarise(last_year = max(year), .groups = "drop")
-
-# 3. Template = dernière élection complète (toutes sources conservées)
-templates <- Base_complete %>%
-  inner_join(last_year, by = "isoname") %>%
-  filter(year == last_year)
-
-# 4. Années manquantes
-missing_years <- Base_complete %>%
-  distinct(isoname, year) %>%
-  anti_join(valid_years, by = c("isoname", "year"))
-
-# 5. Réplication propre des sources
-to_add <- missing_years %>%
-  inner_join(templates, by = "isoname") %>%
-  mutate(year = year.x) %>%
-  select(-year.x)
-
-# 6. Dataset final
-Base_complete_filled <- bind_rows(Base_complete, to_add)
 
 
 #Traiter les cas où les ministres se dupliquent car plusieurs fois le même PF dans une élection ----
