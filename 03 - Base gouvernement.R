@@ -223,21 +223,7 @@ View(Base_vote_parlement_global %>%
   arrange(desc(n)))
 
 
-#Lister les partis présents dans whogov mais pas la base complète 
-missing_parties <- whogov_parties %>%
-  filter(ministers_share >= 0.20,
-         year <= 2015) %>%
-  distinct(isoname, year, partyfacts_id, ministers_share) %>%
-  anti_join(
-    Base_vote_parlement_global %>%
-      distinct(isoname, year, partyfacts_id),
-    by = c("isoname", "year", "partyfacts_id"))
 
-View(missing_parties %>%
-    left_join(
-      Base_vote_parlement_global %>%
-        distinct(isoname, year, source_recode, source),
-      by = c("isoname", "year")))
 
 
 View(
@@ -357,6 +343,24 @@ Base_vote_parlement_global <- Base_vote_parlement_global %>%
     )
   )
       
+
+#Lister les partis présents dans whogov mais pas la base complète 
+missing_parties <- whogov_parties %>%
+  filter(ministers_share >= 0.20,
+         year <= 2015) %>%
+  distinct(isoname, year, partyfacts_id, ministers_share) %>%
+  anti_join(
+    Base_vote_parlement_global %>%
+      distinct(isoname, year, partyfacts_id),
+    by = c("isoname", "year", "partyfacts_id"))
+
+View(missing_parties %>%
+       left_join(
+         Base_vote_parlement_global %>%
+           distinct(isoname, year, source_recode, source,survey),
+         by = c("isoname", "year")))
+
+unique(Base_vote_parlement_global$year[Base_vote_parlement_global$isoname == "Australia"])
 
 
 #Join whogov dans ma base vote parlement ----
