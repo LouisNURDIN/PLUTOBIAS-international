@@ -97,7 +97,7 @@ unique(GMP_inc_2$educ)
 unique(GMP_inc_2$age)
 
 GMP_inc_2_clean <- GMP_inc_2 %>%
-  select(isoname,year, source, source_recode, survey,type, dinc,gender,educ, age, turnout,dataset_party_id,weight)
+  select(isoname,year, source, source_recode, survey,type, dinc,gender,educ, age, turnout,dataset_party_id)
 ##Join Partyfacts dans GMP inc ----
 Base_all_elections <- GMP_inc_2_clean %>%
   left_join(
@@ -219,9 +219,8 @@ write.csv(
 
 
 #Ajout de nouvelles bases ----
-#Je le mets ici en attendant de voir
-ess_data_long <- ess_data_long %>%
-  rename(weight = pspwght)
+
+
 #ESS ----
 ess_data <- read.csv("data/raw/ess/Datafile-subset.csv")
 
@@ -249,7 +248,8 @@ ess_data_long <- ess_data_long %>%
 
 ess_data_long <- ess_data_long %>%
   rename(source = name)
-
+ess_data_long <- ess_data_long %>%
+  rename(weight = pspwght)
 ess_data_long <- ess_data_long %>%
   mutate(source_recode = "ESS")
 ess_data_long <- ess_data_long %>%
@@ -292,7 +292,7 @@ ess_data_long <- ess_data_long %>%
   filter(turnout < 7) 
 
 ess_data_clean <- ess_data_long %>%
-  select(isoname,year, source, source_recode,survey, type, inc,gender,educ,age, turnout, dataset_party_id)
+  select(isoname,year, source, source_recode,survey, type, inc,gender,educ,age, turnout, dataset_party_id,weight)
 
 ess_data_clean <- ess_data_clean %>% mutate(dataset_party_id = trimws(dataset_party_id))
 Partyfacts_id_ess <- Partyfacts_id_ess %>% mutate(dataset_party_id = trimws(dataset_party_id)) 
@@ -474,8 +474,7 @@ write.csv(
 unique(Base_all_elections$source)
 
 #je le mets ici en attendant
-cses_data <- cses_data %>%
-  mutate(weight = IMD1010_2)
+
 #CSES ----
 cses_data <- read.csv("data/raw/cses/cses_imd.csv")
 ###Identifier les variables qui nous intéressent pour les harmoniser----
@@ -487,7 +486,8 @@ cses_data <- cses_data %>%
   mutate(source = "CSES")
 cses_data <- cses_data %>%
   mutate(source_recode = "CSES")
-
+cses_data <- cses_data %>%
+  mutate(weight = IMD1010_2)
 cses_data <- cses_data %>%
   rename(year = IMD1008_YEAR)
 cses_data <- cses_data %>%
@@ -530,7 +530,7 @@ cses_data <- cses_data %>%
 
 
 cses_data_clean <- cses_data %>%
-  select(isoname,year, source, source_recode,survey, type, inc,gender,educ,age, turnout, dataset_party_id)
+  select(isoname,year, source, source_recode,survey, type, inc,gender,educ,age, turnout, dataset_party_id,weight)
 
 sum(cses_data_clean$turnout == 0, na.rm = TRUE)
 
@@ -924,6 +924,8 @@ wvs_data_clean <- wvs_data_clean %>%
     )
   )
 
+unique(wvs_data_clean$dataset_party_id[wvs_data_clean$isoname == "Estonia" & wvs_data_clean$year == 2011 ])
+
 
 #Traitement des partyfacts dans cses pour join 
 wvs_data_clean <- wvs_data_clean %>%
@@ -977,7 +979,8 @@ wvs_data_clean <- wvs_data_clean %>%
       partyfacts_id == "2380" & isoname == "Senegal" & year == 2012 ~ "4010",
       partyfacts_id == "5917" & isoname == "Iraq" & year == 2010 ~ "5919",
       partyfacts_id == "6303" & isoname == "Italy" & year == 2013  ~ "1626",
-
+      partyfacts_id == "6303" & isoname == "Italy" & year == 2013  ~ "1626",
+      dataset_party_id == "233031" & isoname == "Estonia" ~ "1150",
       TRUE ~ partyfacts_id
     )
   )

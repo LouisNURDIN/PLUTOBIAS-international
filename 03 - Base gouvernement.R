@@ -185,6 +185,9 @@ whogov_parties <- whogov_parties %>%
       partyfacts_id == "3611"&  isoname == "Tunisia" ~ "Other",
       partyfacts_id == "2960"&  isoname == "Ukraine" ~ "Other",
       partyfacts_id == "2974"&  isoname == "Venezuela" ~ "Other",
+      partyfacts_id == "482"&  isoname == "Bulgaria" & year <= 2001  ~ "1183", #attention avec celle-là
+      
+      
       
       
       TRUE ~ partyfacts_id
@@ -372,20 +375,6 @@ Base_complete <- Base_vote_parlement_global %>%
     relationship = "many-to-many"
   )
 
-missing_parties <- whogov_parties %>%
-  filter(ministers_share >= 0.20,
-         year <= 2015) %>%
-  distinct(isoname, year, partyfacts_id, ministers_share) %>%
-  anti_join(
-    Base_vote_parlement_global %>%
-      distinct(isoname, year, partyfacts_id),
-    by = c("isoname", "year", "partyfacts_id"))
-
-View(missing_parties %>%
-       left_join(
-         Base_complete %>%
-           distinct(isoname, year, source_recode, source),
-         by = c("isoname", "year")))
 
 
 #code original ----
@@ -436,6 +425,24 @@ Base_complete <- Base_complete %>%
     other_ministers = ministers_share[partyfacts_id == "Other"][1]
   ) %>%
   ungroup()
+
+
+missing_parties <- whogov_parties %>%
+  filter(ministers_share >= 0.20,
+         year <= 2015) %>%
+  distinct(isoname, year, partyfacts_id, ministers_share) %>%
+  anti_join(
+    Base_vote_parlement_global %>%
+      distinct(isoname, year, partyfacts_id),
+    by = c("isoname", "year", "partyfacts_id"))
+
+View(missing_parties %>%
+       left_join(
+         Base_complete %>%
+           distinct(isoname, year, source_recode, source),
+         by = c("isoname", "year")))
+
+
 #Liste des pays/années avec données incohérentes ----
 View(
   Base_complete %>%

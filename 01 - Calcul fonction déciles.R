@@ -382,23 +382,31 @@ build_cses_base_long <- function(df, annee, country){
       by = "inc",
       relationship = "many-to-many"
     ) %>%
-    filter(!is.na(weight_decile))
+    filter(!is.na(weight_decile)) %>%
+    mutate(weight_final = weight * weight_decile)
   
   
   # 3. participation
-  
   nbr_obs <- df_deciles %>%
     group_by(decile) %>%
-    summarise(nbr_obs = sum(weight_decile), .groups = "drop")
+    summarise(
+      nbr_obs = sum(weight_final, na.rm = TRUE),
+      .groups = "drop"
+    )
   
   votes_valides <- df_deciles %>%
     filter(!str_detect(dataset_party_id, "Abstention$")) %>%
     group_by(decile) %>%
-    summarise(votes_valides = sum(weight_decile), .groups = "drop")
+    summarise(
+      votes_valides = sum(weight_final, na.rm = TRUE),
+      .groups = "drop"
+    )
   
   participation <- nbr_obs %>%
     left_join(votes_valides, by = "decile") %>%
-    mutate(taux_participation = votes_valides / nbr_obs * 100)
+    mutate(
+      taux_participation = votes_valides / nbr_obs * 100
+    )
   
   
   # 4. votes
@@ -412,7 +420,7 @@ build_cses_base_long <- function(df, annee, country){
       )
     ) %>%
     group_by(decile, vote, partyfacts_id) %>%
-    summarise(votes = sum(weight_decile), .groups = "drop") %>%
+    summarise(votes = sum(weight_final,na.rm = TRUE), .groups = "drop") %>%
     group_by(decile) %>%
     mutate(pct_votes = votes / sum(votes) * 100)
   
@@ -451,6 +459,8 @@ cses_data_clean_sexe <- cses_data_clean %>%
   filter(gender %in% c("men", "women"))
 
 ###Calcul CSES gender ----
+### Calcul CSES gender ----
+
 build_votes_by_gender <- function(df){
   
   df <- df %>%
@@ -462,11 +472,11 @@ build_votes_by_gender <- function(df){
       )
     )
   
-  # Votes par sexe × parti
+  # Votes pondérés par sexe × parti
   votes <- df %>%
     group_by(isoname, year, gender, vote, partyfacts_id) %>%
     summarise(
-      votes = n(),
+      votes = sum(weight, na.rm = TRUE),
       .groups = "drop"
     ) %>%
     group_by(isoname, year, gender) %>%
@@ -475,13 +485,13 @@ build_votes_by_gender <- function(df){
     ) %>%
     ungroup()
   
-  # Participation par sexe
+  # Participation pondérée
   participation <- df %>%
     group_by(isoname, year, gender) %>%
     summarise(
-      nbr_obs = n(),
+      nbr_obs = sum(weight, na.rm = TRUE),
       votes_valides = sum(
-        !str_detect(dataset_party_id, "Abstention$"),
+        weight * (!str_detect(dataset_party_id, "Abstention$")),
         na.rm = TRUE
       ),
       taux_participation = votes_valides / nbr_obs * 100,
@@ -494,18 +504,20 @@ build_votes_by_gender <- function(df){
       by = c("isoname", "year", "gender")
     )
 }
+
+# Informations de contexte
 meta_info_cses <- cses_data_clean %>%
   distinct(isoname, year, survey, source, source_recode)
 
+# Construction de la base
 cses_dataset_gender <- cses_data_clean_sexe %>%
   group_by(isoname, year) %>%
   group_split() %>%
   map_dfr(~ build_votes_by_gender(.x)) %>%
-  left_join(meta_info_cses, by = c("isoname", "year"))
-
-cses_dataset_gender <- cses_dataset_gender %>%
-  mutate(bias = "androcracy")
-cses_dataset_gender <- cses_dataset_gender %>%
+  left_join(meta_info_cses, by = c("isoname", "year")) %>%
+  mutate(
+    bias = "androcracy"
+  ) %>%
   rename(category = gender)
 
 ##CSES educ ----
@@ -514,9 +526,13 @@ cses_data_clean_educ <- cses_data_clean %>%
 
 build_votes_by_educ_fractional <- function(df){
   
-  # 1. distribution + weights (comme ta fonction revenu)
+  # 1. Distribution pondérée de l'éducation
   dist_educ <- df %>%
-    count(educ) %>%
+    group_by(educ) %>%
+    summarise(
+      n = sum(weight, na.rm = TRUE),
+      .groups = "drop"
+    ) %>%
     arrange(educ) %>%
     mutate(
       pct = n / sum(n) * 100,
@@ -524,33 +540,33 @@ build_votes_by_educ_fractional <- function(df){
       cum_prev = lag(cum_pct, default = 0)
     )
   
+  # Deux groupes : bas / haut niveau d'éducation
   educ_groups <- data.frame(
     educ_group = c(1, 2),
     lower = c(0, 50),
     upper = c(50, 100)
   )
   
+  # 2. Calcul des poids de répartition
   weights_matrix <- dist_educ %>%
     crossing(educ_groups) %>%
     mutate(
       overlap = pmax(0, pmin(cum_pct, upper) - pmax(cum_prev, lower)),
-      weight = overlap / (cum_pct - cum_prev)
+      weight_group = overlap / (cum_pct - cum_prev)
     ) %>%
-    filter(weight > 0)
+    filter(weight_group > 0)
   
-  # 2. expansion micro → groupes pondérés
+  # 3. Attribution des groupes
   df_groups <- df %>%
     left_join(
       weights_matrix %>%
-        dplyr::select(educ, educ_group, weight),
+        select(educ, educ_group, weight_group),
       by = "educ",
       relationship = "many-to-many"
     ) %>%
-    filter(!is.na(weight))
-  
-  # 3. vote variable (comme ta fonction standard)
-  df_groups <- df_groups %>%
+    filter(!is.na(weight_group)) %>%
     mutate(
+      weight_final = weight * weight_group,
       vote = case_when(
         is.na(dataset_party_id) ~ NA_character_,
         str_detect(dataset_party_id, "Abstention$") ~ "Abstention",
@@ -558,55 +574,55 @@ build_votes_by_educ_fractional <- function(df){
       )
     )
   
-  # 4. votes
+  # 4. Votes pondérés
   votes <- df_groups %>%
     group_by(isoname, year, educ_group, vote, partyfacts_id) %>%
     summarise(
-      votes = sum(weight),
+      votes = sum(weight_final, na.rm = TRUE),
       .groups = "drop"
     ) %>%
-    group_by(educ_group) %>%
+    group_by(isoname, year, educ_group) %>%
     mutate(
       pct_votes = votes / sum(votes) * 100
     ) %>%
     ungroup()
   
-  # 5. participation
+  # 5. Participation pondérée
   participation <- df_groups %>%
-    group_by(educ_group) %>%
+    group_by(isoname, year, educ_group) %>%
     summarise(
-      nbr_obs = sum(weight),
+      nbr_obs = sum(weight_final, na.rm = TRUE),
       votes_valides = sum(
-        weight * (!str_detect(dataset_party_id, "Abstention$")),
+        weight_final * (!str_detect(dataset_party_id, "Abstention$")),
         na.rm = TRUE
       ),
       taux_participation = votes_valides / nbr_obs * 100,
       .groups = "drop"
     )
   
-  # 6. output final (même structure que deciles / sexe)
+  # 6. Output
   votes %>%
-    left_join(participation, by = "educ_group")
+    left_join(
+      participation,
+      by = c("isoname", "year", "educ_group")
+    )
 }
+
+# Construction de la base finale
 
 cses_dataset_educ <- cses_data_clean_educ %>%
   group_by(isoname, year) %>%
   group_split() %>%
   map_dfr(~ build_votes_by_educ_fractional(.x)) %>%
-  left_join(meta_info_cses, by = c("isoname", "year"))
-
-cses_dataset_educ <- cses_dataset_educ %>%
-  mutate(bias = "epistocracy")
-cses_dataset_educ <- cses_dataset_educ %>%
-  rename(category = educ_group)
-cses_dataset_educ <- cses_dataset_educ %>%
+  left_join(meta_info_cses, by = c("isoname", "year")) %>%
   mutate(
+    bias = "epistocracy",
     category = case_when(
-      category == "1" ~ "bot-educ", 
-      category== "2" ~ "top-educ",
-      TRUE ~ as.character(category)
+      educ_group == 1 ~ "bot-educ",
+      educ_group == 2 ~ "top-educ"
     )
-  )
+  ) %>%
+  select(-educ_group)
 
 ##CSES age ----
 cses_data_clean_age <- cses_data_clean %>%
@@ -614,9 +630,13 @@ cses_data_clean_age <- cses_data_clean %>%
 
 build_votes_by_age_fractional <- function(df){
   
-  # 1. distribution + weights (comme ta fonction revenu)
+  # 1. Distribution pondérée de l'âge
   dist_age <- df %>%
-    count(age) %>%
+    group_by(age) %>%
+    summarise(
+      n = sum(weight, na.rm = TRUE),
+      .groups = "drop"
+    ) %>%
     arrange(age) %>%
     mutate(
       pct = n / sum(n) * 100,
@@ -624,33 +644,33 @@ build_votes_by_age_fractional <- function(df){
       cum_prev = lag(cum_pct, default = 0)
     )
   
+  # Deux groupes : jeunes / âgés
   age_groups <- data.frame(
     age_group = c(1, 2),
     lower = c(0, 50),
     upper = c(50, 100)
   )
   
+  # 2. Poids de répartition
   weights_matrix <- dist_age %>%
     crossing(age_groups) %>%
     mutate(
       overlap = pmax(0, pmin(cum_pct, upper) - pmax(cum_prev, lower)),
-      weight = overlap / (cum_pct - cum_prev)
+      weight_group = overlap / (cum_pct - cum_prev)
     ) %>%
-    filter(weight > 0)
+    filter(weight_group > 0)
   
-  # 2. expansion micro → groupes pondérés
+  # 3. Attribution des groupes
   df_groups <- df %>%
     left_join(
       weights_matrix %>%
-        dplyr::select(age, age_group, weight),
+        select(age, age_group, weight_group),
       by = "age",
       relationship = "many-to-many"
     ) %>%
-    filter(!is.na(weight))
-  
-  # 3. vote variable (comme ta fonction standard)
-  df_groups <- df_groups %>%
+    filter(!is.na(weight_group)) %>%
     mutate(
+      weight_final = weight * weight_group,
       vote = case_when(
         is.na(dataset_party_id) ~ NA_character_,
         str_detect(dataset_party_id, "Abstention$") ~ "Abstention",
@@ -658,55 +678,55 @@ build_votes_by_age_fractional <- function(df){
       )
     )
   
-  # 4. votes
+  # 4. Votes pondérés
   votes <- df_groups %>%
     group_by(isoname, year, age_group, vote, partyfacts_id) %>%
     summarise(
-      votes = sum(weight),
+      votes = sum(weight_final, na.rm = TRUE),
       .groups = "drop"
     ) %>%
-    group_by(age_group) %>%
+    group_by(isoname, year, age_group) %>%
     mutate(
       pct_votes = votes / sum(votes) * 100
     ) %>%
     ungroup()
   
-  # 5. participation
+  # 5. Participation pondérée
   participation <- df_groups %>%
-    group_by(age_group) %>%
+    group_by(isoname, year, age_group) %>%
     summarise(
-      nbr_obs = sum(weight),
+      nbr_obs = sum(weight_final, na.rm = TRUE),
       votes_valides = sum(
-        weight * (!str_detect(dataset_party_id, "Abstention$")),
+        weight_final * (!str_detect(dataset_party_id, "Abstention$")),
         na.rm = TRUE
       ),
       taux_participation = votes_valides / nbr_obs * 100,
       .groups = "drop"
     )
   
-  # 6. output final (même structure que deciles / sexe)
+  # 6. Output
   votes %>%
-    left_join(participation, by = "age_group")
+    left_join(
+      participation,
+      by = c("isoname", "year", "age_group")
+    )
 }
+
+# Construction de la base finale
 
 cses_dataset_age <- cses_data_clean_age %>%
   group_by(isoname, year) %>%
   group_split() %>%
   map_dfr(~ build_votes_by_age_fractional(.x)) %>%
-  left_join(meta_info_cses, by = c("isoname", "year"))
-
-cses_dataset_age <- cses_dataset_age %>%
-  mutate(bias = "gerontocracy")
-cses_dataset_age <- cses_dataset_age %>%
-  rename(category = age_group)
-cses_dataset_age <- cses_dataset_age %>%
+  left_join(meta_info_cses, by = c("isoname", "year")) %>%
   mutate(
+    bias = "gerontocracy",
     category = case_when(
-      category == "1" ~ "bot-age", 
-      category== "2" ~ "top-age",
-      TRUE ~ as.character(category)
+      age_group == 1 ~ "bot-age",
+      age_group == 2 ~ "top-age"
     )
-  )
+  ) %>%
+  select(-age_group)
 
 
 #WVS ----
@@ -756,23 +776,31 @@ build_wvs_base_long <- function(df, annee, country){
       by = "inc",
       relationship = "many-to-many"
     ) %>%
-    filter(!is.na(weight_decile))
+    filter(!is.na(weight_decile)) %>%
+    mutate(weight_final = weight * weight_decile)
   
   
   # 3. participation
-  
   nbr_obs <- df_deciles %>%
     group_by(decile) %>%
-    summarise(nbr_obs = sum(weight_decile), .groups = "drop")
+    summarise(
+      nbr_obs = sum(weight_final, na.rm = TRUE),
+      .groups = "drop"
+    )
   
   votes_valides <- df_deciles %>%
     filter(!str_detect(dataset_party_id, "Abstention$")) %>%
     group_by(decile) %>%
-    summarise(votes_valides = sum(weight_decile), .groups = "drop")
+    summarise(
+      votes_valides = sum(weight_final, na.rm = TRUE),
+      .groups = "drop"
+    )
   
   participation <- nbr_obs %>%
     left_join(votes_valides, by = "decile") %>%
-    mutate(taux_participation = votes_valides / nbr_obs * 100)
+    mutate(
+      taux_participation = votes_valides / nbr_obs * 100
+    )
   
   
   # 4. votes
@@ -786,7 +814,7 @@ build_wvs_base_long <- function(df, annee, country){
       )
     ) %>%
     group_by(decile, vote, partyfacts_id) %>%
-    summarise(votes = sum(weight_decile), .groups = "drop") %>%
+    summarise(votes = sum(weight_final,na.rm = TRUE), .groups = "drop") %>%
     group_by(decile) %>%
     mutate(pct_votes = votes / sum(votes) * 100)
   
@@ -825,6 +853,7 @@ wvs_data_clean_sexe <- wvs_data_clean %>%
   filter(gender %in% c("men", "women"))
 
 ###WVS calcul fonction gender ----
+
 build_votes_by_gender <- function(df){
   
   df <- df %>%
@@ -836,11 +865,11 @@ build_votes_by_gender <- function(df){
       )
     )
   
-  # Votes par sexe × parti
+  # Votes pondérés par sexe × parti
   votes <- df %>%
     group_by(isoname, year, gender, vote, partyfacts_id) %>%
     summarise(
-      votes = n(),
+      votes = sum(weight, na.rm = TRUE),
       .groups = "drop"
     ) %>%
     group_by(isoname, year, gender) %>%
@@ -849,13 +878,13 @@ build_votes_by_gender <- function(df){
     ) %>%
     ungroup()
   
-  # Participation par sexe
+  # Participation pondérée
   participation <- df %>%
     group_by(isoname, year, gender) %>%
     summarise(
-      nbr_obs = n(),
+      nbr_obs = sum(weight, na.rm = TRUE),
       votes_valides = sum(
-        !str_detect(dataset_party_id, "Abstention$"),
+        weight * (!str_detect(dataset_party_id, "Abstention$")),
         na.rm = TRUE
       ),
       taux_participation = votes_valides / nbr_obs * 100,
@@ -868,18 +897,20 @@ build_votes_by_gender <- function(df){
       by = c("isoname", "year", "gender")
     )
 }
+
+# Informations de contexte
 meta_info_wvs <- wvs_data_clean %>%
   distinct(isoname, year, survey, source, source_recode)
 
+# Construction de la base
 wvs_dataset_gender <- wvs_data_clean_sexe %>%
   group_by(isoname, year) %>%
   group_split() %>%
   map_dfr(~ build_votes_by_gender(.x)) %>%
-  left_join(meta_info_wvs, by = c("isoname", "year"))
-
-wvs_dataset_gender <- wvs_dataset_gender %>%
-  mutate(bias = "androcracy")
-wvs_dataset_gender <- wvs_dataset_gender %>%
+  left_join(meta_info_cses, by = c("isoname", "year")) %>%
+  mutate(
+    bias = "androcracy"
+  ) %>%
   rename(category = gender)
 
 names(wvs_dataset_gender)
@@ -892,9 +923,13 @@ wvs_data_clean_educ <- wvs_data_clean %>%
 ###WVS calcul fonction educ ----
 build_votes_by_educ_fractional <- function(df){
   
-  # 1. distribution + weights (comme ta fonction revenu)
+  # 1. Distribution pondérée de l'éducation
   dist_educ <- df %>%
-    count(educ) %>%
+    group_by(educ) %>%
+    summarise(
+      n = sum(weight, na.rm = TRUE),
+      .groups = "drop"
+    ) %>%
     arrange(educ) %>%
     mutate(
       pct = n / sum(n) * 100,
@@ -902,33 +937,33 @@ build_votes_by_educ_fractional <- function(df){
       cum_prev = lag(cum_pct, default = 0)
     )
   
+  # Deux groupes : bas / haut niveau d'éducation
   educ_groups <- data.frame(
     educ_group = c(1, 2),
     lower = c(0, 50),
     upper = c(50, 100)
   )
   
+  # 2. Calcul des poids de répartition
   weights_matrix <- dist_educ %>%
     crossing(educ_groups) %>%
     mutate(
       overlap = pmax(0, pmin(cum_pct, upper) - pmax(cum_prev, lower)),
-      weight = overlap / (cum_pct - cum_prev)
+      weight_group = overlap / (cum_pct - cum_prev)
     ) %>%
-    filter(weight > 0)
+    filter(weight_group > 0)
   
-  # 2. expansion micro → groupes pondérés
+  # 3. Attribution des groupes
   df_groups <- df %>%
     left_join(
       weights_matrix %>%
-        dplyr::select(educ, educ_group, weight),
+        select(educ, educ_group, weight_group),
       by = "educ",
       relationship = "many-to-many"
     ) %>%
-    filter(!is.na(weight))
-  
-  # 3. vote variable (comme ta fonction standard)
-  df_groups <- df_groups %>%
+    filter(!is.na(weight_group)) %>%
     mutate(
+      weight_final = weight * weight_group,
       vote = case_when(
         is.na(dataset_party_id) ~ NA_character_,
         str_detect(dataset_party_id, "Abstention$") ~ "Abstention",
@@ -936,55 +971,56 @@ build_votes_by_educ_fractional <- function(df){
       )
     )
   
-  # 4. votes
+  # 4. Votes pondérés
   votes <- df_groups %>%
     group_by(isoname, year, educ_group, vote, partyfacts_id) %>%
     summarise(
-      votes = sum(weight),
+      votes = sum(weight_final, na.rm = TRUE),
       .groups = "drop"
     ) %>%
-    group_by(educ_group) %>%
+    group_by(isoname, year, educ_group) %>%
     mutate(
       pct_votes = votes / sum(votes) * 100
     ) %>%
     ungroup()
   
-  # 5. participation
+  # 5. Participation pondérée
   participation <- df_groups %>%
-    group_by(educ_group) %>%
+    group_by(isoname, year, educ_group) %>%
     summarise(
-      nbr_obs = sum(weight),
+      nbr_obs = sum(weight_final, na.rm = TRUE),
       votes_valides = sum(
-        weight * (!str_detect(dataset_party_id, "Abstention$")),
+        weight_final * (!str_detect(dataset_party_id, "Abstention$")),
         na.rm = TRUE
       ),
       taux_participation = votes_valides / nbr_obs * 100,
       .groups = "drop"
     )
   
-  # 6. output final (même structure que deciles / sexe)
+  # 6. Output
   votes %>%
-    left_join(participation, by = "educ_group")
+    left_join(
+      participation,
+      by = c("isoname", "year", "educ_group")
+    )
 }
+
+# Construction de la base finale
 
 wvs_dataset_educ <- wvs_data_clean_educ %>%
   group_by(isoname, year) %>%
   group_split() %>%
   map_dfr(~ build_votes_by_educ_fractional(.x)) %>%
-  left_join(meta_info_wvs, by = c("isoname", "year"))
-
-wvs_dataset_educ <- wvs_dataset_educ %>%
-  mutate(bias = "epistocracy")
-wvs_dataset_educ <- wvs_dataset_educ %>%
-  rename(category = educ_group)
-wvs_dataset_educ <- wvs_dataset_educ %>%
+  left_join(meta_info_wvs, by = c("isoname", "year")) %>%
   mutate(
+    bias = "epistocracy",
     category = case_when(
-      category == "1" ~ "bot-educ", 
-      category== "2" ~ "top-educ",
-      TRUE ~ as.character(category)
+      educ_group == 1 ~ "bot-educ",
+      educ_group == 2 ~ "top-educ"
     )
-  )
+  ) %>%
+  select(-educ_group)
+
 
 
 
@@ -994,9 +1030,13 @@ wvs_data_clean_age <- wvs_data_clean %>%
 
 build_votes_by_age_fractional <- function(df){
   
-  # 1. distribution + weights (comme ta fonction revenu)
+  # 1. Distribution pondérée de l'âge
   dist_age <- df %>%
-    count(age) %>%
+    group_by(age) %>%
+    summarise(
+      n = sum(weight, na.rm = TRUE),
+      .groups = "drop"
+    ) %>%
     arrange(age) %>%
     mutate(
       pct = n / sum(n) * 100,
@@ -1004,33 +1044,33 @@ build_votes_by_age_fractional <- function(df){
       cum_prev = lag(cum_pct, default = 0)
     )
   
+  # Deux groupes : jeunes / âgés
   age_groups <- data.frame(
     age_group = c(1, 2),
     lower = c(0, 50),
     upper = c(50, 100)
   )
   
+  # 2. Poids de répartition
   weights_matrix <- dist_age %>%
     crossing(age_groups) %>%
     mutate(
       overlap = pmax(0, pmin(cum_pct, upper) - pmax(cum_prev, lower)),
-      weight = overlap / (cum_pct - cum_prev)
+      weight_group = overlap / (cum_pct - cum_prev)
     ) %>%
-    filter(weight > 0)
+    filter(weight_group > 0)
   
-  # 2. expansion micro → groupes pondérés
+  # 3. Attribution des groupes
   df_groups <- df %>%
     left_join(
       weights_matrix %>%
-        dplyr::select(age, age_group, weight),
+        select(age, age_group, weight_group),
       by = "age",
       relationship = "many-to-many"
     ) %>%
-    filter(!is.na(weight))
-  
-  # 3. vote variable (comme ta fonction standard)
-  df_groups <- df_groups %>%
+    filter(!is.na(weight_group)) %>%
     mutate(
+      weight_final = weight * weight_group,
       vote = case_when(
         is.na(dataset_party_id) ~ NA_character_,
         str_detect(dataset_party_id, "Abstention$") ~ "Abstention",
@@ -1038,55 +1078,55 @@ build_votes_by_age_fractional <- function(df){
       )
     )
   
-  # 4. votes
+  # 4. Votes pondérés
   votes <- df_groups %>%
     group_by(isoname, year, age_group, vote, partyfacts_id) %>%
     summarise(
-      votes = sum(weight),
+      votes = sum(weight_final, na.rm = TRUE),
       .groups = "drop"
     ) %>%
-    group_by(age_group) %>%
+    group_by(isoname, year, age_group) %>%
     mutate(
       pct_votes = votes / sum(votes) * 100
     ) %>%
     ungroup()
   
-  # 5. participation
+  # 5. Participation pondérée
   participation <- df_groups %>%
-    group_by(age_group) %>%
+    group_by(isoname, year, age_group) %>%
     summarise(
-      nbr_obs = sum(weight),
+      nbr_obs = sum(weight_final, na.rm = TRUE),
       votes_valides = sum(
-        weight * (!str_detect(dataset_party_id, "Abstention$")),
+        weight_final * (!str_detect(dataset_party_id, "Abstention$")),
         na.rm = TRUE
       ),
       taux_participation = votes_valides / nbr_obs * 100,
       .groups = "drop"
     )
   
-  # 6. output final (même structure que deciles / sexe)
+  # 6. Output
   votes %>%
-    left_join(participation, by = "age_group")
+    left_join(
+      participation,
+      by = c("isoname", "year", "age_group")
+    )
 }
+
+# Construction de la base finale
 
 wvs_dataset_age <- wvs_data_clean_age %>%
   group_by(isoname, year) %>%
   group_split() %>%
   map_dfr(~ build_votes_by_age_fractional(.x)) %>%
-  left_join(meta_info_wvs, by = c("isoname", "year"))
-
-wvs_dataset_age <- wvs_dataset_age %>%
-  mutate(bias = "gerontocracy")
-wvs_dataset_age <- wvs_dataset_age %>%
-  rename(category = age_group)
-wvs_dataset_age <- wvs_dataset_age %>%
+  left_join(meta_info_wvs, by = c("isoname", "year")) %>%
   mutate(
+    bias = "gerontocracy",
     category = case_when(
-      category == "1" ~ "bot-age", 
-      category== "2" ~ "top-age",
-      TRUE ~ as.character(category)
+      age_group == 1 ~ "bot-age",
+      age_group == 2 ~ "top-age"
     )
-  )
+  ) %>%
+  select(-age_group)
 
 #ESS ----
 ess_data_clean <- read.csv("data/intermediary/elections/ess elections dataset.csv")
@@ -1136,23 +1176,31 @@ build_ess_base_long <- function(df, annee, country){
       by = "inc",
       relationship = "many-to-many"
     ) %>%
-    filter(!is.na(weight_decile))
+    filter(!is.na(weight_decile)) %>%
+    mutate(weight_final = weight * weight_decile)
   
   
   # 3. participation
-  
   nbr_obs <- df_deciles %>%
     group_by(decile) %>%
-    summarise(nbr_obs = sum(weight_decile), .groups = "drop")
+    summarise(
+      nbr_obs = sum(weight_final, na.rm = TRUE),
+      .groups = "drop"
+    )
   
   votes_valides <- df_deciles %>%
     filter(!str_detect(dataset_party_id, "Abstention$")) %>%
     group_by(decile) %>%
-    summarise(votes_valides = sum(weight_decile), .groups = "drop")
+    summarise(
+      votes_valides = sum(weight_final, na.rm = TRUE),
+      .groups = "drop"
+    )
   
   participation <- nbr_obs %>%
     left_join(votes_valides, by = "decile") %>%
-    mutate(taux_participation = votes_valides / nbr_obs * 100)
+    mutate(
+      taux_participation = votes_valides / nbr_obs * 100
+    )
   
   
   # 4. votes
@@ -1166,7 +1214,7 @@ build_ess_base_long <- function(df, annee, country){
       )
     ) %>%
     group_by(decile, vote, partyfacts_id) %>%
-    summarise(votes = sum(weight_decile), .groups = "drop") %>%
+    summarise(votes = sum(weight_final,na.rm = TRUE), .groups = "drop") %>%
     group_by(decile) %>%
     mutate(pct_votes = votes / sum(votes) * 100)
   
@@ -1189,6 +1237,7 @@ build_ess_base_long <- function(df, annee, country){
 
 # PIPELINE MULTI-PAYS
 
+
 ess_dataset_income <- ess_data_clean_income %>%
   group_by(isoname, year) %>%
   group_split() %>%
@@ -1204,6 +1253,7 @@ ess_data_clean_sexe <- ess_data_clean %>%
   filter(gender %in% c("men", "women"))
 
 ###Calcul CSES gender ----
+
 build_votes_by_gender <- function(df){
   
   df <- df %>%
@@ -1215,11 +1265,11 @@ build_votes_by_gender <- function(df){
       )
     )
   
-  # Votes par sexe × parti
+  # Votes pondérés par sexe × parti
   votes <- df %>%
     group_by(isoname, year, gender, vote, partyfacts_id) %>%
     summarise(
-      votes = n(),
+      votes = sum(weight, na.rm = TRUE),
       .groups = "drop"
     ) %>%
     group_by(isoname, year, gender) %>%
@@ -1228,13 +1278,13 @@ build_votes_by_gender <- function(df){
     ) %>%
     ungroup()
   
-  # Participation par sexe
+  # Participation pondérée
   participation <- df %>%
     group_by(isoname, year, gender) %>%
     summarise(
-      nbr_obs = n(),
+      nbr_obs = sum(weight, na.rm = TRUE),
       votes_valides = sum(
-        !str_detect(dataset_party_id, "Abstention$"),
+        weight * (!str_detect(dataset_party_id, "Abstention$")),
         na.rm = TRUE
       ),
       taux_participation = votes_valides / nbr_obs * 100,
@@ -1247,20 +1297,21 @@ build_votes_by_gender <- function(df){
       by = c("isoname", "year", "gender")
     )
 }
+
+# Informations de contexte
 meta_info_ess <- ess_data_clean %>%
   distinct(isoname, year, survey, source, source_recode)
 
+# Construction de la base
 ess_dataset_gender <- ess_data_clean_sexe %>%
   group_by(isoname, year) %>%
   group_split() %>%
   map_dfr(~ build_votes_by_gender(.x)) %>%
-  left_join(meta_info_ess, by = c("isoname", "year"))
-
-ess_dataset_gender <- ess_dataset_gender %>%
-  mutate(bias = "androcracy")
-ess_dataset_gender <- ess_dataset_gender %>%
+  left_join(meta_info_ess, by = c("isoname", "year")) %>%
+  mutate(
+    bias = "androcracy"
+  ) %>%
   rename(category = gender)
-unique(ess_data_clean$educ)
 
 ##ESS educ ----
 ess_data_clean_educ <- ess_data_clean %>%
@@ -1268,9 +1319,13 @@ ess_data_clean_educ <- ess_data_clean %>%
 
 build_votes_by_educ_fractional <- function(df){
   
-  # 1. distribution + weights (comme ta fonction revenu)
+  # 1. Distribution pondérée de l'éducation
   dist_educ <- df %>%
-    count(educ) %>%
+    group_by(educ) %>%
+    summarise(
+      n = sum(weight, na.rm = TRUE),
+      .groups = "drop"
+    ) %>%
     arrange(educ) %>%
     mutate(
       pct = n / sum(n) * 100,
@@ -1278,33 +1333,33 @@ build_votes_by_educ_fractional <- function(df){
       cum_prev = lag(cum_pct, default = 0)
     )
   
+  # Deux groupes : bas / haut niveau d'éducation
   educ_groups <- data.frame(
     educ_group = c(1, 2),
     lower = c(0, 50),
     upper = c(50, 100)
   )
   
+  # 2. Calcul des poids de répartition
   weights_matrix <- dist_educ %>%
     crossing(educ_groups) %>%
     mutate(
       overlap = pmax(0, pmin(cum_pct, upper) - pmax(cum_prev, lower)),
-      weight = overlap / (cum_pct - cum_prev)
+      weight_group = overlap / (cum_pct - cum_prev)
     ) %>%
-    filter(weight > 0)
+    filter(weight_group > 0)
   
-  # 2. expansion micro → groupes pondérés
+  # 3. Attribution des groupes
   df_groups <- df %>%
     left_join(
       weights_matrix %>%
-        dplyr::select(educ, educ_group, weight),
+        select(educ, educ_group, weight_group),
       by = "educ",
       relationship = "many-to-many"
     ) %>%
-    filter(!is.na(weight))
-  
-  # 3. vote variable (comme ta fonction standard)
-  df_groups <- df_groups %>%
+    filter(!is.na(weight_group)) %>%
     mutate(
+      weight_final = weight * weight_group,
       vote = case_when(
         is.na(dataset_party_id) ~ NA_character_,
         str_detect(dataset_party_id, "Abstention$") ~ "Abstention",
@@ -1312,55 +1367,56 @@ build_votes_by_educ_fractional <- function(df){
       )
     )
   
-  # 4. votes
+  # 4. Votes pondérés
   votes <- df_groups %>%
     group_by(isoname, year, educ_group, vote, partyfacts_id) %>%
     summarise(
-      votes = sum(weight),
+      votes = sum(weight_final, na.rm = TRUE),
       .groups = "drop"
     ) %>%
-    group_by(educ_group) %>%
+    group_by(isoname, year, educ_group) %>%
     mutate(
       pct_votes = votes / sum(votes) * 100
     ) %>%
     ungroup()
   
-  # 5. participation
+  # 5. Participation pondérée
   participation <- df_groups %>%
-    group_by(educ_group) %>%
+    group_by(isoname, year, educ_group) %>%
     summarise(
-      nbr_obs = sum(weight),
+      nbr_obs = sum(weight_final, na.rm = TRUE),
       votes_valides = sum(
-        weight * (!str_detect(dataset_party_id, "Abstention$")),
+        weight_final * (!str_detect(dataset_party_id, "Abstention$")),
         na.rm = TRUE
       ),
       taux_participation = votes_valides / nbr_obs * 100,
       .groups = "drop"
     )
   
-  # 6. output final (même structure que deciles / sexe)
+  # 6. Output
   votes %>%
-    left_join(participation, by = "educ_group")
+    left_join(
+      participation,
+      by = c("isoname", "year", "educ_group")
+    )
 }
+
+# Construction de la base finale
 
 ess_dataset_educ <- ess_data_clean_educ %>%
   group_by(isoname, year) %>%
   group_split() %>%
   map_dfr(~ build_votes_by_educ_fractional(.x)) %>%
-  left_join(meta_info_ess, by = c("isoname", "year"))
-
-ess_dataset_educ <- ess_dataset_educ %>%
-  mutate(bias = "epistocracy")
-ess_dataset_educ <- ess_dataset_educ %>%
-  rename(category = educ_group)
-ess_dataset_educ <- ess_dataset_educ %>%
+  left_join(meta_info_ess, by = c("isoname", "year")) %>%
   mutate(
+    bias = "epistocracy",
     category = case_when(
-      category == "1" ~ "bot-educ", 
-      category== "2" ~ "top-educ",
-      TRUE ~ as.character(category)
+      educ_group == 1 ~ "bot-educ",
+      educ_group == 2 ~ "top-educ"
     )
-  )
+  ) %>%
+  select(-educ_group)
+
 
 ##ESS age ----
 ess_data_clean_age <- ess_data_clean %>%
@@ -1368,9 +1424,13 @@ ess_data_clean_age <- ess_data_clean %>%
 
 build_votes_by_age_fractional <- function(df){
   
-  # 1. distribution + weights (comme ta fonction revenu)
+  # 1. Distribution pondérée de l'âge
   dist_age <- df %>%
-    count(age) %>%
+    group_by(age) %>%
+    summarise(
+      n = sum(weight, na.rm = TRUE),
+      .groups = "drop"
+    ) %>%
     arrange(age) %>%
     mutate(
       pct = n / sum(n) * 100,
@@ -1378,33 +1438,33 @@ build_votes_by_age_fractional <- function(df){
       cum_prev = lag(cum_pct, default = 0)
     )
   
+  # Deux groupes : jeunes / âgés
   age_groups <- data.frame(
     age_group = c(1, 2),
     lower = c(0, 50),
     upper = c(50, 100)
   )
   
+  # 2. Poids de répartition
   weights_matrix <- dist_age %>%
     crossing(age_groups) %>%
     mutate(
       overlap = pmax(0, pmin(cum_pct, upper) - pmax(cum_prev, lower)),
-      weight = overlap / (cum_pct - cum_prev)
+      weight_group = overlap / (cum_pct - cum_prev)
     ) %>%
-    filter(weight > 0)
+    filter(weight_group > 0)
   
-  # 2. expansion micro → groupes pondérés
+  # 3. Attribution des groupes
   df_groups <- df %>%
     left_join(
       weights_matrix %>%
-        dplyr::select(age, age_group, weight),
+        select(age, age_group, weight_group),
       by = "age",
       relationship = "many-to-many"
     ) %>%
-    filter(!is.na(weight))
-  
-  # 3. vote variable (comme ta fonction standard)
-  df_groups <- df_groups %>%
+    filter(!is.na(weight_group)) %>%
     mutate(
+      weight_final = weight * weight_group,
       vote = case_when(
         is.na(dataset_party_id) ~ NA_character_,
         str_detect(dataset_party_id, "Abstention$") ~ "Abstention",
@@ -1412,56 +1472,55 @@ build_votes_by_age_fractional <- function(df){
       )
     )
   
-  # 4. votes
+  # 4. Votes pondérés
   votes <- df_groups %>%
     group_by(isoname, year, age_group, vote, partyfacts_id) %>%
     summarise(
-      votes = sum(weight),
+      votes = sum(weight_final, na.rm = TRUE),
       .groups = "drop"
     ) %>%
-    group_by(age_group) %>%
+    group_by(isoname, year, age_group) %>%
     mutate(
       pct_votes = votes / sum(votes) * 100
     ) %>%
     ungroup()
   
-  # 5. participation
+  # 5. Participation pondérée
   participation <- df_groups %>%
-    group_by(age_group) %>%
+    group_by(isoname, year, age_group) %>%
     summarise(
-      nbr_obs = sum(weight),
+      nbr_obs = sum(weight_final, na.rm = TRUE),
       votes_valides = sum(
-        weight * (!str_detect(dataset_party_id, "Abstention$")),
+        weight_final * (!str_detect(dataset_party_id, "Abstention$")),
         na.rm = TRUE
       ),
       taux_participation = votes_valides / nbr_obs * 100,
       .groups = "drop"
     )
   
-  # 6. output final (même structure que deciles / sexe)
+  # 6. Output
   votes %>%
-    left_join(participation, by = "age_group")
+    left_join(
+      participation,
+      by = c("isoname", "year", "age_group")
+    )
 }
+
+# Construction de la base finale
 
 ess_dataset_age <- ess_data_clean_age %>%
   group_by(isoname, year) %>%
   group_split() %>%
   map_dfr(~ build_votes_by_age_fractional(.x)) %>%
-  left_join(meta_info_ess, by = c("isoname", "year"))
-
-ess_dataset_age <- ess_dataset_age %>%
-  mutate(bias = "gerontocracy")
-ess_dataset_age <- ess_dataset_age %>%
-  rename(category = age_group)
-ess_dataset_age <- ess_dataset_age %>%
+  left_join(meta_info_wvs, by = c("isoname", "year")) %>%
   mutate(
+    bias = "gerontocracy",
     category = case_when(
-      category == "1" ~ "bot-age", 
-      category== "2" ~ "top-age",
-      TRUE ~ as.character(category)
+      age_group == 1 ~ "bot-age",
+      age_group == 2 ~ "top-age"
     )
-  )
-
+  ) %>%
+  select(-age_group)
 
 #Traitement des df income ----
 Base_legislatives_deciles2 <- Base_legislatives_deciles2 %>%
@@ -1638,6 +1697,7 @@ Base_all_clivages <- Base_all_clivages %>%
       vote == "716007" & isoname == "Zimbabwe" & year == 2001 ~ "3305",
       vote == "716002" & isoname == "Zimbabwe" & year == 2012 ~ "3559",
       vote == "716007" & isoname == "Zimbabwe" & year == 2001 ~ "3305",
+      vote == "76003" & isoname == "Brazil" & year >= 1991 ~ "225",
       vote == "BE-1-3-V" & isoname == "Belgium" & year == 2004 & year == 2006  ~ "1586",
       vote == "BE-1-13-V" & isoname == "Belgium" & year == 2002 ~ "554", 
       vote == "BG-3-1-V" & isoname == "Bulgaria" & year >= 2006 ~ "1665",
@@ -1657,6 +1717,7 @@ Base_all_clivages <- Base_all_clivages %>%
       vote == "PL-1-1-V" & isoname == "Poland" & year >= 2008 & year <= 2010 ~ "1588",
       vote == "PT-1-11-V" & isoname == "Portugal" & year >= 2016  ~ "655",
       vote == "RO-4-2-V" & isoname == "Romania" & year == 2008  ~ "120",
+      
       
       #Cas plus problématique de join dans ESS
       vote == "BG-5-1-V" & isoname == "Bulgaria" & year >= 2010 ~ "760", #*
