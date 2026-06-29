@@ -433,28 +433,29 @@ ess_data_clean <- ess_data_clean %>%
       TRUE ~ as.character(isoname)))
 
 
-
+unique(ess_data_clean$dataset_party_id[ess_data_clean$isoname == "Belgium" & ess_data_clean$source == "ESS4e04_6"])
 #Traitement des partyfacts dans cses pour join 
 ess_data_clean <- ess_data_clean %>%
   mutate(
     partyfacts_id = case_when(
-      partyfacts_id == "BG-5-1-V" & isoname == "Bulgaria" & year >= 2010 ~ "760", #*
-      partyfacts_id == "HR-9-3-V" & isoname == "Croatia" & year >= 2018 ~ "4865", #*
-      partyfacts_id == "CZ-1-9-V" & isoname == "Czech Republic" & year >= 2008 ~ "1728", #*
-      partyfacts_id == "CZ-5-5-V" & isoname == "Czech Republic" & year >= 2010 ~ "223", #*
-      partyfacts_id == "CZ-7-4-V" & isoname == "Czech Republic" & year >= 2014 ~ "2141", #*
-      partyfacts_id == "CZ-5-6-V" & isoname == "Czech Republic" & year == 2012 ~ "1202", #*
-      partyfacts_id == "FI-1-9-V" & isoname == "Finland" & year >= 2012 ~ "1303", #*
-      partyfacts_id == "IT-6-4-V" & isoname == "Italy" & year >= 2016 ~ "2046", #*
-      partyfacts_id == "NL-4-11-V" & isoname == "Netherlands" & year >= 2014 ~ "298", #*
-      partyfacts_id == "RU-3-3-V" & isoname == "Russia" ~ "2245", #*
-      partyfacts_id == "SK-6-1-V" & isoname == "Slovakia" ~ "2130", #*
-      partyfacts_id == "SI-4-9-V" & isoname == "Slovenia" ~ "474", #*
-      partyfacts_id == "SI-6-7-V" & isoname == "Slovenia" ~ "1773", #*
-      partyfacts_id == "SI-7-8-v" & isoname == "Slovenia" ~ "3098", #*
-      partyfacts_id == "UA-3-1-V" & isoname == "Ukraine" ~ "2234", #*
-      partyfacts_id == "UA-2-10-V" & isoname == "Ukraine" ~ "2228", #*
-      TRUE ~ as.character(partyfacts_id)
+      dataset_party_id == "BE-1-13-V" & isoname == "Belgium" & year >= 2003 ~ "789",
+      dataset_party_id == "BG-5-1-V" & isoname == "Bulgaria" & year >= 2010 ~ "760", #*
+      dataset_party_id == "HR-9-3-V" & isoname == "Croatia" & year >= 2018 ~ "4865", #*
+      dataset_party_id == "CZ-1-9-V" & isoname == "Czech Republic" & year >= 2008 ~ "1728", #*
+      dataset_party_id == "CZ-5-5-V" & isoname == "Czech Republic" & year >= 2010 ~ "223", #*
+      dataset_party_id == "CZ-7-4-V" & isoname == "Czech Republic" & year >= 2014 ~ "2141", #*
+      dataset_party_id == "CZ-5-6-V" & isoname == "Czech Republic" & year == 2012 ~ "1202", #*
+      dataset_party_id == "FI-1-9-V" & isoname == "Finland" & year >= 2012 ~ "1303", #*
+      dataset_party_id == "IT-6-4-V" & isoname == "Italy" & year >= 2016 ~ "2046", #*
+      dataset_party_id == "NL-4-11-V" & isoname == "Netherlands" & year >= 2014 ~ "298", #*
+      dataset_party_id == "RU-3-3-V" & isoname == "Russia" ~ "2245", #*
+      dataset_party_id == "SK-6-1-V" & isoname == "Slovakia" ~ "2130", #*
+      dataset_party_id == "SI-4-9-V" & isoname == "Slovenia" ~ "474", #*
+      dataset_party_id == "SI-6-7-V" & isoname == "Slovenia" ~ "1773", #*
+      dataset_party_id == "SI-7-8-v" & isoname == "Slovenia" ~ "3098", #*
+      dataset_party_id == "UA-3-1-V" & isoname == "Ukraine" ~ "2234", #*
+      dataset_party_id == "UA-2-10-V" & isoname == "Ukraine" ~ "2228", #*
+      TRUE ~ as.character(dataset_party_id)
     )
   )
 
