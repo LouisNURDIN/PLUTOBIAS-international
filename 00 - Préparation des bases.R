@@ -506,7 +506,7 @@ cses_data <- cses_data %>%
   rename(age = IMD2001_1)
 
 cses_data <- cses_data %>%
-  mutate(survey = "?")
+  mutate(survey = "Post-electoral")
 
 
 #ne pas oublier de garder le weight 

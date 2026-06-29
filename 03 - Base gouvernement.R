@@ -253,6 +253,11 @@ whogov_parties <- whogov_parties %>%
 # Liste des élections officielles
 library(dplyr)
 library(purrr)
+Base_vote_parlement_global <- Base_vote_parlement_global %>%
+  mutate(
+    survey = case_when(
+      source_recode == "CSES" ~ "Post-electoral",
+      TRUE ~ as.character(survey)))
 
 # Liste des élections officielles
 all_elections <- all_elections %>%
@@ -271,29 +276,51 @@ rows_to_add <- Base_vote_parlement_global %>%
     
     map_dfr(sort(unique(dat$year)), function(y1){
       
-      # Première élection officielle après y1
-      next_election <- all_elections %>%
-        filter(isoname == country, year > y1) %>%
-        summarise(next_year = min(year, na.rm = TRUE)) %>%
-        pull(next_year)
+      bloc <- filter(dat, year == y1)
       
-      # S'il n'y a plus d'élection officielle, on ne propage pas
-      if(length(next_election) == 0 || is.infinite(next_election))
+      # On suppose que le type d'enquête est identique pour toutes les lignes du bloc
+      survey_type <- first(bloc$survey)
+      
+      if(survey_type == "Pre-electoral"){
+        
+        # Première élection officielle après y1
+        next_election <- all_elections %>%
+          filter(isoname == country, year > y1) %>%
+          summarise(next_year = min(year, na.rm = TRUE)) %>%
+          pull(next_year)
+        
+        if(length(next_election) == 0 || is.infinite(next_election))
+          return(tibble())
+        
+        new_years <- seq(y1 + 1, next_election - 1)
+        
+      } else if(survey_type %in% c("Post-electoral", "Pre/post-electoral")){
+        
+        # Dernière élection officielle avant y1
+        previous_election <- all_elections %>%
+          filter(isoname == country, year < y1) %>%
+          summarise(prev_year = max(year, na.rm = TRUE)) %>%
+          pull(prev_year)
+        
+        if(length(previous_election) == 0 || is.infinite(previous_election))
+          return(tibble())
+        
+        new_years <- seq(previous_election + 1, y1 - 1)
+        
+      } else{
+        
         return(tibble())
-      
-      # Années à créer
-      new_years <- seq(y1 + 1, next_election - 1)
+        
+      }
       
       if(length(new_years) == 0)
         return(tibble())
       
-      bloc <- filter(dat, year == y1)
-      
       map_dfr(new_years, ~ mutate(bloc, year = .x))
+      
     })
     
-  }) %>%
-  ungroup()
+  })
 
 Base_vote_parlement_global <- bind_rows(
   Base_vote_parlement_global,
@@ -425,7 +452,7 @@ View(
   Base_complete %>%
     ungroup() %>%
     filter(election_couverture_ministers < 0.8) %>%
-    distinct(survey_year,year,isoname,bias,election_couverture_seats,election_couverture_ministers,other_ministers,source,source_recode))
+    distinct(survey_year,year,isoname,bias,election_couverture_seats,election_couverture_ministers,other_ministers,source,source_recode,survey))
 
 
 

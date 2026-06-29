@@ -3,7 +3,6 @@ library(tidyr)
 library(stringr)
 library(ggplot2)
 library(scales)
-install.packages("fixest")
 library(fixest)
 Base_complete_index <-  read.csv("data/final/dataset complete with index.csv", sep = ",")
 Base_regimes_presidentiels_index <-  read.csv("data/final/dataset complete regimes presidentiels.csv", sep = ",")
@@ -642,3 +641,4 @@ modelsummary(reg_gerontocracy_femmes_ministres,
     "year" = "Année"),
   statistic = "std.error", stars = c('*' = .05, '**' = .01, '***' = .001),
   fmt = 3,title = "Effet de la gérontocratie sur le taux de femmes ministres, en contrôlant par l'année")
+
