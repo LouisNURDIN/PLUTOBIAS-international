@@ -97,9 +97,9 @@ p_50_50 <- ggplot(data_50_50, aes(x = Indice, y = Value, fill = Indice)) +
   facet_wrap(~ source_recode) +
   scale_y_continuous(
     trans = log_trans(),
-    breaks = c(0.3, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2,2.5,3,3.5,4,4.5,5)) +
+    breaks = c(0.3, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2,2.5,3,4)) +
   
-  coord_cartesian(ylim = c(0.3, 5)) +
+  coord_cartesian(ylim = c(0.3, 4)) +
   
   theme_minimal() +
   theme(
@@ -144,7 +144,7 @@ p_10_10 <- ggplot(data_10_10, aes(x = Indice, y = Value, fill = Indice)) +
   
   scale_y_continuous(trans = log_trans()) +
   
-  coord_cartesian(ylim = c(0.3,5 )) +
+  coord_cartesian(ylim = c(0.3,4 )) +
   
   theme_minimal() +
   theme(
@@ -166,13 +166,13 @@ p_10_10 <- ggplot(data_10_10, aes(x = Indice, y = Value, fill = Indice)) +
 grid::grid.newpage()
 p_50_50
 ggsave(
-  filename = "results/figures/Boxplot global bias 50 50.jpg",
+  filename = "results/figures/Boxplot plutocracy 50 50.jpg",
   plot = p_50_50,width = 10,height = 6,dpi = 300)
 
 grid::grid.newpage()
 p_10_10
 ggsave(
-  filename = "results/figures/Boxplot global bias 50 50.jpg",
+  filename = "results/figures/Boxplot plutocracy 10 10.jpg",
   plot = p_10_10,width = 10,height = 6,dpi = 300)
 
 ##Box plot androcracy ----
@@ -255,7 +255,7 @@ plot_top_bot_gender <- ggplot(data_top_bot_gender, aes(x = Indice, y = Value, fi
 grid::grid.newpage()
 plot_top_bot_gender
 ggsave(
-  filename = "results/figures/Boxplot global bias 50 50.jpg",
+  filename = "results/figures/Boxplot androcracy 50 50.jpg",
   plot = plot_top_bot_gender,width = 10,height = 6,dpi = 300)
 
 ##Box plot epistocracy ----
@@ -318,9 +318,9 @@ plot_top_bot_educ <- ggplot(data_top_bot_educ, aes(x = Indice, y = Value, fill =
   facet_wrap(~ source_recode) +
   scale_y_continuous(
     trans = log_trans(),
-    breaks = c(0.5, 0.75, 1, 1.25, 1.5, 1.75, 2)) +
+    breaks = c(0.5, 0.75, 1, 1.25, 1.5, 1.75, 2,3)) +
   
-  coord_cartesian(ylim = c(0.5, 2)) +
+  coord_cartesian(ylim = c(0.5, 3)) +
   
   theme_minimal() +
   theme(
@@ -330,7 +330,7 @@ plot_top_bot_educ <- ggplot(data_top_bot_educ, aes(x = Indice, y = Value, fill =
     text = element_text(size = 14) ) +
   
   labs(
-    title = "Distribution des indices d'épistocratie",
+    title = "Distribution des indices d'épistocratie (top 50 / bottom 50)",
     x = "",
     y = "Poids électoral 50% plus diplômés / 50% moins diplômés"
   )
@@ -338,7 +338,7 @@ plot_top_bot_educ <- ggplot(data_top_bot_educ, aes(x = Indice, y = Value, fill =
 grid::grid.newpage()
 plot_top_bot_educ
 ggsave(
-  filename = "results/figures/Boxplot global bias 50 50.jpg",
+  filename = "results/figures/Boxplot epistocracy 50 50.jpg",
   plot = plot_top_bot_educ,width = 10,height = 6,dpi = 300)
 
 ##Box plot gerontocracy ----
@@ -401,9 +401,9 @@ plot_top_bot_age <- ggplot(data_top_bot_age, aes(x = Indice, y = Value, fill = I
   facet_wrap(~ source_recode) +
   scale_y_continuous(
     trans = log_trans(),
-    breaks = c(0.5, 0.75, 1, 1.25, 1.5, 1.75, 2)) +
+    breaks = c(0.5, 0.75, 1, 1.25, 1.5, 1.75, 2,3)) +
   
-  coord_cartesian(ylim = c(0.5, 2)) +
+  coord_cartesian(ylim = c(0.5, 3)) +
   
   theme_minimal() +
   theme(
@@ -413,7 +413,7 @@ plot_top_bot_age <- ggplot(data_top_bot_age, aes(x = Indice, y = Value, fill = I
     text = element_text(size = 14) ) +
   
   labs(
-    title = "Distribution des indices de gérontocratie",
+    title = "Distribution des indices de gérontocratie (top 50 / bottom 50)",
     x = "",
     y = "Poids électoral 50% plus âgés / 50% moins âgés"
   )
@@ -421,7 +421,7 @@ plot_top_bot_age <- ggplot(data_top_bot_age, aes(x = Indice, y = Value, fill = I
 grid::grid.newpage()
 plot_top_bot_age
 ggsave(
-  filename = "results/figures/Boxplot global bias 50 50.jpg",
+  filename = "results/figures/Boxplot gerontocracy 50 50.jpg",
   plot = plot_top_bot_age,width = 10,height = 6,dpi = 300)
 
 
@@ -457,9 +457,9 @@ plot_all_global_bias_50_50 <- ggplot(Base_complete_index_filtre, aes(x = bias, y
   facet_wrap(~ source_recode) +
   scale_y_continuous(
     trans = log_trans(),
-    breaks = c(0.5, 0.75, 1, 1.25, 1.5, 1.75, 2)) +
+    breaks = c(0.5, 0.75, 1, 1.25, 1.5, 1.75, 2,3,4)) +
   
-  coord_cartesian(ylim = c(0.5, 2)) +
+  coord_cartesian(ylim = c(0.5, 4)) +
   
   theme_minimal() +
   theme(
@@ -496,6 +496,32 @@ ggplot(
   coord_cartesian(ylim = c(0.5, 2))
 
 
+#Plot de mes indices par biais ----
+plot_bias_by_country <- ggplot(
+  Base_complete_index_filtre,
+  aes(x = year,y = ratio_gouvernement_top_bot2,color = bias
+  )
+) +
+  geom_line(linewidth = 1) +
+  geom_hline(yintercept = 1, linetype = "dashed", color = "grey50") +
+  facet_wrap(~ isoname) +
+  coord_cartesian(ylim = c(0,4)) +
+  scale_color_manual(
+    values = c(
+      "androcracy" = "red",
+      "epistocracy" = "green",
+      "gerontocracy" = "blue",
+      "plutocracy" = "violet")
+    ) +
+  labs(
+    x = "Année",y = "ratio tob/bot 50 50",color = "Indice"
+  ) +
+  
+  theme_minimal()
+print(plot_bias_by_country)
+
+
+
 #Test androcracy ----
 cor(Base_complete_index_gender$women_share_government, Base_complete_index_gender$Percentage.of.women.diputees, 
     use = "complete.obs")
@@ -514,7 +540,7 @@ women_representation <- Base_complete_index_gender %>%
 
 
 
-
+#Représentation des femmes ----
 plot_women_representation <- ggplot(
   women_representation,
   aes(x = year,y = Value,color = Indice,group = Indice
@@ -641,4 +667,6 @@ modelsummary(reg_gerontocracy_femmes_ministres,
     "year" = "Année"),
   statistic = "std.error", stars = c('*' = .05, '**' = .01, '***' = .001),
   fmt = 3,title = "Effet de la gérontocratie sur le taux de femmes ministres, en contrôlant par l'année")
+
+
 

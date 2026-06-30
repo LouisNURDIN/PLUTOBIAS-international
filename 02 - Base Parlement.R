@@ -8,7 +8,8 @@ library(stringr)
 elections_legislatives_valides <- read.csv("data/intermediary/elections/valid legislative elections.csv", sep = ",")
 
 Base_all_clivages <- read.csv("data/intermediary/elections/dataset with all clivages and elections.csv", sep = ",")
-
+Base_all_clivages <- Base_all_clivages %>%
+  filter(year <= 2020)
 
 Base_all_clivages <- Base_all_clivages %>%
   filter(isoname != "Hong Kong")
@@ -205,6 +206,23 @@ Base_vote_parlement_global <- Base_all_clivages %>%
 Base_vote_parlement_global <- Base_vote_parlement_global %>%
   rename(year = election_year)
 
+
+check_elections_wpid <- Base_vote_parlement_global %>%
+  filter(
+    source_recode == "ESS",
+    !is.na(survey_year),
+    survey_year > year
+  ) %>%
+  distinct(
+    isoname,
+    source,
+    source_recode,
+    survey_year,
+    year,
+    survey,
+    election_date
+  ) %>%
+  arrange(isoname, survey_year)
 ###Traitement pour avoir le taux de députés par partis sur l'ensemble des députéss
 
 

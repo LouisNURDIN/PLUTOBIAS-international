@@ -12,7 +12,8 @@ Base_complete<- Base_complete[!is.na(Base_complete$election_date),]
 
 Base_complete<- Base_complete %>% filter(Base_complete$partyfacts_id != "Other")
 Base_complete <- Base_complete %>%filter(Base_complete$year >= 1966)
-
+Base_complete <- Base_complete %>%filter(Base_complete$election_couverture_seats <= 100)
+Base_complete <- Base_complete %>%filter(Base_complete$election_couverture_ministers <= 100)
 
 Base_complete$category_recode1 <- NA 
 Base_complete <- Base_complete %>%
@@ -328,5 +329,7 @@ Base_complete_index %>%
   filter(bias == "gerontocracy") %>%
   filter(ratio_gouvernement_top_bot == max(ratio_gouvernement_top_bot, na.rm = TRUE)) %>%
   select(source_recode, isoname, year, ratio_gouvernement_top_bot)
+
+
 
 

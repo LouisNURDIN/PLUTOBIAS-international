@@ -207,6 +207,9 @@ whogov_parties <- whogov_parties %>%
 #DINC ----
 Base_vote_parlement_global <- read.csv("data/intermediary/parliament/Elections and parliament global dataset.csv", sep = ",")
 
+
+
+
 unique(Base_vote_parlement_global$partyfacts_id[Base_vote_parlement_global$isoname == "Zimbabwe" & 
                                                   Base_vote_parlement_global$year == 2013] )
 
@@ -473,6 +476,10 @@ View(
     distinct(survey_year,year,isoname,bias,election_couverture_seats,election_couverture_ministers,other_ministers,source,source_recode,survey))
 
 
+#diagnostic join des années d'enquêtes et d'élections ----
+check_year <- Base_vote_parlement_global %>%
+  distinct(survey_year, year,isoname,source,source_recode,survey) %>%
+  arrange(isoname,survey_year, year)
 
 
 #Export des bases ----
