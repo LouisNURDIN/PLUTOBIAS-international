@@ -1,6 +1,7 @@
 #Calcul des indices de ploutocratie 
 library(dplyr)
 Base_complete <-  read.csv("data/final/final dataset all countries and clivages.csv", sep = ",")
+table(Base_complete$source_recode)
 pays_regimes_presidentiels <- read.csv("data/raw/Liste régimes présidentiels.csv", sep = ",")
 pays_regimes_presidentiels <- unique(pays_regimes_presidentiels$isoname)
 
@@ -278,6 +279,8 @@ Base_regimes_presidentiels_index_test <- Base_regimes_presidentiels_index %>%
   slice(1) %>%
   ungroup()  #
 
+table(Base_complete_clean$source_recode)
+table(Base_complete_index$source_recode)
 ##Export des bases ----
 write.csv(
   Base_regimes_presidentiels_index,

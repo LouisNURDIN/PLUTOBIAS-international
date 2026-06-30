@@ -252,6 +252,8 @@ Base_vote_parlement_global <- Base_vote_parlement_global %>%
 all_elections <- all_elections %>%
   distinct(isoname, year) %>%
   arrange(isoname, year)
+table(Base_vote_parlement_global$survey)
+
 
 Base_vote_parlement_global <- Base_vote_parlement_global %>%
   arrange(isoname, source, source_recode, year)
@@ -266,9 +268,14 @@ rows_to_add <- Base_vote_parlement_global %>%
     map_dfr(sort(unique(dat$year)), function(y1){
       
       bloc <- filter(dat, year == y1)
-      
+     
+     
       # On suppose que le type d'enquête est identique pour toutes les lignes du bloc
       survey_type <- first(bloc$survey)
+      
+      if (is.na(survey_type)) {
+        
+        return(tibble()) }
       
       if(survey_type == "Pre-electoral"){
         

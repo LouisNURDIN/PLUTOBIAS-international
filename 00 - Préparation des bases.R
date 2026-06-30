@@ -105,7 +105,7 @@ unique(GMP_inc_2$educ)
 unique(GMP_inc_2$age)
 
 GMP_inc_2_clean <- GMP_inc_2 %>%
-  select(isoname,year, source, source_recode, survey,type, dinc,gender,educ, age, turnout,dataset_party_id,weight)
+  select(isoname,year, source, source_recode, survey,type, dinc,gender,educ, age, turnout,dataset_party_id)
 
 
 ##Join Partyfacts dans GMP inc ----
@@ -142,12 +142,6 @@ cor(Base_elections_legislatives$age, Base_elections_legislatives$dinc,  use = "c
 # - 0,1616936
 cor(Base_elections_legislatives$educ, Base_elections_legislatives$dinc, use = "complete.obs")
 #0,3013959
-cor(Base_elections_legislatives$gender, Base_elections_legislatives$dinc, use = "complete.obs")
-#0,1089327
-cor(Base_elections_legislatives$gender, Base_elections_legislatives$educ, use = "complete.obs")
-#0,04249539
-
-
 
 #Corrections partis problématiques
 Base_elections_legislatives <- Base_elections_legislatives %>%
@@ -210,14 +204,12 @@ Base_elections_legislatives <- Base_elections_legislatives %>%
 write.csv(
   Base_elections_legislatives,
   "data/intermediary/elections/legislative elections dataset.csv",
-  row.names = FALSE
-)
+  row.names = FALSE)
 
 write.csv(
   Base_all_elections,
   "data/intermediary/elections/all elections dataset.csv",
-  row.names = FALSE
-)
+  row.names = FALSE)
 
 
 #Ajout de nouvelles bases ----
@@ -294,7 +286,7 @@ ess_data_long <- ess_data_long %>%
   filter(turnout < 7) 
 
 ess_data_clean <- ess_data_long %>%
-  select(isoname,year, source, source_recode,survey, type, inc,gender,educ,age, turnout, dataset_party_id,weight)
+  select(isoname,year, source, source_recode,survey, type, inc,gender,educ,age, turnout, dataset_party_id)
 
 ess_data_clean <- ess_data_clean %>% mutate(dataset_party_id = trimws(dataset_party_id))
 Partyfacts_id_ess <- Partyfacts_id_ess %>% mutate(dataset_party_id = trimws(dataset_party_id)) 
@@ -532,7 +524,7 @@ cses_data <- cses_data %>%
 
 
 cses_data_clean <- cses_data %>%
-  select(isoname,year, source, source_recode,survey, type, inc,gender,educ,age, turnout, dataset_party_id,weight)
+  select(isoname,year, source, source_recode,survey, type, inc,gender,educ,age, turnout, dataset_party_id)
 
 sum(cses_data_clean$turnout == 0, na.rm = TRUE)
 
@@ -719,7 +711,7 @@ wvs_data <- wvs_data %>%
   mutate(survey = "Pre-electoral")
 
 wvs_data_clean <- wvs_data %>%
-  select(isoname,year, source, source_recode,survey, type, inc,gender,educ,age, turnout, dataset_party_id,weight)
+  select(isoname,year, source, source_recode,survey, type, inc,gender,educ,age, turnout, dataset_party_id)
 
 #Filtre pour ne garder que les données valides sur le revenu, le vote, et les bonnes élections
 
