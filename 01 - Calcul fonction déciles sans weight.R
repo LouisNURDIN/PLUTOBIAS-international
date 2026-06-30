@@ -881,8 +881,7 @@ wvs_dataset_gender <- wvs_dataset_gender %>%
 wvs_dataset_gender <- wvs_dataset_gender %>%
   rename(category = gender)
 
-names(wvs_dataset_gender)
-names(wvs_dataset_income)
+
 
 ##WVS educ ----
 wvs_data_clean_educ <- wvs_data_clean %>%
@@ -1261,9 +1260,6 @@ ess_dataset_gender <- ess_dataset_gender %>%
   mutate(bias = "androcracy")
 ess_dataset_gender <- ess_dataset_gender %>%
   rename(category = gender)
-
-names(wvs_dataset_gender)
-names(wvs_dataset_income)
 
 ##ESS educ ----
 ess_data_clean_educ <- ess_data_clean %>%
