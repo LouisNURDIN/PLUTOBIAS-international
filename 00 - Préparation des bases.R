@@ -91,13 +91,23 @@ GMP_inc_2 <- GMP_inc_2 %>%
 GMP_inc_2 <- GMP_inc_2 %>%
   rename(gender = sex)
 
-
+GMP_inc_2 <- GMP_inc_2 %>%
+  mutate(
+    gender = as.character(gender),
+    gender = case_when(
+      gender == "0" ~ "men",
+      gender == "1" ~ "women",
+      TRUE ~ gender
+    )
+  )
 
 unique(GMP_inc_2$educ)
 unique(GMP_inc_2$age)
 
 GMP_inc_2_clean <- GMP_inc_2 %>%
-  select(isoname,year, source, source_recode, survey,type, dinc,gender,educ, age, turnout,dataset_party_id)
+  select(isoname,year, source, source_recode, survey,type, dinc,gender,educ, age, turnout,dataset_party_id,weight)
+
+
 ##Join Partyfacts dans GMP inc ----
 Base_all_elections <- GMP_inc_2_clean %>%
   left_join(
@@ -137,15 +147,7 @@ cor(Base_elections_legislatives$gender, Base_elections_legislatives$dinc, use = 
 cor(Base_elections_legislatives$gender, Base_elections_legislatives$educ, use = "complete.obs")
 #0,04249539
 
-GMP_inc_2 <- GMP_inc_2 %>%
-  mutate(
-    gender = as.character(gender),
-    gender = case_when(
-      gender == "0" ~ "men",
-      gender == "1" ~ "women",
-      TRUE ~ gender
-    )
-  )
+
 
 #Corrections partis problématiques
 Base_elections_legislatives <- Base_elections_legislatives %>%
