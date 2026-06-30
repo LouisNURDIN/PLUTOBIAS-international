@@ -449,7 +449,7 @@ ess_data_clean <- ess_data_clean %>%
       dataset_party_id == "SI-7-8-v" & isoname == "Slovenia" ~ "3098", #*
       dataset_party_id == "UA-3-1-V" & isoname == "Ukraine" ~ "2234", #*
       dataset_party_id == "UA-2-10-V" & isoname == "Ukraine" ~ "2228", #*
-      TRUE ~ as.character(dataset_party_id)
+      TRUE ~ as.character(partyfacts_id)
     )
   )
 

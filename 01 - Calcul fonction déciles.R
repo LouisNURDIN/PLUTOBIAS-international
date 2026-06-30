@@ -1332,7 +1332,7 @@ ess_dataset_income <- ess_dataset_income %>%
 ess_data_clean_sexe <- ess_data_clean %>%
   filter(gender %in% c("men", "women"))
 
-###Calcul CSES gender ----
+###Calcul ESS gender ----
 
 build_votes_by_gender <- function(df){
   
@@ -1612,6 +1612,7 @@ cses_dataset_income <- cses_dataset_income %>%
 wvs_dataset_income <- wvs_dataset_income %>%
   mutate(
     category = paste0("inc-", category))
+
 ess_dataset_income <- ess_dataset_income %>%
   mutate(
     category = paste0("inc-", category))

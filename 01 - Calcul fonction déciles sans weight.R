@@ -1476,6 +1476,9 @@ cses_dataset_income <- cses_dataset_income %>%
 wvs_dataset_income <- wvs_dataset_income %>%
   mutate(
     category = paste0("inc-", category))
+ess_dataset_income <- ess_dataset_income %>%
+  mutate(
+    category = paste0("inc-", category))
 
 #Espace pour empiler les bases votes entre elles ----
 bases <- list(
