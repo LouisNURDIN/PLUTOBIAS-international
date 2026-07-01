@@ -9,7 +9,7 @@ elections_legislatives_valides <- read.csv("data/intermediary/elections/valid el
 elections_legislatives_valides2 <- read.csv("data/intermediary/elections/valid legislative elections.csv", sep = ",")
 pays_gmp_legislatives <- unique(elections_legislatives_valides2$isoname)
 annees_gmp_legislatives <- unique(elections_legislatives_valides2$year)
-all_elections <- read.csv ("data/intermediary/elections/list all elections.csv", sep = ";")
+all_elections <- read.csv ("data/intermediary/elections/all elections update.csv", sep = ";")
 all_elections <- all_elections %>%
   mutate(year = as.numeric(year))
 
