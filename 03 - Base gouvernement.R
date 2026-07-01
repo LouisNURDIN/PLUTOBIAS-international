@@ -271,14 +271,12 @@ rows_to_add <- Base_vote_parlement_global %>%
     map_dfr(sort(unique(dat$year)), function(y1){
       
       bloc <- filter(dat, year == y1)
-     
-     
-      # On suppose que le type d'enquête est identique pour toutes les lignes du bloc
+      
       survey_type <- first(bloc$survey)
       
-      if (is.na(survey_type)) {
-        
-        return(tibble()) }
+      if(is.na(survey_type)){
+        return(tibble())
+      }
       
       if(survey_type == "Pre-electoral"){
         
@@ -295,16 +293,39 @@ rows_to_add <- Base_vote_parlement_global %>%
         
       } else if(survey_type %in% c("Post-electoral", "Pre/post-electoral")){
         
-        # Dernière élection officielle avant y1
-        previous_election <- all_elections %>%
-          filter(isoname == country, year < y1) %>%
-          summarise(prev_year = max(year, na.rm = TRUE)) %>%
-          pull(prev_year)
+        # L'année du survey est-elle une année d'élection ?
+        is_election_year <- y1 %in%
+          (all_elections %>%
+             filter(isoname == country) %>%
+             pull(year))
         
-        if(length(previous_election) == 0 || is.infinite(previous_election))
-          return(tibble())
-        
-        new_years <- seq(previous_election + 1, y1 - 1)
+        if(is_election_year){
+          
+          # Même année qu'une élection : on propage vers l'élection suivante
+          next_election <- all_elections %>%
+            filter(isoname == country, year > y1) %>%
+            summarise(next_year = min(year, na.rm = TRUE)) %>%
+            pull(next_year)
+          
+          if(length(next_election) == 0 || is.infinite(next_election))
+            return(tibble())
+          
+          new_years <- seq(y1 + 1, next_election - 1)
+          
+        } else {
+          
+          # Pas une année d'élection : on rattache à la précédente
+          previous_election <- all_elections %>%
+            filter(isoname == country, year < y1) %>%
+            summarise(prev_year = max(year, na.rm = TRUE)) %>%
+            pull(prev_year)
+          
+          if(length(previous_election) == 0 || is.infinite(previous_election))
+            return(tibble())
+          
+          new_years <- seq(previous_election + 1, y1 - 1)
+          
+        }
         
       } else{
         
@@ -482,6 +503,43 @@ check_year <- Base_vote_parlement_global %>%
   arrange(isoname,survey_year, year)
 
 
+#Filtrer pour enlever les enquêtes qui ont eu lieu trop longtemps après les élections
+Base_complete <- Base_complete %>%filter(Base_complete$year >= 1966)
+Base_complete <- Base_complete %>%filter(Base_complete$survey_year <= 2020)
+Base_complete <- Base_complete %>%filter(!(isoname == "France" & survey_year >= 2018))
+Base_complete <- Base_complete %>%filter(!(isoname == "Montenegro" & survey_year >= 2018))
+Base_complete <- Base_complete %>%filter(!(isoname == "Netherlands" & survey_year >= 2018))
+Base_complete <- Base_complete %>%filter(!(isoname == "Slovakia" & survey_year >= 2018))
+Base_complete <- Base_complete %>%filter(!(isoname == "Austria" & survey_year >= 2018))
+Base_complete <- Base_complete %>%filter(!(isoname == "Belgium" & survey_year >= 2020))
+Base_complete <- Base_complete %>%filter(!(isoname == "Bulgaria" & survey_year >= 2018))
+Base_complete <- Base_complete %>%filter(!(isoname == "Croatia" & survey_year >= 2018))
+Base_complete <- Base_complete %>%filter(!(isoname == "Cyprus" & survey_year >= 2018))
+Base_complete <- Base_complete %>%filter(!(isoname == "Czech Republic" & survey_year >= 2018))
+Base_complete <- Base_complete %>%filter(!(isoname == "Estonia" & survey_year >= 2020))
+Base_complete <- Base_complete %>%filter(!(isoname == "Finland" & survey_year >= 2020))
+Base_complete <- Base_complete %>%filter(!(isoname == "Germany" & survey_year >= 2018))
+Base_complete <- Base_complete %>%filter(!(isoname == "Greece" & survey_year >= 2020))
+Base_complete <- Base_complete %>%filter(!(isoname == "Ireland" & survey_year >= 2016))
+Base_complete <- Base_complete %>%filter(!(isoname == "Israel" & survey_year >= 2020))
+Base_complete <- Base_complete %>%filter(!(isoname == "Italy" & survey_year >= 2018)) #Cas supicieux, il y a bien une élection en 2018 donc on peut dire que les enquêtes de 2018 doivent être rattachées )à l'élection de 2018, mais sinon c"tait en 2013
+Base_complete <- Base_complete %>%filter(!(isoname == "Latvia" & survey_year >= 2018))
+Base_complete <- Base_complete %>%filter(!(isoname == "Lithuania" & survey_year >= 2016))
+Base_complete <- Base_complete %>%filter(!(isoname == "Norway" & survey_year >= 2017))
+Base_complete <- Base_complete %>%filter(!(isoname == "Poland" & survey_year >= 2019))
+Base_complete <- Base_complete %>%filter(!(isoname == "Portugal" & survey_year >= 2019))
+Base_complete <- Base_complete %>%filter(!(isoname == "Serbia" & survey_year >= 2016))
+Base_complete <- Base_complete %>%filter(!(isoname == "Slovenia" & survey_year >= 2018))
+Base_complete <- Base_complete %>%filter(!(isoname == "Spain" & survey_year >= 2016))
+Base_complete <- Base_complete %>%filter(!(isoname == "Switzerland" & survey_year >= 2019))
+Base_complete <- Base_complete %>%filter(!(isoname == "United Kingdom" & survey_year >= 2017))
+Base_complete <- Base_complete %>%filter(!(isoname == "Denmark" & survey_year >= 2019))
+Base_complete <- Base_complete %>%filter(!(isoname == "Russia" & survey_year >= 2016))
+
+
+unique(Base_complete$survey_year[Base_complete$isoname == "Russia"])
+unique(Base_complete$isoname[Base_complete$survey_year >= 2016])
+unique(Base_complete$survey_year)
 #Export des bases ----
 write.csv(
   Base_complete,
