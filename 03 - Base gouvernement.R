@@ -463,7 +463,7 @@ missing_parties <- whogov_parties %>%
          year <= 2015) %>%
   distinct(isoname, year, partyfacts_id, ministers_share) %>%
   anti_join(
-    Base_vote_parlement_global %>%
+    Base_complete %>%
       distinct(isoname, year, partyfacts_id),
     by = c("isoname", "year", "partyfacts_id"))
 
@@ -539,7 +539,7 @@ Base_complete <- Base_complete %>%filter(!(isoname == "Russia" & survey_year >= 
 
 unique(Base_complete$survey_year[Base_complete$isoname == "Russia"])
 unique(Base_complete$isoname[Base_complete$survey_year >= 2016])
-unique(Base_complete$survey_year)
+unique(Base_complete$isoname)
 #Export des bases ----
 write.csv(
   Base_complete,
