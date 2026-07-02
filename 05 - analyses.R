@@ -4,8 +4,18 @@ library(stringr)
 library(ggplot2)
 library(scales)
 library(fixest)
+library(lubridate)
+library(purrr)
 Base_complete_index <-  read.csv("data/final/dataset complete with index.csv", sep = ",")
 
+Base_complete_index <- Base_complete_index %>%
+  mutate(
+    year_election = if_else(
+      year == year(election_date),
+      1L,
+      0L
+    )
+  )
 #Hiérarchiser les sources ---- 
 Base_complete_index <- Base_complete_index  %>%
   mutate(
@@ -43,6 +53,9 @@ Base_complete_best_sources <- Base_complete_index %>%
     !is.na(score_source),
     score_source == min(score_source, na.rm = TRUE)
   ) %>%
+  mutate(
+    nbr_sources = n_distinct(source)
+  ) %>%
   ungroup()
 
 #check si on a bien une observation par pays/année/bias
@@ -50,37 +63,51 @@ Base_complete_best_sources <- Base_complete_best_sources %>%
   filter(election_couverture_seats >= 80 & election_couverture_ministers >= 0.80)
 
 Base_complete_best_sources %>% count(isoname, year, bias) %>% filter(n > 1)
-#Pour les combinaison où on a plusieurs sources à égalité, calculer une moyenne de nos indices 
 
+
+#Calcul moyenne indices quand on a plusieurs sources ----
 ratio_cols <- names(Base_complete_best_sources)[grepl("^ratio", names(Base_complete_best_sources))]
 
-verification_ratios <- Base_complete_best_sources %>%
+Base_complete_finale <- Base_complete_best_sources %>%
   group_by(isoname, year, bias) %>%
-  filter(n_distinct(source) > 1) %>%
-  left_join(
-    Base_complete_best_sources %>%
-      group_by(isoname, year, bias) %>%
-      summarise(
-        across(
-          all_of(ratio_cols),
-          ~ mean(.x, na.rm = TRUE),
-          .names = "{.col}_moyenne"
-        ),
-        .groups = "drop"
-      ),
-    by = c("isoname", "year", "bias")
+  summarise(
+    
+    # nombre de sources conservées
+    nbr_sources = n_distinct(source),
+    
+    # moyenne géométrique des ratios
+    across(
+      all_of(ratio_cols),
+      ~ {
+        x <- .x
+        x <- x[!is.na(x) & x > 0]
+        
+        if (length(x) == 0) {
+          NA_real_
+        } else {
+          exp(mean(log(x)))
+        }
+      }
+    ),
+    
+    # autres variables inchangées
+    across(
+      -c(all_of(ratio_cols), source),
+      first
+    ),
+    
+    .groups = "drop"
   )
-
 #Création des datasets par biais
 Base_regimes_presidentiels_index <-  read.csv("data/final/dataset complete regimes presidentiels.csv", sep = ",")
 
-Base_complete_index_income <- Base_complete_best_sources %>%filter(Base_complete_best_sources$bias == "plutocracy")
+Base_complete_index_income <- Base_complete_finale %>%filter(Base_complete_finale$bias == "plutocracy")
 
-Base_complete_index_gender<- Base_complete_best_sources %>%filter(Base_complete_best_sources$bias == "androcracy")
+Base_complete_index_gender<- Base_complete_finale %>%filter(Base_complete_finale$bias == "androcracy")
 
-Base_complete_index_educ <- Base_complete_best_sources %>%filter(Base_complete_best_sources$bias == "epistocracy")
+Base_complete_index_educ <- Base_complete_finale %>%filter(Base_complete_finale$bias == "epistocracy")
 
-Base_complete_index_age <- Base_complete_best_sources %>%filter(Base_complete_best_sources$bias == "gerontocracy")
+Base_complete_index_age <- Base_complete_finale %>%filter(Base_complete_finale$bias == "gerontocracy")
 
 #Filtre pour travailler sur des bases propres
 Base_complete_index_income <- Base_complete_index_income %>%
@@ -134,6 +161,18 @@ recodage <- function(df) {
 
 data_50_50 <- recodage(data_50_50)
 data_10_10 <- recodage(data_10_10)
+
+filtre_annees_electorales <- function(df) {
+  df %>%
+    filter(
+      !(Indice %in% c("Participation", "Votes → sièges") &
+          year_election == 0))}
+
+data_50_50 <- data_50_50 %>%
+  filtre_annees_electorales()
+
+data_10_10 <- data_10_10 %>%
+  filtre_annees_electorales()
 
 ### PLOT 50/50 ----
 p_50_50 <- ggplot(data_50_50, aes(x = Indice, y = Value, fill = Indice)) +
@@ -271,8 +310,12 @@ recodage <- function(df) {
         "Gouvernement")))
 }
 
+
+
 data_top_bot_gender <- recodage(data_top_bot_gender)
 
+data_top_bot_gender <- data_top_bot_gender %>%
+  filtre_annees_electorales()
 ### PLOT 50/50 ----
 plot_top_bot_gender <- ggplot(data_top_bot_gender, aes(x = Indice, y = Value, fill = Indice)) +
   geom_boxplot(
@@ -356,6 +399,8 @@ recodage <- function(df) {
 
 data_top_bot_educ <- recodage(data_top_bot_educ)
 
+data_top_bot_educ <- data_top_bot_educ %>%
+  filtre_annees_electorales()
 
 plot_top_bot_educ <- ggplot(data_top_bot_educ, aes(x = Indice, y = Value, fill = Indice)) +
   geom_boxplot(
@@ -438,7 +483,8 @@ recodage <- function(df) {
 }
 
 data_top_bot_age <- recodage(data_top_bot_age)
-
+data_top_bot_age <- data_top_bot_age %>%
+  filtre_annees_electorales()
 
 plot_top_bot_age <- ggplot(data_top_bot_age, aes(x = Indice, y = Value, fill = Indice)) +
   geom_boxplot(
@@ -493,10 +539,7 @@ ggsave(
 
 
 #Box plot indice avec tous les biais ----
-Base_complete_index_filtre <- Base_complete_index %>%
-  filter(election_couverture_seats >= 80 & election_couverture_ministers >= 0.80)
-
-plot_all_global_bias_50_50 <- ggplot(Base_complete_index_filtre, aes(x = bias, y = ratio_gouvernement_top_bot2, fill = bias)) +
+plot_all_global_bias_50_50 <- ggplot(Base_complete_finale, aes(x = bias, y = ratio_gouvernement_top_bot2, fill = bias)) +
   geom_boxplot(
     position = position_nudge(x = -0.35),
     width = 0.2,
@@ -548,6 +591,203 @@ ggsave(
 filename = "results/figures/Boxplot global bias 50 50.jpg",
 plot = plot_all_global_bias_50_50,width = 10,height = 6,dpi = 300)
 
+
+#HEATMAP corrélations biais/indices ----
+##Garder la meilleure source au sein de chaque source_recode
+Base_complete_grosses_sources <- Base_complete_index %>%
+  group_by(isoname, year, bias,source_recode) %>%
+  filter(
+    !is.na(score_source),
+    score_source == min(score_source, na.rm = TRUE)
+  ) %>%
+  mutate(
+    nbr_sources = n_distinct(source)
+  ) %>%
+  ungroup()
+
+#check si on a bien une observation par pays/année/bias
+Base_complete_grosses_sources <- Base_complete_grosses_sources %>%
+  filter(election_couverture_seats >= 80 & election_couverture_ministers >= 0.80)
+
+Base_complete_grosses_sources %>% count(isoname, year, bias,source_recode) %>% filter(n > 1)
+
+
+#Calcul moyenne indices quand on a plusieurs sources ----
+ratio_cols <- names(Base_complete_grosses_sources)[grepl("^ratio", names(Base_complete_grosses_sources))]
+
+Base_complete_global_sources <- Base_complete_grosses_sources %>%
+  group_by(isoname, year, bias,source_recode) %>%
+  summarise(
+    
+    # nombre de sources conservées
+    nbr_sources = n_distinct(source),
+    
+    # moyenne géométrique des ratios
+    across(
+      all_of(ratio_cols),
+      ~ {
+        x <- .x
+        x <- x[!is.na(x) & x > 0]
+        
+        if (length(x) == 0) {
+          NA_real_
+        } else {
+          exp(mean(log(x)))
+        }
+      }
+    ),
+    
+    # autres variables inchangées
+    across(
+      -c(all_of(ratio_cols), source),
+      first
+    ),
+    
+    .groups = "drop"
+  )
+Base_complete_global_sources %>%
+  count(isoname, year, bias, source_recode) %>%
+  filter(n > 1)
+
+##Prépa base heatmap ----
+Base_complete_global_sources_long <- Base_complete_global_sources %>%
+  pivot_longer(
+    cols = starts_with("ratio_") & !ends_with("top_bot2"),
+    names_to = "Indice",
+    values_to = "Value")
+
+table(Base_complete_global_sources_long$Indice)
+
+Base_complete_global_sources_long <- recodage(Base_complete_global_sources_long)
+
+Base_complete_global_sources_long <- Base_complete_global_sources_long %>%
+  filtre_annees_electorales()
+
+
+make_heatmap <- function(df, bias_i, indice_i) {
+  
+  df_sub <- df %>%
+    filter(bias == bias_i, Indice == indice_i)
+  
+  sources <- unique(df_sub$source_recode)
+  
+  expand_grid(src1 = sources, src2 = sources) %>%
+    rowwise() %>%
+    mutate(
+      tmp = list({
+        
+        d1 <- df_sub %>%
+          filter(source_recode == src1) %>%
+          select(isoname, year, v1 = Value)
+        
+        d2 <- df_sub %>%
+          filter(source_recode == src2) %>%
+          select(isoname, year, v2 = Value)
+        
+        inner <- inner_join(d1, d2, by = c("isoname", "year"))
+        
+        list(
+          cor = if (nrow(inner) < 5) NA_real_ else cor(inner$v1, inner$v2, use = "complete.obs"),
+          n = nrow(inner)
+        )
+      }),
+      
+      cor = tmp$cor,
+      n = tmp$n
+    ) %>%
+    select(-tmp)
+}
+
+biases <- c("androcracy", "plutocracy", "gerontocracy", "epistocracy")
+indices <- c(
+  "Participation","Votes → sièges","Sièges → ministres","Gouvernement")
+
+
+heatmaps <- crossing(bias = biases, indice = indices) %>%
+  mutate(data = map2(bias, indice, ~ make_heatmap(Base_complete_global_sources_long, .x, .y)))
+
+plot_heatmap <- function(df, title) {
+  
+  df <- df %>%
+    mutate(
+      upper_triangle = src1 <= src2
+    )
+  
+  ggplot(df, aes(src1, src2)) +
+    
+    # triangle inférieur grisé
+    geom_tile(
+      data = ~subset(.x, !upper_triangle),
+      fill = "grey90"
+    ) +
+    
+    # triangle supérieur coloré
+    geom_tile(
+      data = ~subset(.x, upper_triangle),
+      aes(fill = cor)
+    ) +
+    
+    # labels (corrélation + N)
+    geom_text(
+      data = ~subset(.x, upper_triangle),
+      aes(label = paste0(round(cor, 2), "\nN=", n)),
+      size = 3
+    ) +
+    
+    scale_fill_gradient2(
+      low = "blue",
+      mid = "white",
+      high = "red",
+      midpoint = 0,
+      limits = c(-1, 1)
+    ) +
+    
+    theme_minimal() +
+    labs(title = title, x = "", y = "")
+}
+
+plots <- heatmaps %>%
+  mutate(plot = map2(data, paste(bias, indice, sep = " — "), plot_heatmap))
+
+
+#Visualiser les heatmap
+plots$plot[[1]]  #Androcracy - Gouvernement
+plots$plot[[5]]  #Epistocracy - Gouvernement
+plots$plot[[9]]  #Gerontocracy - Gouvernement
+plots$plot[[13]] #Plutocracy - Gouvernement
+
+plots$plot[[2]] #Androcracy - Participation
+plots$plot[[6]] #Epistocracy - Participation
+plots$plot[[10]] #Gerontocracy - Participation
+plots$plot[[14]] #Plutocracy - Participation
+
+plots$plot[[4]] #Androcracy - Votes → Sièges
+plots$plot[[8]] #Epistocracy - Votes → Sièges
+plots$plot[[12]] #Gerontocracy - Votes → Sièges
+plots$plot[[16]] #Plutocracy - Votes → Sièges
+
+plots$plot[[3]] #Androcracy - Sièges → Ministres
+plots$plot[[7]] #Epistocracy - Sièges → Ministres
+plots$plot[[11]] #Gerontocracy - Sièges → Ministres
+plots$plot[[15]] #Plutocracy - Sièges → Ministres
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#____________________________________________________________________________
+#EXPLORATOIRE ----
 #Autres boxplot ----
 ggplot(
   data_top_bot_gender %>%
