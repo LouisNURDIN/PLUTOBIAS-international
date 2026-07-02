@@ -749,6 +749,19 @@ plot_heatmap <- function(df, title) {
 plots <- heatmaps %>%
   mutate(plot = map2(data, paste(bias, indice, sep = " — "), plot_heatmap))
 
+setwd("results/figures")
+
+walk2(
+  plots$plot,
+  paste0("heatmap_", plots$bias, "_", plots$indice, ".png"),
+  ~ ggsave(
+    filename = .y,
+    plot = .x,
+    width = 10,
+    height = 7,
+    dpi = 300
+  )
+)
 
 #Visualiser les heatmap
 plots$plot[[1]]  #Androcracy - Gouvernement
