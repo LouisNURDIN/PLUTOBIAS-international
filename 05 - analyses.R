@@ -5,6 +5,29 @@ library(ggplot2)
 library(scales)
 library(fixest)
 Base_complete_index <-  read.csv("data/final/dataset complete with index.csv", sep = ",")
+
+#Hiérarchiser les sources ---- 
+Base_complete_index <- Base_complete_index  %>%
+  mutate(
+    survey_post = case_when(
+      survey == "Post-electoral" ~ "1",
+      survey == "Pre/Post-electoral" ~ "1",
+      survey == "Pre-electoral" ~ "0",
+      TRUE ~ survey))
+table(Base_complete_index$survey_post)
+
+Base_complete_index <- Base_complete_index  %>%
+  mutate(
+    survey_specific = case_when(
+      source_recode == "CSES" ~ "1",
+      source_recode == "WPID" ~ "1",
+      source_recode == "ESS" ~ "0",
+      source_recode == "WVS" ~ "0",
+      TRUE ~ source_recode))
+table(Base_complete_index$survey_specific)
+
+
+#Création des datasets par biais
 Base_regimes_presidentiels_index <-  read.csv("data/final/dataset complete regimes presidentiels.csv", sep = ",")
 
 Base_complete_index_income <- Base_complete_index %>%filter(Base_complete_index$bias == "plutocracy")

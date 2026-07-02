@@ -200,7 +200,7 @@ Base_complete_clean <- Base_complete_clean %>% filter(!isoname %in% pays_regimes
 
 #base propre ----
 Base_complete_index <- Base_complete_clean  %>%
-  group_by(source,source_recode,isoname,survey_year,year,election_date,bias) %>%
+  group_by(source,source_recode,isoname,survey,survey_year,year,election_date,bias) %>%
   summarise(ratio_participation_top_bot = mean(ratio_participation_top_bot, na.rm = TRUE),
     ratio_votes_valides_en_sieges_top_bot = mean(ratio_votes_valides_en_sieges_top_bot, na.rm = TRUE),
     ratio_sieges_ministres_top_bot = mean(ratio_sieges_ministres_top_bot, na.rm = TRUE),
@@ -253,7 +253,7 @@ write.csv(
 
 #Même chose avec les régimes présidentiels ----
 Base_regimes_presidentiels_index <- Base_regimes_presidentiels  %>%
-  group_by(source,source_recode,isoname,survey_year,year,election_date,bias) %>%
+  group_by(source,source_recode,isoname,survey,survey_year,year,election_date,bias) %>%
   summarise(ratio_participation_top_bot = mean(ratio_participation_top_bot, na.rm = TRUE),
             ratio_votes_valides_en_sieges_top_bot = mean(ratio_votes_valides_en_sieges_top_bot, na.rm = TRUE),
             
