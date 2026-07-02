@@ -26,17 +26,61 @@ Base_complete_index <- Base_complete_index  %>%
       TRUE ~ source_recode))
 table(Base_complete_index$survey_specific)
 
+Base_complete_index <- Base_complete_index  %>%
+  mutate(
+    score_source = case_when(
+      survey_post == "1" & survey_specific == "1" ~ "1",  #Post-electoral + specific = meilleure source,
+      survey_post == "1" & survey_specific == "0" ~ "2", #Post-electoral et général,
+      survey_post == "0" & survey_specific == "1" ~ "3", #Pre-electoral et specific,
+      survey_post == "0" & survey_specific == "0" ~ "4", #Pre-electoral et général,
+      TRUE ~ survey))
+table(Base_complete_index$score_source)
+
+#Filtre pour garder pour chaque combinaison pays/année/biais la meilleure source
+Base_complete_best_sources <- Base_complete_index %>%
+  group_by(isoname, year, bias) %>%
+  filter(
+    !is.na(score_source),
+    score_source == min(score_source, na.rm = TRUE)
+  ) %>%
+  ungroup()
+
+#check si on a bien une observation par pays/année/bias
+Base_complete_best_sources <- Base_complete_best_sources %>%
+  filter(election_couverture_seats >= 80 & election_couverture_ministers >= 0.80)
+
+Base_complete_best_sources %>% count(isoname, year, bias) %>% filter(n > 1)
+#Pour les combinaison où on a plusieurs sources à égalité, calculer une moyenne de nos indices 
+
+ratio_cols <- names(Base_complete_best_sources)[grepl("^ratio", names(Base_complete_best_sources))]
+
+verification_ratios <- Base_complete_best_sources %>%
+  group_by(isoname, year, bias) %>%
+  filter(n_distinct(source) > 1) %>%
+  left_join(
+    Base_complete_best_sources %>%
+      group_by(isoname, year, bias) %>%
+      summarise(
+        across(
+          all_of(ratio_cols),
+          ~ mean(.x, na.rm = TRUE),
+          .names = "{.col}_moyenne"
+        ),
+        .groups = "drop"
+      ),
+    by = c("isoname", "year", "bias")
+  )
 
 #Création des datasets par biais
 Base_regimes_presidentiels_index <-  read.csv("data/final/dataset complete regimes presidentiels.csv", sep = ",")
 
-Base_complete_index_income <- Base_complete_index %>%filter(Base_complete_index$bias == "plutocracy")
+Base_complete_index_income <- Base_complete_best_sources %>%filter(Base_complete_best_sources$bias == "plutocracy")
 
-Base_complete_index_gender<- Base_complete_index %>%filter(Base_complete_index$bias == "androcracy")
+Base_complete_index_gender<- Base_complete_best_sources %>%filter(Base_complete_best_sources$bias == "androcracy")
 
-Base_complete_index_educ <- Base_complete_index%>%filter(Base_complete_index$bias == "epistocracy")
+Base_complete_index_educ <- Base_complete_best_sources %>%filter(Base_complete_best_sources$bias == "epistocracy")
 
-Base_complete_index_age <- Base_complete_index %>%filter(Base_complete_index$bias == "gerontocracy")
+Base_complete_index_age <- Base_complete_best_sources %>%filter(Base_complete_best_sources$bias == "gerontocracy")
 
 #Filtre pour travailler sur des bases propres
 Base_complete_index_income <- Base_complete_index_income %>%
