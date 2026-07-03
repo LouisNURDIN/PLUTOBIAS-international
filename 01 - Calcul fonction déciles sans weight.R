@@ -11,6 +11,70 @@ sum(is.na(Base_elections_legislatives$weight))
 Base_elections_legislatives <- Base_elections_legislatives %>%
   filter(Base_elections_legislatives$partyfacts_id != "Other")
 
+all_elections <- read.csv ("data/intermediary/elections/all elections update.csv", sep = ",")
+
+all_elections <- all_elections %>%
+  mutate(
+    election_date = as.Date(election_date, format = "%Y.%m.%d"),
+    year = as.integer(year)
+  )
+
+Base_elections_legislatives <- Base_elections_legislatives %>%
+  mutate(interview_date = as.Date(interview_date))
+
+
+Base_elections_legislatives_matched <- Base_elections_legislatives %>%
+  group_by(isoname) %>%
+  group_modify(~{
+    
+    df <- .x
+    country <- .y$isoname[1]
+    
+    elections <- all_elections %>%
+      mutate(election_date = as.Date(election_date)) %>%
+      filter(isoname == country) %>%
+      arrange(election_date)
+    
+    if (nrow(elections) == 0) return(df)
+    if (nrow(df) == 0) return(df)
+    
+    map_dfr(seq_len(nrow(df)), function(i){
+      
+      row <- df[i, ]
+      
+      if (is.na(row$interview_date)) return(row)
+      
+      if (row$survey == "pre-electoral") {
+        
+        next_elec <- elections %>%
+          filter(election_date > row$interview_date) %>%
+          slice_min(election_date, n = 1)
+        
+        row$election_date <- ifelse(nrow(next_elec) == 0, NA, next_elec$election_date[1])
+        row$election_year <- ifelse(nrow(next_elec) == 0, NA, next_elec$year[1])
+        
+      } else if (row$survey %in% c("post-electoral", "pre/post-electoral")) {
+        
+        prev_elec <- elections %>%
+          filter(election_date <= row$interview_date) %>%
+          slice_max(election_date, n = 1)
+        
+        row$election_date <- ifelse(nrow(prev_elec) == 0, NA, prev_elec$election_date[1])
+        row$election_year <- ifelse(nrow(prev_elec) == 0, NA, prev_elec$year[1])
+        
+      } else {
+        
+        row$election_date <- NA
+        row$election_year <- NA
+      }
+      
+      row
+    })
+    
+  }) %>%
+  ungroup()
+
+
 #Calcul fonction déciles WPID ----
 
 meta_info <- Base_elections_legislatives %>%

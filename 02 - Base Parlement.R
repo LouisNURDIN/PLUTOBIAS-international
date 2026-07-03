@@ -366,3 +366,21 @@ write.csv(
   elections_dans_elections_global,
   "data/intermediary/elections/list all elections.csv",
   row.names = FALSE)
+
+
+all_elections_update <- read.csv ("data/intermediary/elections/all elections update.csv", sep = ";")
+
+all_elections_update <- all_elections_update %>%
+  mutate(year = as.integer(year)) %>%
+  left_join(
+    Elections_global %>%
+      mutate(year = as.integer(year)) %>%
+      dplyr::select(isoname, year, election_date),
+    by = c("isoname", "year")
+  )
+
+write.csv(
+  all_elections_update,
+  "data/intermediary/elections/all elections update.csv",
+  row.names = FALSE)
+            
