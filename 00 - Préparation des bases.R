@@ -2,6 +2,7 @@ library(haven)
 library(dplyr)
 library(tidyr)
 library(stringr)
+library(lubridate)
 #Ouverture de la base ----
 GMP_inc <- read_dta("data/raw/wpid/gmp-inc.dta")
 
@@ -101,11 +102,25 @@ GMP_inc_2 <- GMP_inc_2 %>%
     )
   )
 
+GMP_inc_2 <- GMP_inc_2 %>%
+  mutate(interview_date = year)
+
+GMP_inc_2 <- GMP_inc_2 %>%
+  mutate(
+    interview_date = case_when(
+      survey == "Pre-electoral" ~ as.Date(sprintf("%04d-01-01", year)),
+      survey %in% c("Post-electoral", "Pre/post-electoral") ~
+        as.Date(sprintf("%04d-12-31", year)),
+      
+      TRUE ~ as.Date(NA)
+    )
+  )
+
 unique(GMP_inc_2$educ)
 unique(GMP_inc_2$age)
 
 GMP_inc_2_clean <- GMP_inc_2 %>%
-  select(isoname,year, source, source_recode, survey,type, dinc,gender,educ, age, turnout,dataset_party_id)
+  select(isoname,year,interview_date, source, source_recode, survey,type, dinc,gender,educ, age, turnout,dataset_party_id)
 
 
 ##Join Partyfacts dans GMP inc ----
@@ -218,6 +233,23 @@ write.csv(
 #ESS ----
 ess_data <- read.csv("data/raw/ess/Datafile-subset.csv")
 
+table(ess_data$inwyys)
+
+ess_data <- ess_data %>%
+  mutate(
+    interview_date = make_date(
+      year  = coalesce(
+        na_if(inwyr, 99),
+        na_if(inwyys, 99)),
+      month = coalesce(
+        na_if(inwmm, 99),
+        na_if(inwmms, 99),
+        12L),
+      day   = coalesce(
+        na_if(inwdd, 99),
+        na_if(inwdds, 99),
+        31L)))
+
 ess_data <- ess_data %>%
   select(-age)
 ess_data_long <- ess_data %>%
@@ -235,6 +267,7 @@ ess_data_long <- ess_data_long %>%
         sep = "-"
       ),TRUE ~ paste( cntry, first_essround,party_id,substr(variable, 4, 4),sep = "-")))  
 
+names(ess_data_long)
 sum(is.na(ess_data_long$ess_id))
 ###Identifier les variables qui nous intéressent pour les harmoniser----
 ess_data_long <- ess_data_long %>%
@@ -246,8 +279,11 @@ ess_data_long <- ess_data_long %>%
   rename(weight = pspwght)
 ess_data_long <- ess_data_long %>%
   mutate(source_recode = "ESS")
+
 ess_data_long <- ess_data_long %>%
-  rename(year = essround)
+  mutate(
+      year  = coalesce(na_if(inwyr, 9999), na_if(inwyys, 9999)))
+
 ess_data_long <- ess_data_long %>%
   rename(turnout = vote)
 ess_data_long <- ess_data_long %>%
@@ -266,6 +302,8 @@ ess_data_long <- ess_data_long %>%
 
 ess_data_long <- ess_data_long %>%
   mutate(survey = "Post-electoral")
+
+sum(is.na(ess_data_long$inwdd))
 
 #Filtrer mes données sur le vote
 sum(ess_data_long$turnout == 2, na.rm = TRUE)
@@ -286,7 +324,7 @@ ess_data_long <- ess_data_long %>%
   filter(turnout < 7) 
 
 ess_data_clean <- ess_data_long %>%
-  select(isoname,year, source, source_recode,survey, type, inc,gender,educ,age, turnout, dataset_party_id)
+  select(isoname,year,interview_date, source, source_recode,survey, type, inc,gender,educ,age, turnout, dataset_party_id)
 
 ess_data_clean <- ess_data_clean %>% mutate(dataset_party_id = trimws(dataset_party_id))
 Partyfacts_id_ess <- Partyfacts_id_ess %>% mutate(dataset_party_id = trimws(dataset_party_id)) 
@@ -471,9 +509,17 @@ unique(Base_all_elections$source)
 
 #CSES ----
 cses_data <- read.csv("data/raw/cses/cses_imd.csv")
+
+
 ###Identifier les variables qui nous intéressent pour les harmoniser----
 cses_data <- cses_data %>%
   rename(isoname = IMD1006_NAM)
+cses_data <- cses_data %>%
+  rename(annee = IMD1013_Y)
+cses_data <- cses_data %>%
+  rename(mois = IMD1013_M)
+cses_data <- cses_data %>%
+  rename(jour = IMD1013_D)
 cses_data <- cses_data %>%
   rename(dataset_key= IMD1001)
 cses_data <- cses_data %>%
@@ -504,6 +550,15 @@ cses_data <- cses_data %>%
   mutate(survey = "Post-electoral")
 
 
+#Recréer la date de l'interview
+cses_data <- cses_data %>%
+  mutate(
+    interview_date = make_date(
+      year  = if_else(annee == 9999, year, annee),
+      month = if_else(mois == 99, 12L, mois),
+      day   = if_else(jour == 99, 31L, jour)))
+
+
 #ne pas oublier de garder le weight 
 
 
@@ -524,7 +579,7 @@ cses_data <- cses_data %>%
 
 
 cses_data_clean <- cses_data %>%
-  select(isoname,year, source, source_recode,survey, type, inc,gender,educ,age, turnout, dataset_party_id)
+  select(isoname,year,interview_date, source, source_recode,survey, type, inc,gender,educ,age, turnout, dataset_party_id)
 
 sum(cses_data_clean$turnout == 0, na.rm = TRUE)
 
@@ -673,6 +728,8 @@ write.csv(
 
 #WVS ----
 wvs_data <- read.csv  ("data/raw/wvs/WVS_Time_Series_1981-2022_csv_v5_0.csv")
+sum(is.na(wvs_data$S012))
+table(wvs_data$S012)
 unique(wvs_data$S018)
 
 mean(wvs_data$S018, na.rm = TRUE)
@@ -710,8 +767,16 @@ wvs_data <- wvs_data %>%
 wvs_data <- wvs_data %>%
   mutate(survey = "Pre-electoral")
 
+
+wvs_data <- wvs_data %>%
+  mutate(
+    interview_date = if_else(
+      is.na(S012) | S012 < 0,
+      as.Date(sprintf("%04d-01-01", year)),
+      as.Date(as.character(S012), format = "%Y%m%d")))
+
 wvs_data_clean <- wvs_data %>%
-  select(isoname,year, source, source_recode,survey, type, inc,gender,educ,age, turnout, dataset_party_id)
+  select(isoname,year,interview_date, source, source_recode,survey, type, inc,gender,educ,age, turnout, dataset_party_id)
 
 #Filtre pour ne garder que les données valides sur le revenu, le vote, et les bonnes élections
 
