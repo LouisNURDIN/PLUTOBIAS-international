@@ -131,42 +131,8 @@ Elections_global <- Elections_global  %>%
 
 
 #DINC ----
-matching <- Base_all_clivages %>%
-  distinct(source, source_recode, isoname, year) %>%
-  left_join(
-    Elections_global %>% distinct(isoname, year),
-    by = "isoname",
-    relationship = "many-to-many"
-  ) %>%
-  mutate(
-    diff_year = year.y - year.x
-  ) %>%
-  filter(
-    (source_recode == "ESS" & diff_year <= 0) |
-      (source_recode != "ESS" & diff_year >= 0)
-  ) %>%
-  group_by(isoname, year.x, source_recode) %>%
-  mutate(
-    abs_diff = abs(diff_year)
-  ) %>%
-  slice_min(abs_diff, n = 1, with_ties = FALSE) %>%
-  ungroup() %>%
-  rename(
-    survey_year = year.x,
-    election_year = year.y
-  )
-
-Elections_global2 <- matching %>%
-  left_join(
-    Elections_global,
-    by = c(
-      "isoname" = "isoname",
-      "election_year" = "year"
-    )
-  )
-
 ##Traitement sur données manquantes ----
-Elections_global2 <- Elections_global2 %>%
+Elections_global2 <- Elections_global %>%
   group_by(isoname, election_year, election_date) %>%
   mutate(
     seats = if_else(
@@ -190,21 +156,16 @@ Elections_global2 <- Elections_global2 %>%
 
 
 
-
 ## Join entre les bases ----
-Base_all_clivages <- Base_all_clivages %>%
-  rename(survey_year = year)
-
 Base_vote_parlement_global <- Base_all_clivages %>%
   left_join(
     Elections_global2 %>%
-      select(isoname, survey_year, election_year,partyfacts_id,party,election_date,seats,seats_total,seats_share),
-    distinct(isoname, year,partyfacts_id),
-    by = c("isoname", "survey_year","partyfacts_id")
+      select(isoname, election_year,partyfacts_id,party,election_date,seats,seats_total,seats_share),
+    distinct(isoname, election_year,partyfacts_id),
+    by = c("isoname", "election_year","partyfacts_id")
   )
 
-Base_vote_parlement_global <- Base_vote_parlement_global %>%
-  rename(year = election_year)
+
 
 
 check_elections_wpid <- Base_vote_parlement_global %>%

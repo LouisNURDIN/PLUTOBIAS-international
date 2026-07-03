@@ -16,14 +16,17 @@ all_elections <- read.csv ("data/intermediary/elections/all elections update.csv
 all_elections <- all_elections %>%
   mutate(
     election_date = as.Date(election_date, format = "%Y.%m.%d"),
-    year = as.integer(year)
-  )
+    year = as.integer(year))
+
+all_elections <- all_elections %>%
+  mutate(election_date = as.Date(election_date, format = "%Y.%m.%d")) %>%
+  distinct()
 
 Base_elections_legislatives <- Base_elections_legislatives %>%
   mutate(interview_date = as.Date(interview_date))
 
 
-Base_elections_legislatives_matched <- Base_elections_legislatives %>%
+Base_elections_legislatives <- Base_elections_legislatives %>%
   group_by(isoname) %>%
   group_modify(~{
     
@@ -44,7 +47,7 @@ Base_elections_legislatives_matched <- Base_elections_legislatives %>%
       
       if (is.na(row$interview_date)) return(row)
       
-      if (row$survey == "pre-electoral") {
+      if (row$survey == "Pre-electoral") {
         
         next_elec <- elections %>%
           filter(election_date > row$interview_date) %>%
@@ -53,7 +56,7 @@ Base_elections_legislatives_matched <- Base_elections_legislatives %>%
         row$election_date <- ifelse(nrow(next_elec) == 0, NA, next_elec$election_date[1])
         row$election_year <- ifelse(nrow(next_elec) == 0, NA, next_elec$year[1])
         
-      } else if (row$survey %in% c("post-electoral", "pre/post-electoral")) {
+      } else if (row$survey %in% c("Post-electoral", "Pre/Post-electoral")) {
         
         prev_elec <- elections %>%
           filter(election_date <= row$interview_date) %>%
@@ -400,6 +403,8 @@ Base_legislatives_age <- Base_legislatives_age %>%
 #Autres bases ----
 #CSES ----
 cses_data_clean <- read.csv("data/intermediary/elections/cses elections dataset.csv")
+
+#cses income
 cses_data_clean_income <- cses_data_clean %>%
   filter(inc <= 5)
 
@@ -772,10 +777,21 @@ cses_dataset_age <- cses_dataset_age %>%
   )
 
 
+#Export base CSES
+write.csv(
+  cses_data_clean,
+  "data/intermediary/elections/cses data good date.csv",
+  row.names = FALSE
+)
+
+
 #WVS ----
 wvs_data_clean <- read.csv("data/intermediary/elections/wvs elections dataset.csv")
+
+#wvs income
 wvs_data_clean_income <- wvs_data_clean %>%
   filter(inc >= 1)
+
 
 #calcul décile wvs ----
 build_wvs_base_long <- function(df, annee, country){
@@ -1154,6 +1170,8 @@ wvs_dataset_age <- wvs_dataset_age %>%
 
 #ESS ----
 ess_data_clean <- read.csv("data/intermediary/elections/ess elections dataset.csv")
+
+#ess income
 sum(ess_data_clean$partyfacts_id == "Abstention", na.rm = TRUE)
 ess_data_clean_income <- ess_data_clean %>%
   filter(inc < 77)
@@ -1543,6 +1561,14 @@ wvs_dataset_income <- wvs_dataset_income %>%
 ess_dataset_income <- ess_dataset_income %>%
   mutate(
     category = paste0("inc-", category))
+
+
+
+
+#______________________________________________________________
+#Test avec notre base cumulée cses ess wvs ----
+
+
 
 #Espace pour empiler les bases votes entre elles ----
 bases <- list(

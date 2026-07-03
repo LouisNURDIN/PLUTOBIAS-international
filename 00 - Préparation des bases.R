@@ -107,14 +107,7 @@ GMP_inc_2 <- GMP_inc_2 %>%
 
 GMP_inc_2 <- GMP_inc_2 %>%
   mutate(
-    interview_date = case_when(
-      survey == "Pre-electoral" ~ as.Date(sprintf("%04d-01-01", year)),
-      survey %in% c("Post-electoral", "Pre/post-electoral") ~
-        as.Date(sprintf("%04d-12-31", year)),
-      
-      TRUE ~ as.Date(NA)
-    )
-  )
+    interview_date = year)
 
 unique(GMP_inc_2$educ)
 unique(GMP_inc_2$age)
@@ -214,6 +207,56 @@ Base_elections_legislatives <- Base_elections_legislatives %>%
     )
   )
 
+Base_elections_legislatives <- Base_elections_legislatives %>%
+  group_by(isoname) %>%
+  group_modify(~{
+    
+    df <- .x
+    country <- .y$isoname[1]
+    
+    elections <- all_elections %>%
+      mutate(election_date = as.Date(election_date)) %>%
+      filter(isoname == country) %>%
+      arrange(election_date)
+    
+    if (nrow(elections) == 0) return(df)
+    if (nrow(df) == 0) return(df)
+    
+    map_dfr(seq_len(nrow(df)), function(i){
+      
+      row <- df[i, ]
+      
+      if (is.na(row$interview_date)) return(row)
+      
+      if (row$survey == "Pre-electoral") {
+        
+        next_elec <- elections %>%
+          filter(election_date > row$interview_date) %>%
+          slice_min(election_date, n = 1)
+        
+        row$election_date <- ifelse(nrow(next_elec) == 0, NA, next_elec$election_date[1])
+        row$election_year <- ifelse(nrow(next_elec) == 0, NA, next_elec$year[1])
+        
+      } else if (row$survey %in% c("Post-electoral", "Pre/Post-electoral")) {
+        
+        prev_elec <- elections %>%
+          filter(election_date <= row$interview_date) %>%
+          slice_max(election_date, n = 1)
+        
+        row$election_date <- ifelse(nrow(prev_elec) == 0, NA, prev_elec$election_date[1])
+        row$election_year <- ifelse(nrow(prev_elec) == 0, NA, prev_elec$year[1])
+        
+      } else {
+        
+        row$election_date <- NA
+        row$election_year <- NA
+      }
+      
+      row
+    })
+    
+  }) %>%
+  ungroup()
 
 #Export Base globale et Base législatives
 write.csv(
@@ -237,18 +280,16 @@ table(ess_data$inwyys)
 
 ess_data <- ess_data %>%
   mutate(
-    interview_date = make_date(
-      year  = coalesce(
-        na_if(inwyr, 99),
-        na_if(inwyys, 99)),
-      month = coalesce(
-        na_if(inwmm, 99),
-        na_if(inwmms, 99),
-        12L),
-      day   = coalesce(
-        na_if(inwdd, 99),
-        na_if(inwdds, 99),
-        31L)))
+    year = coalesce(na_if(inwyr, 99), na_if(inwyys, 99)),
+    month = coalesce(na_if(inwmm, 99), na_if(inwmms, 99)),
+    day = coalesce(na_if(inwdd, 99), na_if(inwdds, 99)),
+    
+    interview_date = case_when(
+      is.na(year) ~ as.Date(NA),
+      is.na(month) | is.na(day) ~ as.Date(NA),
+      TRUE ~ make_date(year, month, day)
+    )
+  )
 
 ess_data <- ess_data %>%
   select(-age)
@@ -495,6 +536,64 @@ unique(ess_data_clean$dataset_party_id[ess_data_clean$isoname == "Ukraine" &
                                 ess_data_clean$year == 2012
                               & ess_data_clean$source_recode == "ESS"])
 
+#Rattacher les répondants à la bonne élection 
+ess_data_clean <- ess_data_clean %>%
+  group_by(isoname) %>%
+  group_modify(~{
+    
+    df <- .x
+    country <- .y$isoname[1]
+    
+    elections <- all_elections %>%
+      filter(isoname == country) %>%
+      mutate(
+        election_date = as.Date(election_date, format = "%Y.%m.%d")
+      ) %>%
+      arrange(year, election_date)
+    
+    if (nrow(elections) == 0) return(df)
+    
+    map_dfr(seq_len(nrow(df)), function(i){
+      
+      row <- df[i, ]
+      
+      ## Cas 1 : on connaît la date d'interview ET il existe des dates d'élection
+      if (!is.na(row$interview_date) &&
+          any(!is.na(elections$election_date))) {
+        
+        prev_elec <- elections %>%
+          filter(!is.na(election_date),
+                 election_date <= row$interview_date) %>%
+          slice_max(election_date, n = 1)
+        
+        ## Cas 2 : secours → matching par année
+      } else {
+        
+        prev_elec <- elections %>%
+          filter(year <= row$year) %>%
+          arrange(year, election_date) %>%
+          slice_tail(n = 1)
+        
+      }
+      
+      if (nrow(prev_elec) == 0) {
+        
+        row$election_date <- as.Date(NA)
+        row$election_year <- NA_integer_
+        
+      } else {
+        
+        row$election_date <- prev_elec$election_date[1]
+        row$election_year <- prev_elec$year[1]
+        
+      }
+      
+      row
+      
+    })
+    
+  }) %>%
+  ungroup()
 
 ###Export Base ESS ----
 write.csv(
@@ -553,10 +652,17 @@ cses_data <- cses_data %>%
 #Recréer la date de l'interview
 cses_data <- cses_data %>%
   mutate(
-    interview_date = make_date(
-      year  = if_else(annee == 9999, year, annee),
-      month = if_else(mois == 99, 12L, mois),
-      day   = if_else(jour == 99, 31L, jour)))
+    annee2 = if_else(annee == 9999, year, annee),
+    mois2  = na_if(mois, 99),
+    jour2  = na_if(jour, 99),
+    
+    interview_date = case_when(
+      is.na(annee2) ~ as.Date(NA),
+      is.na(mois2) | is.na(jour2) ~ as.Date(NA),
+      TRUE ~ make_date(annee2, mois2, jour2)
+    )
+  ) %>%
+  select(-annee2, -mois2, -jour2)
 
 
 #ne pas oublier de garder le weight 
@@ -719,6 +825,67 @@ cses_data_clean <- cses_data_clean %>%
 table(cses_data_clean$turnout[cses_data$isoname == "Albania"])
 table(cses_data_clean$turnout[cses_data$isoname == "Belgium"])
 sum(cses_data_clean$partyfacts_id == "Abstention", na.rm = TRUE)
+
+#Rattacher la bonne élection à chaque répondant ----
+cses_data_clean <- cses_data_clean %>%
+  group_by(isoname) %>%
+  group_modify(~{
+    
+    df <- .x
+    country <- .y$isoname[1]
+    
+    elections <- all_elections %>%
+      filter(isoname == country) %>%
+      mutate(
+        election_date = as.Date(election_date, format = "%Y.%m.%d")
+      ) %>%
+      arrange(year, election_date)
+    
+    if (nrow(elections) == 0) return(df)
+    
+    map_dfr(seq_len(nrow(df)), function(i){
+      
+      row <- df[i, ]
+      
+      ## Cas 1 : on connaît la date d'interview ET il existe des dates d'élection
+      if (!is.na(row$interview_date) &&
+          any(!is.na(elections$election_date))) {
+        
+        prev_elec <- elections %>%
+          filter(!is.na(election_date),
+                 election_date <= row$interview_date) %>%
+          slice_max(election_date, n = 1)
+        
+        ## Cas 2 : secours → matching par année
+      } else {
+        
+        prev_elec <- elections %>%
+          filter(year <= row$year) %>%
+          arrange(year, election_date) %>%
+          slice_tail(n = 1)
+        
+      }
+      
+      if (nrow(prev_elec) == 0) {
+        
+        row$election_date <- as.Date(NA)
+        row$election_year <- NA_integer_
+        
+      } else {
+        
+        row$election_date <- prev_elec$election_date[1]
+        row$election_year <- prev_elec$year[1]
+        
+      }
+      
+      row
+      
+    })
+    
+  }) %>%
+  ungroup()
+
+
 ###Export Base CSES ----
 write.csv(
   cses_data_clean,
@@ -772,8 +939,9 @@ wvs_data <- wvs_data %>%
   mutate(
     interview_date = if_else(
       is.na(S012) | S012 < 0,
-      as.Date(sprintf("%04d-01-01", year)),
-      as.Date(as.character(S012), format = "%Y%m%d")))
+      as.Date(NA),
+      as.Date(as.character(S012), format = "%Y%m%d")
+    ))
 
 wvs_data_clean <- wvs_data %>%
   select(isoname,year,interview_date, source, source_recode,survey, type, inc,gender,educ,age, turnout, dataset_party_id)
@@ -1044,7 +1212,64 @@ wvs_data_clean <- wvs_data_clean %>%
     )
   )
 
-
+#Rattacher les répondants à la bonne élection 
+wvs_data_clean <- wvs_data_clean %>%
+  group_by(isoname) %>%
+  group_modify(~{
+    
+    df <- .x
+    country <- .y$isoname[1]
+    
+    elections <- all_elections %>%
+      filter(isoname == country) %>%
+      mutate(
+        election_date = as.Date(election_date, format = "%Y.%m.%d")
+      ) %>%
+      arrange(year, election_date)
+    
+    if (nrow(elections) == 0) return(df)
+    
+    map_dfr(seq_len(nrow(df)), function(i){
+      
+      row <- df[i, ]
+      
+      ## Cas 1 : date d'interview connue + dates d'élection disponibles
+      if (!is.na(row$interview_date) &&
+          any(!is.na(elections$election_date))) {
+        
+        next_elec <- elections %>%
+          filter(!is.na(election_date),
+                 election_date > row$interview_date) %>%
+          slice_min(election_date, n = 1)
+        
+        ## Cas 2 : secours → matching par année
+      } else {
+        
+        next_elec <- elections %>%
+          filter(year >= row$year) %>%
+          arrange(year, election_date) %>%
+          slice_head(n = 1)
+        
+      }
+      
+      if (nrow(next_elec) == 0) {
+        
+        row$election_date <- as.Date(NA)
+        row$election_year <- NA_integer_
+        
+      } else {
+        
+        row$election_date <- next_elec$election_date[1]
+        row$election_year <- next_elec$year[1]
+        
+      }
+      
+      row
+      
+    })
+    
+  }) %>%
+  ungroup()
 
 
 ###Export Base WVS ----
@@ -1058,3 +1283,27 @@ write.csv(
 
 
 
+
+
+#Espace pour empiler les bases votes entre elles ----
+cses_data_clean <- cses_data_clean %>% mutate(year = as.integer(year))
+ess_data_clean <- ess_data_clean %>% mutate(year = as.integer(year))
+wvs_data_clean <- wvs_data_clean %>% mutate(year = as.integer(year))
+
+ess_data_clean <- ess_data_clean %>% mutate(type = "Lower House")
+cses_data_clean <- cses_data_clean %>% mutate(type = "Lower House")
+
+bases <- list(
+  cses_data_clean,
+  ess_data_clean,
+  wvs_data_clean
+)
+
+Base_cses_ess_wvs <- bind_rows(bases)
+
+###Export Base CSES ESS WVS ----
+write.csv(
+  Base_cses_ess_wvs,
+  "data/intermediary/elections/dataset cses ess wvs.csv",
+  row.names = FALSE
+)
