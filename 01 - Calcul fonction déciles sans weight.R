@@ -11,16 +11,6 @@ sum(is.na(Base_elections_legislatives$weight))
 Base_elections_legislatives <- Base_elections_legislatives %>%
   filter(Base_elections_legislatives$partyfacts_id != "Other")
 
-all_elections <- read.csv ("data/intermediary/elections/all elections update.csv", sep = ",")
-
-all_elections <- all_elections %>%
-  mutate(
-    election_date = as.Date(election_date, format = "%Y.%m.%d"),
-    year = as.integer(year))
-
-all_elections <- all_elections %>%
-  mutate(election_date = as.Date(election_date, format = "%Y.%m.%d")) %>%
-  distinct()
 
 Base_elections_legislatives <- Base_elections_legislatives %>%
   mutate(interview_date = as.Date(interview_date))

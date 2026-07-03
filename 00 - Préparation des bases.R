@@ -3,6 +3,19 @@ library(dplyr)
 library(tidyr)
 library(stringr)
 library(lubridate)
+
+#Liste avec élections
+all_elections <- read.csv ("data/intermediary/elections/all elections update.csv", sep = ",")
+
+all_elections <- all_elections %>%
+  mutate(
+    election_date = as.Date(election_date, format = "%Y.%m.%d"),
+    year = as.integer(year))
+
+all_elections <- all_elections %>%
+  mutate(election_date = as.Date(election_date, format = "%Y.%m.%d")) %>%
+  distinct()
+
 #Ouverture de la base ----
 GMP_inc <- read_dta("data/raw/wpid/gmp-inc.dta")
 
