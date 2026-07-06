@@ -735,6 +735,7 @@ cses_data_clean <- cses_data_clean %>%
   mutate(
     isoname = case_when(
       isoname == "Czech Republic/Czechia" ~ "Czech Republic",
+      isoname == "Great Britain" ~ "United Kingdom",
       TRUE ~ isoname
     )
   )
@@ -857,6 +858,8 @@ cses_data_clean <- cses_data_clean %>%
   }) %>%
   ungroup()
 
+cses_data_clean <- cses_data_clean %>%
+  select(-year)
 
 ###Export Base CSES ----
 write.csv(
@@ -1243,13 +1246,14 @@ wvs_data_clean <- wvs_data_clean %>%
   }) %>%
   ungroup()
 
+wvs_data_clean <- wvs_data_clean %>%
+  select(-year)
 
 ###Export Base WVS ----
 write.csv(
   wvs_data_clean,
   "data/intermediary/elections/wvs elections dataset.csv",
-  row.names = FALSE
-)
+  row.names = FALSE)
 
 
 
