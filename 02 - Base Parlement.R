@@ -7,9 +7,22 @@ library(stringr)
 #Import base élections législatives
 elections_legislatives_valides <- read.csv("data/intermediary/elections/valid legislative elections.csv", sep = ",")
 
+parlgov <- read.csv("data/raw/parlgov/parlgov_elections.csv", sep = ";")
+parlgov <- parlgov %>% rename(isoname = country_name)
+parlgov <- parlgov %>% filter(election_type == "parliament") 
+
+parlgov <- parlgov %>%
+  mutate(election_date = as.Date(election_date, format = "%d/%m/%Y"),
+    year = as.integer(format(election_date, "%Y")))
+
+parlgov <- parlgov  %>% 
+  mutate(seats_share = seats / seats_total * 100)
+
 Base_all_clivages <- read.csv("data/intermediary/elections/dataset with all clivages and elections.csv", sep = ",")
+
 Base_all_clivages <- Base_all_clivages %>%
-  filter(year <= 2020)
+  mutate(election_year = as.integer(election_year)) %>%
+  filter(election_year <= 2020)
 
 Base_all_clivages <- Base_all_clivages %>%
   filter(isoname != "Hong Kong")
@@ -24,9 +37,7 @@ Data_elections_global <- Data_elections_global  %>%
   mutate(
     seats_total = case_when(
       country_name == "Malaysia" & year == 2004  ~ 219,
-      TRUE ~ seats_total
-    )
-  )
+      TRUE ~ seats_total))
       
       
 pays_gmp_legislatives <- unique(Base_all_clivages$isoname)
@@ -126,9 +137,10 @@ Elections_global <- Elections_global %>%
   )
 
 
-Elections_global <- Elections_global  %>% 
-  mutate(seats_share = seats / seats_total * 100)
 
+
+Elections_global <- Elections_global  %>% 
+  rename(election_year = year)
 
 #DINC ----
 ##Traitement sur données manquantes ----
@@ -155,6 +167,22 @@ Elections_global2 <- Elections_global2 %>%
   )
 
 
+Elections_global2 <- Elections_global2 %>%
+  mutate(election_date = as.Date(election_date, format = "%Y.%m.%d"))
+
+parlgov_last_elections <- parlgov %>%
+  anti_join(Elections_global2,
+            by = c("isoname", "election_date"))
+
+
+Elections_global2 <-
+  bind_rows(Elections_global2, parlgov_last_elections)
+
+Elections_global2 <- Elections_global2 %>%
+  arrange(isoname, election_date)
+
+Elections_global <- Elections_global  %>% 
+  mutate(seats_share = seats / seats_total * 100)
 
 ## Join entre les bases ----
 Base_vote_parlement_global <- Base_all_clivages %>%
@@ -171,19 +199,16 @@ Base_vote_parlement_global <- Base_all_clivages %>%
 check_elections_wpid <- Base_vote_parlement_global %>%
   filter(
     source_recode == "ESS",
-    !is.na(survey_year),
-    survey_year > year
   ) %>%
   distinct(
     isoname,
     source,
     source_recode,
-    survey_year,
-    year,
+    election_year,
     survey,
     election_date
   ) %>%
-  arrange(isoname, survey_year)
+  arrange(isoname)
 ###Traitement pour avoir le taux de députés par partis sur l'ensemble des députéss
 
 
@@ -216,11 +241,11 @@ Base_vote_parlement_global <- Base_vote_parlement_global %>%
   )
 
 Base_vote_parlement_global <- Base_vote_parlement_global %>%
-  distinct(source,source_recode,isoname,survey_year,year,partyfacts_id,bias,
+  distinct(source,source_recode,isoname,election_year,partyfacts_id,bias,
     category,.keep_all = TRUE)
 
 Base_vote_parlement_global <- Base_vote_parlement_global %>%
-  group_by(source,source_recode,isoname,survey_year,bias,category) %>%
+  group_by(source,source_recode,isoname,election_year,bias,category) %>%
   mutate(
     election_couverture_seats = sum(seats_share, na.rm = TRUE)) %>%
   ungroup()
