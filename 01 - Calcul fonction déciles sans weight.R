@@ -602,7 +602,7 @@ build_votes_by_educ_fractional <- function(df){
       votes = sum(weight),
       .groups = "drop"
     ) %>%
-    group_by(educ_group) %>%
+    group_by(isoname, election_year, election_date,educ_group) %>%
     mutate(
       pct_votes = votes / sum(votes) * 100
     ) %>%
@@ -610,7 +610,7 @@ build_votes_by_educ_fractional <- function(df){
   
   # 5. participation
   participation <- df_groups %>%
-    group_by(educ_group) %>%
+    group_by(isoname,election_year, election_date,educ_group) %>%
     summarise(
       nbr_obs = sum(weight),
       votes_valides = sum(
@@ -632,7 +632,7 @@ build_votes_by_educ_fractional <- function(df){
         "educ_group"
       )
     )
-
+}
 cses_dataset_educ <- cses_data_clean_educ %>%
   group_by(isoname, election_year,election_date) %>%
   group_split() %>%
@@ -709,7 +709,7 @@ build_votes_by_age_fractional <- function(df){
       votes = sum(weight),
       .groups = "drop"
     ) %>%
-    group_by(age_group) %>%
+    group_by(isoname, election_year,election_date,age_group) %>%
     mutate(
       pct_votes = votes / sum(votes) * 100
     ) %>%
@@ -717,7 +717,7 @@ build_votes_by_age_fractional <- function(df){
   
   # 5. participation
   participation <- df_groups %>%
-    group_by(age_group) %>%
+    group_by(isoname, election_year, election_date,age_group) %>%
     summarise(
       nbr_obs = sum(weight),
       votes_valides = sum(
@@ -737,7 +737,7 @@ build_votes_by_age_fractional <- function(df){
         "election_year",
         "election_date",
         "age_group"))
-
+}
 
 cses_dataset_age <- cses_data_clean_age %>%
   group_by(isoname, election_year,election_date) %>%
@@ -1047,7 +1047,7 @@ build_votes_by_educ_fractional <- function(df){
         "election_year",
         "election_date",
         "educ_group"))
-
+}
 wvs_dataset_educ <- wvs_data_clean_educ %>%
   group_by(isoname, election_year,election_date) %>%
   group_split() %>%
@@ -1126,7 +1126,7 @@ build_votes_by_age_fractional <- function(df){
       votes = sum(weight),
       .groups = "drop"
     ) %>%
-    group_by(isoanme, election_year, election_date,age_group) %>%
+    group_by(isoname, election_year, election_date,age_group) %>%
     mutate(
       pct_votes = votes / sum(votes) * 100
     ) %>%
@@ -1156,7 +1156,7 @@ build_votes_by_age_fractional <- function(df){
         "age_group"
       )
     )
-
+}
 wvs_dataset_age <- wvs_data_clean_age %>%
   group_by(isoname, election_year,election_date) %>%
   group_split() %>%
@@ -1430,7 +1430,7 @@ build_votes_by_educ_fractional <- function(df){
   
   # 5. participation
   participation <- df_groups %>%
-    group_by(educ_group) %>%
+    group_by(isoname, election_year, election_date,educ_group) %>%
     summarise(
       nbr_obs = sum(weight),
       votes_valides = sum(
@@ -1452,7 +1452,7 @@ build_votes_by_educ_fractional <- function(df){
         "educ_group"
       )
     )
-
+}
 ess_dataset_educ <- ess_data_clean_educ %>%
   group_by(isoname, election_year,election_date) %>%
   group_split() %>%
@@ -1539,7 +1539,7 @@ build_votes_by_age_fractional <- function(df){
   
   # 5. participation
   participation <- df_groups %>%
-    group_by(age_group) %>%
+    group_by(isoname, election_year, election_date,age_group) %>%
     summarise(
       nbr_obs = sum(weight),
       votes_valides = sum(
@@ -1561,7 +1561,7 @@ build_votes_by_age_fractional <- function(df){
         "age_group"
       )
     )
-
+}
 ess_dataset_age <- ess_data_clean_age %>%
   group_by(isoname, election_year,election_date) %>%
   group_split() %>%
@@ -1642,7 +1642,7 @@ unique(Base_all_clivages$category)
 unique(Base_all_clivages$source_recode)
 
 Base_all_clivages <- Base_all_clivages %>%
-  select(source,source_recode,survey,bias,isoname,election_year, 
+  select(source,source_recode,survey,bias,isoname,election_year,election_date, 
          category,vote,partyfacts_id,votes, pct_votes,nbr_obs,votes_valides,taux_participation)
 
 

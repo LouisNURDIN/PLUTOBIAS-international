@@ -8,6 +8,8 @@ library(lubridate)
 library(purrr)
 Base_complete_index <-  read.csv("data/final/dataset complete with index.csv", sep = ",")
 
+unique(Base_complete_index$source_recode)
+
 Base_complete_index <- Base_complete_index %>%
   mutate(
     year_election = if_else(
@@ -73,7 +75,7 @@ Base_complete_finale <- Base_complete_best_sources %>%
   summarise(
     
     # nombre de sources conservées
-    nbr_sources = n_distinct(source),
+    nbr_best_sources = n_distinct(source),
     
     # moyenne géométrique des ratios
     across(

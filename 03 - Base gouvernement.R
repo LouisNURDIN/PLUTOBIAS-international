@@ -6,7 +6,13 @@ library(lubridate)
 #Base avec données gouvernements
 whogov <- read.csv("data/raw/whogov/WhoGov_within_V3.1.csv", sep = ";")
 elections_legislatives_valides <- read.csv("data/intermediary/elections/valid elections.csv", sep = ",")
+elections_legislatives_valides <- elections_legislatives_valides %>%
+  rename(year = election_year)
+
 elections_legislatives_valides2 <- read.csv("data/intermediary/elections/valid legislative elections.csv", sep = ",")
+elections_legislatives_valides2 <- elections_legislatives_valides2 %>%
+  rename(year = election_year)
+
 pays_gmp_legislatives <- unique(elections_legislatives_valides2$isoname)
 annees_gmp_legislatives <- unique(elections_legislatives_valides2$year)
 all_elections <- read.csv ("data/intermediary/elections/all elections update.csv", sep = ";")
@@ -208,7 +214,8 @@ whogov_parties <- whogov_parties %>%
 #DINC ----
 Base_vote_parlement_global <- read.csv("data/intermediary/parliament/Elections and parliament global dataset.csv", sep = ",")
 
-
+Base_vote_parlement_global <- Base_vote_parlement_global %>%
+  mutate(year = election_year)
 
 
 unique(Base_vote_parlement_global$partyfacts_id[Base_vote_parlement_global$isoname == "Zimbabwe" & 
@@ -230,12 +237,6 @@ View(Base_vote_parlement_global %>%
   arrange(desc(n)))
 
 
-
-
-
-View(
-  Base_complete %>%
-    count(source,source_recode, isoname,election_date_date, survey_year,year,bias))
 
 
 #Créer la bonne année de join dans whogov
@@ -415,7 +416,7 @@ Base_complete <- Base_vote_parlement_global %>%
 Base_complete <- Base_complete[!is.na(Base_complete$year),]
 
 Base_complete <- Base_complete %>%
-  select(isoname,year, survey_year,join_year, source, source_recode,survey, election_date,bias,category, partyfacts_id, votes, pct_votes,
+  select(isoname,year,join_year,election_year, election_date, source, source_recode,survey, bias,category, partyfacts_id, votes, pct_votes,
          votes_valides, taux_participation, seats, seats_total, seats_share, ministers_party, total_ministers, ministers_share,women_party,women_share_party,Percentage.of.women.diputees,women_share_government, election_couverture_seats
   )
 Base_complete <- Base_complete %>%
@@ -423,7 +424,7 @@ Base_complete <- Base_complete %>%
 
 #vérifier ici
 Base_complete <- Base_complete %>%
-  distinct(source,source_recode,isoname,survey_year,year,partyfacts_id,bias,
+  distinct(source,source_recode,isoname,year,election_year, election_date,partyfacts_id,bias,
            category,.keep_all = TRUE)
 
 
@@ -445,14 +446,14 @@ Base_complete <- Base_complete %>%
     total_ministers = coalesce(total_ministers, 0),
     ministers_share = coalesce(ministers_share, 0)
   ) %>%
-  group_by(source,source_recode,isoname,survey_year, year,bias, category) %>%
+  group_by(source,source_recode,isoname,year,election_date,bias, category) %>%
   mutate(
     election_couverture_ministers = sum(ministers_share, na.rm = TRUE)
   ) %>%
   ungroup()
 
 Base_complete <- Base_complete %>%
-  group_by(source,source_recode,isoname,survey_year,year,bias) %>%
+  group_by(source,source_recode,isoname,year,election_date,bias) %>%
   mutate(
     other_ministers = ministers_share[partyfacts_id == "Other"][1]
   ) %>%
@@ -460,13 +461,12 @@ Base_complete <- Base_complete %>%
 
 
 missing_parties <- whogov_parties %>%
-  filter(ministers_share >= 0.20,
-         year <= 2015) %>%
+  filter(ministers_share >= 0.20 %>%
   distinct(isoname, year, partyfacts_id, ministers_share) %>%
   anti_join(
     Base_complete %>%
       distinct(isoname, year, partyfacts_id),
-    by = c("isoname", "year", "partyfacts_id"))
+    by = c("isoname", "year", "partyfacts_id")))
 
 View(missing_parties %>%
        left_join(
@@ -476,71 +476,32 @@ View(missing_parties %>%
 
 
 #Liste des pays/années avec données incohérentes ----
+
+#Filtrer pour enlever les enquêtes où il n'y a pas whogov
+Base_complete <- Base_complete %>%filter(Base_complete$year >= 1966)
+
+
 View(
   Base_complete %>%
     ungroup() %>%
     filter(election_couverture_ministers > 1) %>%
-    distinct(survey_year,year,isoname,election_couverture_ministers,source,source_recode,bias))
-
-View(
-  Base_complete %>%
-    ungroup() %>%
-    filter(election_couverture_seats > 100) %>%
-    distinct(survey_year,year,isoname,election_couverture_seats,source,source_recode,bias))
-
-
-##Liste des pays/années où tous les ministres ne sont pas couverts ----
+    distinct(year,isoname,election_couverture_ministers,source,source_recode))
 
 View(
   Base_complete %>%
     ungroup() %>%
     filter(election_couverture_ministers < 0.8) %>%
-    distinct(survey_year,year,isoname,bias,election_couverture_seats,election_couverture_ministers,other_ministers,source,source_recode,survey))
+    distinct(year,isoname,election_couverture_ministers,source,source_recode,bias))
+
+View(
+  Base_complete %>%
+    ungroup() %>%
+    filter(election_couverture_seats > 100) %>%
+    distinct(year,isoname,election_couverture_seats,source,source_recode))
 
 
-#diagnostic join des années d'enquêtes et d'élections ----
-check_year <- Base_vote_parlement_global %>%
-  distinct(survey_year, year,isoname,source,source_recode,survey) %>%
-  arrange(isoname,survey_year, year)
 
 
-#Filtrer pour enlever les enquêtes qui ont eu lieu trop longtemps après les élections
-Base_complete <- Base_complete %>%filter(Base_complete$year >= 1966)
-Base_complete <- Base_complete %>%filter(Base_complete$survey_year <= 2020)
-Base_complete <- Base_complete %>%filter(!(isoname == "France" & survey_year >= 2018))
-Base_complete <- Base_complete %>%filter(!(isoname == "Montenegro" & survey_year >= 2018))
-Base_complete <- Base_complete %>%filter(!(isoname == "Netherlands" & survey_year >= 2018))
-Base_complete <- Base_complete %>%filter(!(isoname == "Slovakia" & survey_year >= 2018))
-Base_complete <- Base_complete %>%filter(!(isoname == "Austria" & survey_year >= 2018))
-Base_complete <- Base_complete %>%filter(!(isoname == "Belgium" & survey_year >= 2020))
-Base_complete <- Base_complete %>%filter(!(isoname == "Bulgaria" & survey_year >= 2018))
-Base_complete <- Base_complete %>%filter(!(isoname == "Croatia" & survey_year >= 2018))
-Base_complete <- Base_complete %>%filter(!(isoname == "Cyprus" & survey_year >= 2018))
-Base_complete <- Base_complete %>%filter(!(isoname == "Czech Republic" & survey_year >= 2018))
-Base_complete <- Base_complete %>%filter(!(isoname == "Estonia" & survey_year >= 2020))
-Base_complete <- Base_complete %>%filter(!(isoname == "Finland" & survey_year >= 2020))
-Base_complete <- Base_complete %>%filter(!(isoname == "Germany" & survey_year >= 2018))
-Base_complete <- Base_complete %>%filter(!(isoname == "Greece" & survey_year >= 2020))
-Base_complete <- Base_complete %>%filter(!(isoname == "Ireland" & survey_year >= 2016))
-Base_complete <- Base_complete %>%filter(!(isoname == "Israel" & survey_year >= 2020))
-Base_complete <- Base_complete %>%filter(!(isoname == "Italy" & survey_year >= 2018)) #Cas supicieux, il y a bien une élection en 2018 donc on peut dire que les enquêtes de 2018 doivent être rattachées )à l'élection de 2018, mais sinon c"tait en 2013
-Base_complete <- Base_complete %>%filter(!(isoname == "Latvia" & survey_year >= 2018))
-Base_complete <- Base_complete %>%filter(!(isoname == "Lithuania" & survey_year >= 2016))
-Base_complete <- Base_complete %>%filter(!(isoname == "Norway" & survey_year >= 2017))
-Base_complete <- Base_complete %>%filter(!(isoname == "Poland" & survey_year >= 2019))
-Base_complete <- Base_complete %>%filter(!(isoname == "Portugal" & survey_year >= 2019))
-Base_complete <- Base_complete %>%filter(!(isoname == "Serbia" & survey_year >= 2016))
-Base_complete <- Base_complete %>%filter(!(isoname == "Slovenia" & survey_year >= 2018))
-Base_complete <- Base_complete %>%filter(!(isoname == "Spain" & survey_year >= 2016))
-Base_complete <- Base_complete %>%filter(!(isoname == "Switzerland" & survey_year >= 2019))
-Base_complete <- Base_complete %>%filter(!(isoname == "United Kingdom" & survey_year >= 2017))
-Base_complete <- Base_complete %>%filter(!(isoname == "Denmark" & survey_year >= 2019))
-Base_complete <- Base_complete %>%filter(!(isoname == "Russia" & survey_year >= 2016))
-
-
-unique(Base_complete$survey_year[Base_complete$isoname == "Russia"])
-unique(Base_complete$isoname[Base_complete$survey_year >= 2016])
-unique(Base_complete$isoname)
 #Export des bases ----
 write.csv(
   Base_complete,
