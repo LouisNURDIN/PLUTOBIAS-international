@@ -6,18 +6,25 @@ library(scales)
 library(fixest)
 library(lubridate)
 library(purrr)
+
 Base_complete_index <-  read.csv("data/final/dataset complete with index.csv", sep = ",")
+all_elections <- read.csv ("data/intermediary/elections/all elections update.csv", sep = ";")
 
 unique(Base_complete_index$source_recode)
 
+annees_elections <- all_elections %>%
+  distinct(isoname,year) %>%  mutate(wpid_election = 1L)
+
 Base_complete_index <- Base_complete_index %>%
+  left_join(annees_elections,
+    by = c("isoname", "year")) %>%
   mutate(
-    year_election = if_else(
-      year == year(election_date),
-      1L,
-      0L
-    )
-  )
+    year_election = case_when(
+      !is.na(election_date) ~ as.integer(year == lubridate::year(election_date)),
+      source_recode == "WPID" & !is.na(wpid_election) ~ 1L,
+      TRUE ~ 0L)) %>%
+  select(-wpid_election)
+
 #Hiérarchiser les sources ---- 
 Base_complete_index <- Base_complete_index  %>%
   mutate(

@@ -1,13 +1,15 @@
 #Calcul des indices de ploutocratie 
 library(dplyr)
 Base_complete <-  read.csv("data/final/final dataset all countries and clivages.csv", sep = ",")
+
+
 table(Base_complete$source_recode)
 pays_regimes_presidentiels <- read.csv("data/raw/Liste régimes présidentiels.csv", sep = ",")
 pays_regimes_presidentiels <- unique(pays_regimes_presidentiels$isoname)
 
 Base_complete <- Base_complete[!is.na(Base_complete$category),]
 Base_complete <- Base_complete[!is.na(Base_complete$partyfacts_id),]
-Base_complete<- Base_complete[!is.na(Base_complete$election_date),]
+
 
 
 Base_complete<- Base_complete %>% filter(Base_complete$partyfacts_id != "Other")
@@ -66,7 +68,7 @@ Base_complete <- Base_complete %>%
 # 3. Agrégation PROPRE au niveau décile
 
 categories_index <- Base_complete %>%
-  group_by(source,source_recode, isoname,survey_year, year, bias, category,category_recode1,category_recode2) %>%
+  group_by(source,source_recode, isoname,year, bias, category,category_recode1,category_recode2) %>%
   summarise(
     taux_participation = first(na.omit(taux_participation)),
     total_sieges = sum(votes_en_siege, na.rm = TRUE),
@@ -79,7 +81,7 @@ categories_index <- Base_complete %>%
 # 4. Ratios 1 vs 10
 
 first_index <- categories_index %>%
-  group_by(source,source_recode,isoname,survey_year, year,bias) %>%
+  group_by(source,source_recode,isoname, year,bias) %>%
   summarise(
     
     ratio_participation_top_bot =
@@ -109,7 +111,7 @@ first_index <- categories_index %>%
 
 # 5. Ratios 50 / 50
 second_index <- categories_index %>%
-  group_by(source,source_recode,isoname,survey_year, year,bias) %>%
+  group_by(source,source_recode,isoname,year,bias) %>%
   summarise(
     
     ratio_participation_top_bot2 =
@@ -141,15 +143,15 @@ second_index <- categories_index %>%
 Base_complete <- Base_complete %>%
   left_join(
     categories_index %>%
-      select(source,source_recode,isoname,survey_year,year,bias, category,category_recode1,category_recode2,total_sieges, total_ministres),
-    by = c("source","source_recode","isoname","survey_year","year", "bias","category","category_recode1","category_recode2")
+      select(source,source_recode,isoname,year,bias, category,category_recode1,category_recode2,total_sieges, total_ministres),
+    by = c("source","source_recode","isoname","year", "bias","category","category_recode1","category_recode2")
   )
 
 Base_complete <- Base_complete %>%
-  left_join(first_index, by = c("source","source_recode","isoname", "survey_year","year","bias")) %>%
-  left_join(second_index, by = c("source","source_recode","isoname","survey_year", "year","bias"))
+  left_join(first_index, by = c("source","source_recode","isoname", "year","bias")) %>%
+  left_join(second_index, by = c("source","source_recode","isoname","year","bias"))
 
-
+unique(Base_complete$source_recode)
 
 # Base finale
 Base_complete_clean <- Base_complete %>%
@@ -166,7 +168,7 @@ Base_complete_clean <- Base_complete %>%
     
   ) %>%
   select(
-    source,source_recode,survey, isoname,survey_year,year,
+    source,source_recode,survey, isoname,year,election_year,
     election_date,bias,category,
     partyfacts_id,
     pct_votes, taux_participation,
@@ -200,7 +202,7 @@ Base_complete_clean <- Base_complete_clean %>% filter(!isoname %in% pays_regimes
 
 #base propre ----
 Base_complete_index <- Base_complete_clean  %>%
-  group_by(source,source_recode,isoname,survey,survey_year,year,election_date,bias) %>%
+  group_by(source,source_recode,isoname,survey,year,election_date,bias) %>%
   summarise(ratio_participation_top_bot = mean(ratio_participation_top_bot, na.rm = TRUE),
     ratio_votes_valides_en_sieges_top_bot = mean(ratio_votes_valides_en_sieges_top_bot, na.rm = TRUE),
     ratio_sieges_ministres_top_bot = mean(ratio_sieges_ministres_top_bot, na.rm = TRUE),
@@ -225,12 +227,12 @@ Base_complete_index <- Base_complete_index %>%
 #Lister pays/années où mes indices se dupliquent (on est censé en avoir 4)
 View(
 Base_complete_index %>%
-  count(source,source_recode, isoname, survey_year,year)%>%
+  count(source,source_recode, isoname,year)%>%
   filter(n > 4))
 
 #L'objectif est d'arriver à une table où on a 4 lignes par 
 Base_complete_test_index <- Base_complete_index %>%
-  group_by(source,source_recode,isoname,survey_year, year,bias) %>%
+  group_by(source,source_recode,isoname,year,bias) %>%
   slice(1) %>%
   ungroup()  #
 
@@ -240,7 +242,7 @@ View(
   Base_complete_index %>%
     ungroup() %>%
     filter(election_couverture_ministers < 0.80) %>%
-    distinct(source_recode,isoname,year,election_couverture_seats,election_couverture_ministers,source_recode)
+    distinct(source,source_recode,isoname,year,election_couverture_seats,election_couverture_ministers)
 )
 
 #Export des bases ----
@@ -253,7 +255,7 @@ write.csv(
 
 #Même chose avec les régimes présidentiels ----
 Base_regimes_presidentiels_index <- Base_regimes_presidentiels  %>%
-  group_by(source,source_recode,isoname,survey,survey_year,year,election_date,bias) %>%
+  group_by(source,source_recode,isoname,survey,year,election_date,bias) %>%
   summarise(ratio_participation_top_bot = mean(ratio_participation_top_bot, na.rm = TRUE),
             ratio_votes_valides_en_sieges_top_bot = mean(ratio_votes_valides_en_sieges_top_bot, na.rm = TRUE),
             
