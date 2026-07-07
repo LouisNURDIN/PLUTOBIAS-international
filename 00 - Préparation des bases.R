@@ -35,6 +35,7 @@ sum(GMP_inc$vote == "No vote", na.rm = TRUE)
 sum(GMP_inc$vote == "Blank", na.rm = TRUE)
 unique(GMP_inc$dinc)  #dinc = décile du répondant
 unique(GMP_inc$type)  # type = type d'élection
+unique(GMP_inc$isoname)
 
 sum(GMP_inc$turnout == 1 & GMP_inc$vote == "", na.rm = TRUE)
 sum(GMP_inc$turnout == 0 & GMP_inc$vote != "", na.rm = TRUE) #a priori erreur dans PF, s'en référer à PF
@@ -160,9 +161,14 @@ Base_all_elections <- Base_all_elections %>%
 
 ## Filtre législatives dans deuxième méthode ----
 Base_elections_legislatives <- Base_all_elections %>%
-  filter(type == "Lower house")
-unique(GMP_inc$dinc)
+  filter(
+    isoname %in% pays_regimes_presidentiels & type %in% c("Presidential", "Presidential, round 1") |
+      (!(isoname %in% pays_regimes_presidentiels) & type == "Lower house"))
 
+table(Base_elections_legislatives$type)
+unique(Base_elections_legislatives$isoname)
+unique(Base_elections_legislatives$isoname[Base_elections_legislatives$type == "Presidential, round 1"])
+unique(GMP_inc$type[GMP_inc$isoname == "Chile"])
 cor(Base_elections_legislatives$age, Base_elections_legislatives$educ, use = "complete.obs")
 # - 0,1678806
 cor(Base_elections_legislatives$age, Base_elections_legislatives$dinc,  use = "complete.obs")
@@ -657,9 +663,20 @@ sum(cses_data$turnout == 0, na.rm = TRUE)
 
 
 cses_data <- cses_data %>%
-  filter(type <= 13)
+  filter(
+    isoname %in% pays_regimes_presidentiels & type %in% c(20, 12) |
+      (!(isoname %in% pays_regimes_presidentiels) & type <= 13 ))
 
-
+cses_data <- cses_data %>%
+  mutate(
+    type = case_when(
+      type == 12 ~ "Parliamentary and Presidential",   
+      gender == 20 ~ "Presidential",
+      type == 13 ~ "Parliamentary/Legislative",
+      type = 11 ~ "Parliamentary/Legislative",
+      TRUE ~ type
+    )
+  )
 
 cses_data_clean <- cses_data %>%
   select(isoname,year,interview_date, source, source_recode,survey, type, inc,gender,educ,age, turnout, dataset_party_id)
