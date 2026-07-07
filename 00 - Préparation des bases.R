@@ -17,6 +17,11 @@ all_elections <- all_elections %>%
   mutate(election_date = as.Date(election_date, format = "%Y.%m.%d")) %>%
   distinct()
 
+#Liste des régimes présidentiels
+pays_regimes_presidentiels <- read.csv("data/raw/Liste régimes présidentiels.csv", sep = ",")
+pays_regimes_presidentiels <- unique(pays_regimes_presidentiels$isoname)
+
+
 #Ouverture de la base ----
 GMP_inc <- read_dta("data/raw/wpid/gmp-inc.dta")
 
@@ -731,14 +736,15 @@ cses_data_clean <- cses_data_clean %>%
     )
   )
 
+
 cses_data_clean <- cses_data_clean %>%
   mutate(
     isoname = case_when(
       isoname == "Czech Republic/Czechia" ~ "Czech Republic",
       isoname == "Great Britain" ~ "United Kingdom",
-      TRUE ~ isoname
-    )
-  )
+      isoname == "Republic of Korea" ~ "South Korea",
+      isoname == "Russian Federation" ~ "Russia",
+      TRUE ~ isoname))
 
 #Traitement des partyfacts dans cses pour join 
 cses_data_clean <- cses_data_clean %>%

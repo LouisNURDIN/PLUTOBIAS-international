@@ -10,15 +10,10 @@ sum(is.na(Base_elections_legislatives$weight))
 
 
 
-
-Base_elections_legislatives <- Base_elections_legislatives %>%
-  mutate(interview_date = as.Date(interview_date))
-
-
 #Calcul fonction déciles WPID ----
 
 meta_info <- Base_elections_legislatives %>%
-  distinct(isoname, election_year, survey, source, source_recode)
+  distinct(isoname, election_year,survey, source, source_recode)
 build_votes_by_decile <- function(df){
   
   df <- df %>%
@@ -37,7 +32,7 @@ build_votes_by_decile <- function(df){
       votes = n(),
       .groups = "drop"
     ) %>%
-    group_by(dinc) %>%
+    group_by(source,source_recode,isoname, election_year,dinc) %>%
     mutate(
       pct_votes = votes / sum(votes) * 100
     ) %>%
@@ -45,7 +40,7 @@ build_votes_by_decile <- function(df){
   
   # 2. Participation par décile
   participation <- df %>%
-    group_by(dinc) %>%
+    group_by(source, source_recode, isoname, election_year,dinc) %>%
     summarise(
       nbr_obs = n(),
       votes_valides = sum(!str_detect(dataset_party_id, "Abstention$"), na.rm = TRUE),
@@ -55,7 +50,9 @@ build_votes_by_decile <- function(df){
   
   # 3. Output final
   result <- votes %>%
-    left_join(participation, by = "dinc")
+    left_join(
+      participation,
+      by = c("source","source_recode", "isoname", "election_year", "dinc"))
   
   return(result)
 }
@@ -201,7 +198,7 @@ build_votes_by_educ_fractional <- function(df){
   
   # 5. participation
   participation <- df_groups %>%
-    group_by(educ_group) %>%
+    group_by(source, source_recode,isoname, election_year,educ_group) %>%
     summarise(
       nbr_obs = sum(weight),
       votes_valides = sum(
@@ -214,9 +211,17 @@ build_votes_by_educ_fractional <- function(df){
   
   # 6. output final (même structure que deciles / sexe)
   votes %>%
-    left_join(participation, by = "educ_group")
+    left_join(
+      participation,
+      by = c(
+        "source",
+        "source_recode",
+        "isoname",
+        "election_year",
+        "educ_group"
+      )
+    )
 }
-
 Base_legislatives_educ <- Base_elections_legislatives %>%
   group_by(source, source_recode,isoname, election_year) %>%
   group_split() %>%
@@ -303,7 +308,7 @@ build_votes_by_age_fractional <- function(df){
   
   # 5. participation
   participation <- df_groups %>%
-    group_by(age_group) %>%
+    group_by(source, source_recode, isoname, election_year,age_group) %>%
     summarise(
       nbr_obs = sum(weight),
       votes_valides = sum(
@@ -316,7 +321,16 @@ build_votes_by_age_fractional <- function(df){
   
   # 6. output final (même structure que deciles / sexe)
   votes %>%
-    left_join(participation, by = "age_group")
+    left_join(
+      participation,
+      by = c(
+        "source",
+        "source_recode",
+        "isoname",
+        "election_year",
+        "age_group"
+      )
+    )
 }
 
 Base_legislatives_age <- Base_elections_legislatives %>%
@@ -343,6 +357,10 @@ Base_legislatives_age <- Base_legislatives_age %>%
 #CSES ----
 cses_data_clean <- read.csv("data/intermediary/elections/cses elections dataset.csv")
 
+
+sum(is.na(cses_data_clean$election_date))
+unique(cses_data_clean$isoname[is.na(cses_data_clean$election_date)])
+
 #cses income
 cses_data_clean_income <- cses_data_clean %>%
   filter(inc <= 5)
@@ -352,6 +370,7 @@ build_cses_base_long <- function(df, annee, country){
   
   # sécurité
   election_year <- unique(df$election_year)[1]
+  election_date <- unique(df$election_date)[1]
   survey <- unique(df$survey)[1]
   source <- unique(df$source)[1]
   source_recode <- unique(df$source_recode)[1]
@@ -395,18 +414,20 @@ build_cses_base_long <- function(df, annee, country){
   # 3. participation
   
   nbr_obs <- df_deciles %>%
-    group_by(decile) %>%
+    group_by(isoname, election_year, election_date,decile) %>%
     summarise(nbr_obs = sum(weight_decile), .groups = "drop")
   
   votes_valides <- df_deciles %>%
     filter(!str_detect(dataset_party_id, "Abstention$")) %>%
-    group_by(decile) %>%
+    group_by(isoname,election_year, election_date,decile) %>%
     summarise(votes_valides = sum(weight_decile), .groups = "drop")
   
   participation <- nbr_obs %>%
-    left_join(votes_valides, by = "decile") %>%
-    mutate(taux_participation = votes_valides / nbr_obs * 100)
-  
+    left_join(
+      votes_valides,
+      by = c("isoname","election_year","election_date","decile")) %>%
+    mutate(
+      taux_participation = votes_valides / nbr_obs * 100)
   
   # 4. votes
   
@@ -418,25 +439,34 @@ build_cses_base_long <- function(df, annee, country){
         TRUE ~ dataset_party_id
       )
     ) %>%
-    group_by(decile, vote, partyfacts_id) %>%
-    summarise(votes = sum(weight_decile), .groups = "drop") %>%
-    group_by(decile) %>%
-    mutate(pct_votes = votes / sum(votes) * 100)
+    group_by(isoname, election_year, election_date, decile, vote, partyfacts_id) %>%
+    summarise(
+      votes = sum(weight_decile),
+      .groups = "drop"
+    ) %>%
+    group_by(isoname, election_year, election_date, decile) %>%
+    mutate(
+      pct_votes = votes / sum(votes) * 100
+    ) %>%
+    ungroup()
   
   
   # 5. output
   
   votes %>%
-    left_join(participation, by = "decile") %>%
+    left_join(
+      participation,
+      by = c("isoname", "election_year", "election_date", "decile")) %>%
     mutate(
       annee = annee,
       election_year = election_year,
+      election_date = election_date,
       isoname = country,
       survey = survey,
       source = source,
       source_recode = source_recode
     ) %>%
-    relocate(isoname, annee, election_year, vote, decile, survey)
+    relocate(isoname, annee, election_year,election_date, vote, decile, survey)
 }
 
 
@@ -444,7 +474,7 @@ build_cses_base_long <- function(df, annee, country){
 
 
 cses_dataset_income <- cses_data_clean_income %>%
-  group_by(isoname, election_year) %>%
+  group_by(isoname, election_year,election_date) %>%
   group_split() %>%
   map_dfr(~ build_cses_base_long(.x, unique(.x$election_year), unique(.x$isoname)))
 cses_dataset_income <- cses_dataset_income %>%
@@ -471,12 +501,12 @@ build_votes_by_gender <- function(df){
   
   # Votes par sexe × parti
   votes <- df %>%
-    group_by(isoname, election_year, gender, vote, partyfacts_id) %>%
+    group_by(isoname, election_year,election_date, gender, vote, partyfacts_id) %>%
     summarise(
       votes = n(),
       .groups = "drop"
     ) %>%
-    group_by(isoname, election_year, gender) %>%
+    group_by(isoname, election_year,election_date, gender) %>%
     mutate(
       pct_votes = votes / sum(votes) * 100
     ) %>%
@@ -484,7 +514,7 @@ build_votes_by_gender <- function(df){
   
   # Participation par sexe
   participation <- df %>%
-    group_by(isoname, election_year, gender) %>%
+    group_by(isoname, election_year,election_date, gender) %>%
     summarise(
       nbr_obs = n(),
       votes_valides = sum(
@@ -498,17 +528,17 @@ build_votes_by_gender <- function(df){
   votes %>%
     left_join(
       participation,
-      by = c("isoname", "election_year", "gender")
+      by = c("isoname", "election_year","election_date", "gender")
     )
 }
 meta_info_cses <- cses_data_clean %>%
-  distinct(isoname, election_year, survey, source, source_recode)
+  distinct(isoname, election_year,election_date, survey, source, source_recode)
 
 cses_dataset_gender <- cses_data_clean_sexe %>%
-  group_by(isoname, election_year) %>%
+  group_by(isoname, election_year,election_date) %>%
   group_split() %>%
   map_dfr(~ build_votes_by_gender(.x)) %>%
-  left_join(meta_info_cses, by = c("isoname", "election_year"))
+  left_join(meta_info_cses, by = c("isoname", "election_year","election_date"))
 
 cses_dataset_gender <- cses_dataset_gender %>%
   mutate(bias = "androcracy")
@@ -567,7 +597,7 @@ build_votes_by_educ_fractional <- function(df){
   
   # 4. votes
   votes <- df_groups %>%
-    group_by(isoname, election_year, educ_group, vote, partyfacts_id) %>%
+    group_by(isoname, election_year,election_date, educ_group, vote, partyfacts_id) %>%
     summarise(
       votes = sum(weight),
       .groups = "drop"
@@ -593,14 +623,21 @@ build_votes_by_educ_fractional <- function(df){
   
   # 6. output final (même structure que deciles / sexe)
   votes %>%
-    left_join(participation, by = "educ_group")
-}
+    left_join(
+      participation,
+      by = c(
+        "isoname",
+        "election_year",
+        "election_date",
+        "educ_group"
+      )
+    )
 
 cses_dataset_educ <- cses_data_clean_educ %>%
-  group_by(isoname, election_year) %>%
+  group_by(isoname, election_year,election_date) %>%
   group_split() %>%
   map_dfr(~ build_votes_by_educ_fractional(.x)) %>%
-  left_join(meta_info_cses, by = c("isoname", "election_year"))
+  left_join(meta_info_cses, by = c("isoname", "election_year","election_date"))
 
 cses_dataset_educ <- cses_dataset_educ %>%
   mutate(bias = "epistocracy")
@@ -667,7 +704,7 @@ build_votes_by_age_fractional <- function(df){
   
   # 4. votes
   votes <- df_groups %>%
-    group_by(isoname, election_year, age_group, vote, partyfacts_id) %>%
+    group_by(isoname, election_year,election_date, age_group, vote, partyfacts_id) %>%
     summarise(
       votes = sum(weight),
       .groups = "drop"
@@ -693,14 +730,20 @@ build_votes_by_age_fractional <- function(df){
   
   # 6. output final (même structure que deciles / sexe)
   votes %>%
-    left_join(participation, by = "age_group")
-}
+    left_join(
+      participation,
+      by = c(
+        "isoname",
+        "election_year",
+        "election_date",
+        "age_group"))
+
 
 cses_dataset_age <- cses_data_clean_age %>%
-  group_by(isoname, election_year) %>%
+  group_by(isoname, election_year,election_date) %>%
   group_split() %>%
   map_dfr(~ build_votes_by_age_fractional(.x)) %>%
-  left_join(meta_info_cses, by = c("isoname", "election_year"))
+  left_join(meta_info_cses, by = c("isoname", "election_year","election_date"))
 
 cses_dataset_age <- cses_dataset_age %>%
   mutate(bias = "gerontocracy")
@@ -727,6 +770,9 @@ write.csv(
 #WVS ----
 wvs_data_clean <- read.csv("data/intermediary/elections/wvs elections dataset.csv")
 
+sum(is.na(wvs_data_clean$election_date))
+unique(wvs_data_clean$isoname[is.na(wvs_data_clean$election_date)])
+
 #wvs income
 wvs_data_clean_income <- wvs_data_clean %>%
   filter(inc >= 1)
@@ -737,6 +783,7 @@ build_wvs_base_long <- function(df, annee, country){
   
   # sécurité
   election_year <- unique(df$election_year)[1]
+  election_date <- unique(df$election_date)[1]
   survey <- unique(df$survey)[1]
   source <- unique(df$source)[1]
   source_recode <- unique(df$source_recode)[1]
@@ -780,18 +827,20 @@ build_wvs_base_long <- function(df, annee, country){
   # 3. participation
   
   nbr_obs <- df_deciles %>%
-    group_by(decile) %>%
+    group_by(isoname, election_year, election_date,decile) %>%
     summarise(nbr_obs = sum(weight_decile), .groups = "drop")
   
   votes_valides <- df_deciles %>%
     filter(!str_detect(dataset_party_id, "Abstention$")) %>%
-    group_by(decile) %>%
+    group_by(isoname,election_year, election_date,decile) %>%
     summarise(votes_valides = sum(weight_decile), .groups = "drop")
   
   participation <- nbr_obs %>%
-    left_join(votes_valides, by = "decile") %>%
-    mutate(taux_participation = votes_valides / nbr_obs * 100)
-  
+    left_join(
+      votes_valides,
+      by = c("isoname","election_year","election_date","decile")) %>%
+    mutate(
+      taux_participation = votes_valides / nbr_obs * 100)
   
   # 4. votes
   
@@ -803,33 +852,41 @@ build_wvs_base_long <- function(df, annee, country){
         TRUE ~ dataset_party_id
       )
     ) %>%
-    group_by(decile, vote, partyfacts_id) %>%
-    summarise(votes = sum(weight_decile), .groups = "drop") %>%
-    group_by(decile) %>%
-    mutate(pct_votes = votes / sum(votes) * 100)
+    group_by(isoname, election_year, election_date, decile, vote, partyfacts_id) %>%
+    summarise(
+      votes = sum(weight_decile),
+      .groups = "drop"
+    ) %>%
+    group_by(isoname, election_year, election_date, decile) %>%
+    mutate(
+      pct_votes = votes / sum(votes) * 100
+    ) %>%
+    ungroup()
   
   
   # 5. output
   
   votes %>%
-    left_join(participation, by = "decile") %>%
+    left_join(
+      participation,
+      by = c("isoname", "election_year", "election_date", "decile")) %>%
     mutate(
       annee = annee,
       election_year = election_year,
+      election_date = election_date,
       isoname = country,
       survey = survey,
       source = source,
       source_recode = source_recode
     ) %>%
-    relocate(isoname, annee, election_year, vote, decile, survey)
+    relocate(isoname, annee, election_year,election_date, vote, decile, survey)
 }
-
 
 # PIPELINE MULTI-PAYS
 
 
 wvs_dataset_income <- wvs_data_clean_income %>%
-  group_by(isoname, election_year) %>%
+  group_by(isoname, election_year,election_date) %>%
   group_split() %>%
   map_dfr(~ build_wvs_base_long(.x, unique(.x$election_year), unique(.x$isoname)))
 wvs_dataset_income <- wvs_dataset_income %>%
@@ -856,12 +913,12 @@ build_votes_by_gender <- function(df){
   
   # Votes par sexe × parti
   votes <- df %>%
-    group_by(isoname, election_year, gender, vote, partyfacts_id) %>%
+    group_by(isoname, election_year,election_date, gender, vote, partyfacts_id) %>%
     summarise(
       votes = n(),
       .groups = "drop"
     ) %>%
-    group_by(isoname, election_year, gender) %>%
+    group_by(isoname, election_year,election_date, gender) %>%
     mutate(
       pct_votes = votes / sum(votes) * 100
     ) %>%
@@ -869,7 +926,7 @@ build_votes_by_gender <- function(df){
   
   # Participation par sexe
   participation <- df %>%
-    group_by(isoname, election_year, gender) %>%
+    group_by(isoname, election_year,election_date, gender) %>%
     summarise(
       nbr_obs = n(),
       votes_valides = sum(
@@ -883,24 +940,26 @@ build_votes_by_gender <- function(df){
   votes %>%
     left_join(
       participation,
-      by = c("isoname", "election_year", "gender")
+      by = c("isoname", "election_year","election_date", "gender")
     )
 }
 meta_info_wvs <- wvs_data_clean %>%
-  distinct(isoname, election_year, survey, source, source_recode)
+  distinct(isoname, election_year,election_date, survey, source, source_recode)
 
 wvs_dataset_gender <- wvs_data_clean_sexe %>%
-  group_by(isoname, election_year) %>%
+  group_by(isoname, election_year,election_date) %>%
   group_split() %>%
   map_dfr(~ build_votes_by_gender(.x)) %>%
-  left_join(meta_info_wvs, by = c("isoname", "election_year"))
+  left_join(meta_info_wvs, by = c("isoname", "election_year","election_date"))
 
 wvs_dataset_gender <- wvs_dataset_gender %>%
   mutate(bias = "androcracy")
 wvs_dataset_gender <- wvs_dataset_gender %>%
   rename(category = gender)
 
-
+meta_info_wvs %>%
+  count(isoname, election_year, election_date) %>%
+  filter(n > 1)
 
 ##WVS educ ----
 wvs_data_clean_educ <- wvs_data_clean %>%
@@ -955,12 +1014,12 @@ build_votes_by_educ_fractional <- function(df){
   
   # 4. votes
   votes <- df_groups %>%
-    group_by(isoname, election_year, educ_group, vote, partyfacts_id) %>%
+    group_by(isoname, election_year,election_date, educ_group, vote, partyfacts_id) %>%
     summarise(
       votes = sum(weight),
       .groups = "drop"
     ) %>%
-    group_by(educ_group) %>%
+    group_by(isoname,election_year,election_date,educ_group) %>%
     mutate(
       pct_votes = votes / sum(votes) * 100
     ) %>%
@@ -968,7 +1027,7 @@ build_votes_by_educ_fractional <- function(df){
   
   # 5. participation
   participation <- df_groups %>%
-    group_by(educ_group) %>%
+    group_by(isoname,election_year,election_date,educ_group) %>%
     summarise(
       nbr_obs = sum(weight),
       votes_valides = sum(
@@ -981,14 +1040,19 @@ build_votes_by_educ_fractional <- function(df){
   
   # 6. output final (même structure que deciles / sexe)
   votes %>%
-    left_join(participation, by = "educ_group")
-}
+    left_join(
+      participation,
+      by = c(
+        "isoname",
+        "election_year",
+        "election_date",
+        "educ_group"))
 
 wvs_dataset_educ <- wvs_data_clean_educ %>%
-  group_by(isoname, election_year) %>%
+  group_by(isoname, election_year,election_date) %>%
   group_split() %>%
   map_dfr(~ build_votes_by_educ_fractional(.x)) %>%
-  left_join(meta_info_wvs, by = c("isoname", "election_year"))
+  left_join(meta_info_wvs, by = c("isoname", "election_year","election_date"))
 
 wvs_dataset_educ <- wvs_dataset_educ %>%
   mutate(bias = "epistocracy")
@@ -1057,12 +1121,12 @@ build_votes_by_age_fractional <- function(df){
   
   # 4. votes
   votes <- df_groups %>%
-    group_by(isoname, election_year, age_group, vote, partyfacts_id) %>%
+    group_by(isoname, election_year,election_date, age_group, vote, partyfacts_id) %>%
     summarise(
       votes = sum(weight),
       .groups = "drop"
     ) %>%
-    group_by(age_group) %>%
+    group_by(isoanme, election_year, election_date,age_group) %>%
     mutate(
       pct_votes = votes / sum(votes) * 100
     ) %>%
@@ -1070,7 +1134,7 @@ build_votes_by_age_fractional <- function(df){
   
   # 5. participation
   participation <- df_groups %>%
-    group_by(age_group) %>%
+    group_by(isoname,election_year,election_date,age_group) %>%
     summarise(
       nbr_obs = sum(weight),
       votes_valides = sum(
@@ -1083,14 +1147,21 @@ build_votes_by_age_fractional <- function(df){
   
   # 6. output final (même structure que deciles / sexe)
   votes %>%
-    left_join(participation, by = "age_group")
-}
+    left_join(
+      participation,
+      by = c(
+        "isoname",
+        "election_year",
+        "election_date",
+        "age_group"
+      )
+    )
 
 wvs_dataset_age <- wvs_data_clean_age %>%
-  group_by(isoname, election_year) %>%
+  group_by(isoname, election_year,election_date) %>%
   group_split() %>%
   map_dfr(~ build_votes_by_age_fractional(.x)) %>%
-  left_join(meta_info_wvs, by = c("isoname", "election_year"))
+  left_join(meta_info_wvs, by = c("isoname", "election_year","election_date"))
 
 wvs_dataset_age <- wvs_dataset_age %>%
   mutate(bias = "gerontocracy")
@@ -1119,6 +1190,7 @@ build_ess_base_long <- function(df, annee, country){
   
   # sécurité
   election_year <- unique(df$election_year)[1]
+  election_date <- unique(df$election_date)[1]
   survey <- unique(df$survey)[1]
   source <- unique(df$source)[1]
   source_recode <- unique(df$source_recode)[1]
@@ -1162,18 +1234,20 @@ build_ess_base_long <- function(df, annee, country){
   # 3. participation
   
   nbr_obs <- df_deciles %>%
-    group_by(decile) %>%
+    group_by(isoname, election_year, election_date,decile) %>%
     summarise(nbr_obs = sum(weight_decile), .groups = "drop")
   
   votes_valides <- df_deciles %>%
     filter(!str_detect(dataset_party_id, "Abstention$")) %>%
-    group_by(decile) %>%
+    group_by(isoname,election_year, election_date,decile) %>%
     summarise(votes_valides = sum(weight_decile), .groups = "drop")
   
   participation <- nbr_obs %>%
-    left_join(votes_valides, by = "decile") %>%
-    mutate(taux_participation = votes_valides / nbr_obs * 100)
-  
+    left_join(
+      votes_valides,
+      by = c("isoname","election_year","election_date","decile")) %>%
+    mutate(
+      taux_participation = votes_valides / nbr_obs * 100)
   
   # 4. votes
   
@@ -1185,33 +1259,41 @@ build_ess_base_long <- function(df, annee, country){
         TRUE ~ dataset_party_id
       )
     ) %>%
-    group_by(decile, vote, partyfacts_id) %>%
-    summarise(votes = sum(weight_decile), .groups = "drop") %>%
-    group_by(decile) %>%
-    mutate(pct_votes = votes / sum(votes) * 100)
+    group_by(isoname, election_year, election_date, decile, vote, partyfacts_id) %>%
+    summarise(
+      votes = sum(weight_decile),
+      .groups = "drop"
+    ) %>%
+    group_by(isoname, election_year, election_date, decile) %>%
+    mutate(
+      pct_votes = votes / sum(votes) * 100
+    ) %>%
+    ungroup()
   
   
   # 5. output
   
   votes %>%
-    left_join(participation, by = "decile") %>%
+    left_join(
+      participation,
+      by = c("isoname", "election_year", "election_date", "decile")) %>%
     mutate(
       annee = annee,
       election_year = election_year,
+      election_date = election_date,
       isoname = country,
       survey = survey,
       source = source,
       source_recode = source_recode
     ) %>%
-    relocate(isoname, annee, election_year, vote, decile, survey)
+    relocate(isoname, annee, election_year,election_date, vote, decile, survey)
 }
-
 
 # PIPELINE MULTI-PAYS
 
 
 ess_dataset_income <- ess_data_clean_income %>%
-  group_by(isoname, election_year) %>%
+  group_by(isoname, election_year,election_date) %>%
   group_split() %>%
   map_dfr(~ build_ess_base_long(.x, unique(.x$election_year), unique(.x$isoname)))
 ess_dataset_income <- ess_dataset_income %>%
@@ -1238,12 +1320,12 @@ build_votes_by_gender <- function(df){
   
   # Votes par sexe × parti
   votes <- df %>%
-    group_by(isoname, election_year, gender, vote, partyfacts_id) %>%
+    group_by(isoname, election_year,election_date, gender, vote, partyfacts_id) %>%
     summarise(
       votes = n(),
       .groups = "drop"
     ) %>%
-    group_by(isoname, election_year, gender) %>%
+    group_by(isoname, election_year,election_date, gender) %>%
     mutate(
       pct_votes = votes / sum(votes) * 100
     ) %>%
@@ -1251,7 +1333,7 @@ build_votes_by_gender <- function(df){
   
   # Participation par sexe
   participation <- df %>%
-    group_by(isoname, election_year, gender) %>%
+    group_by(isoname, election_year,election_date, gender) %>%
     summarise(
       nbr_obs = n(),
       votes_valides = sum(
@@ -1265,17 +1347,17 @@ build_votes_by_gender <- function(df){
   votes %>%
     left_join(
       participation,
-      by = c("isoname", "election_year", "gender")
+      by = c("isoname", "election_year","election_date", "gender")
     )
 }
 meta_info_ess <- ess_data_clean %>%
-  distinct(isoname, election_year, survey, source, source_recode)
+  distinct(isoname, election_year,election_date, survey, source, source_recode)
 
 ess_dataset_gender <- ess_data_clean_sexe %>%
-  group_by(isoname, election_year) %>%
+  group_by(isoname, election_year,election_date) %>%
   group_split() %>%
   map_dfr(~ build_votes_by_gender(.x)) %>%
-  left_join(meta_info_ess, by = c("isoname", "election_year"))
+  left_join(meta_info_ess, by = c("isoname", "election_year","election_date"))
 
 ess_dataset_gender <- ess_dataset_gender %>%
   mutate(bias = "androcracy")
@@ -1335,12 +1417,12 @@ build_votes_by_educ_fractional <- function(df){
   
   # 4. votes
   votes <- df_groups %>%
-    group_by(isoname, election_year, educ_group, vote, partyfacts_id) %>%
+    group_by(isoname, election_year,election_date, educ_group, vote, partyfacts_id) %>%
     summarise(
       votes = sum(weight),
       .groups = "drop"
     ) %>%
-    group_by(educ_group) %>%
+    group_by(isoname, election_year, election_date,educ_group) %>%
     mutate(
       pct_votes = votes / sum(votes) * 100
     ) %>%
@@ -1361,14 +1443,21 @@ build_votes_by_educ_fractional <- function(df){
   
   # 6. output final (même structure que deciles / sexe)
   votes %>%
-    left_join(participation, by = "educ_group")
-}
+    left_join(
+      participation,
+      by = c(
+        "isoname",
+        "election_year",
+        "election_date",
+        "educ_group"
+      )
+    )
 
 ess_dataset_educ <- ess_data_clean_educ %>%
-  group_by(isoname, election_year) %>%
+  group_by(isoname, election_year,election_date) %>%
   group_split() %>%
   map_dfr(~ build_votes_by_educ_fractional(.x)) %>%
-  left_join(meta_info_ess, by = c("isoname", "election_year"))
+  left_join(meta_info_ess, by = c("isoname", "election_year","election_date"))
 
 ess_dataset_educ <- ess_dataset_educ %>%
   mutate(bias = "epistocracy")
@@ -1437,12 +1526,12 @@ build_votes_by_age_fractional <- function(df){
   
   # 4. votes
   votes <- df_groups %>%
-    group_by(isoname, election_year, age_group, vote, partyfacts_id) %>%
+    group_by(isoname, election_year,election_date, age_group, vote, partyfacts_id) %>%
     summarise(
       votes = sum(weight),
       .groups = "drop"
     ) %>%
-    group_by(age_group) %>%
+    group_by(isoname, election_year, election_date,age_group) %>%
     mutate(
       pct_votes = votes / sum(votes) * 100
     ) %>%
@@ -1463,14 +1552,21 @@ build_votes_by_age_fractional <- function(df){
   
   # 6. output final (même structure que deciles / sexe)
   votes %>%
-    left_join(participation, by = "age_group")
-}
+    left_join(
+      participation,
+      by = c(
+        "isoname",
+        "election_year",
+        "election_date",
+        "age_group"
+      )
+    )
 
 ess_dataset_age <- ess_data_clean_age %>%
-  group_by(isoname, election_year) %>%
+  group_by(isoname, election_year,election_date) %>%
   group_split() %>%
   map_dfr(~ build_votes_by_age_fractional(.x)) %>%
-  left_join(meta_info_ess, by = c("isoname", "election_year"))
+  left_join(meta_info_ess, by = c("isoname", "election_year","election_date"))
 
 ess_dataset_age <- ess_dataset_age %>%
   mutate(bias = "gerontocracy")
