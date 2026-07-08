@@ -310,7 +310,7 @@ ess_data_long <- ess_data_long %>%
 ess_data_long <- ess_data_long %>%
   rename(dataset_party_id = ess_id)
 ess_data_long <- ess_data_long %>%
-  mutate(type = "?")
+  mutate(type = "General election")
 ess_data_long <- ess_data_long %>%
   rename(inc = hinctnta)
 ess_data_long <- ess_data_long %>%
@@ -673,8 +673,8 @@ cses_data <- cses_data %>%
       type == 12 ~ "Parliamentary and Presidential",   
       gender == 20 ~ "Presidential",
       type == 13 ~ "Parliamentary/Legislative",
-      type = 11 ~ "Parliamentary/Legislative",
-      TRUE ~ type
+      type == 10 ~ "Parliamentary/Legislative",
+      TRUE ~ as.character(type)
     )
   )
 
@@ -917,7 +917,7 @@ wvs_data <- wvs_data %>%
 wvs_data <- wvs_data %>%
   rename(dataset_party_id = E179WVS) #turnout inclus dans cette variable
 wvs_data <- wvs_data %>%
-  mutate(type = "Lower House")
+  mutate(type = "General election")
 wvs_data <- wvs_data %>%
   mutate(turnout = NA)
 

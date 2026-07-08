@@ -8,12 +8,15 @@ unique(Base_elections_legislatives$gender)
 unique(Base_elections_legislatives$isoname[Base_elections_legislatives$source == "CSES"])
 sum(is.na(Base_elections_legislatives$weight))
 
+#Liste des régimes présidentiels
+pays_regimes_presidentiels <- read.csv("data/raw/Liste régimes présidentiels.csv", sep = ",")
+pays_regimes_presidentiels <- unique(pays_regimes_presidentiels$isoname)
 
 
 #Calcul fonction déciles WPID ----
 
 meta_info <- Base_elections_legislatives %>%
-  distinct(isoname, election_year,survey, source, source_recode)
+  distinct(isoname,type, election_year,survey, source, source_recode)
 build_votes_by_decile <- function(df){
   
   df <- df %>%
@@ -120,7 +123,7 @@ build_votes_by_gender <- function(df){
     )
 }
 meta_info <- Base_elections_legislatives %>%
-  distinct(isoname, election_year, survey, source, source_recode)
+  distinct(isoname, election_year, survey, source, source_recode,type)
 
 Base_legislatives_gender <- Base_elections_legislatives_sexe %>%
   group_by(source,source_recode,isoname, election_year) %>%
@@ -352,14 +355,14 @@ Base_legislatives_age <- Base_legislatives_age %>%
     )
   )
 
+unique(Base_legislatives_age$type)
+unique(Base_legislatives_educ$type)
+unique(Base_legislatives_gender$type)
+
 
 #Autres bases ----
 #CSES ----
 cses_data_clean <- read.csv("data/intermediary/elections/cses elections dataset.csv")
-
-
-sum(is.na(cses_data_clean$election_date))
-unique(cses_data_clean$isoname[is.na(cses_data_clean$election_date)])
 
 #cses income
 cses_data_clean_income <- cses_data_clean %>%
@@ -371,6 +374,7 @@ build_cses_base_long <- function(df, annee, country){
   # sécurité
   election_year <- unique(df$election_year)[1]
   election_date <- unique(df$election_date)[1]
+  type <- unique(df$type)[1]
   survey <- unique(df$survey)[1]
   source <- unique(df$source)[1]
   source_recode <- unique(df$source_recode)[1]
@@ -462,11 +466,12 @@ build_cses_base_long <- function(df, annee, country){
       election_year = election_year,
       election_date = election_date,
       isoname = country,
+      type = type,
       survey = survey,
       source = source,
       source_recode = source_recode
     ) %>%
-    relocate(isoname, annee, election_year,election_date, vote, decile, survey)
+    relocate(isoname, annee, election_year,election_date, vote, decile, survey,type)
 }
 
 
@@ -532,7 +537,7 @@ build_votes_by_gender <- function(df){
     )
 }
 meta_info_cses <- cses_data_clean %>%
-  distinct(isoname, election_year,election_date, survey, source, source_recode)
+  distinct(isoname, election_year,election_date,type, survey, source, source_recode)
 
 cses_dataset_gender <- cses_data_clean_sexe %>%
   group_by(isoname, election_year,election_date) %>%
@@ -758,20 +763,20 @@ cses_dataset_age <- cses_dataset_age %>%
     )
   )
 
-
-#Export base CSES
-write.csv(
-  cses_data_clean,
-  "data/intermediary/elections/cses data good date.csv",
-  row.names = FALSE
-)
+unique(cses_dataset_age$type)
+unique(cses_dataset_gender$type)
+unique(cses_dataset_income$type)
+unique(cses_dataset_educ$type)
 
 
 #WVS ----
 wvs_data_clean <- read.csv("data/intermediary/elections/wvs elections dataset.csv")
 
-sum(is.na(wvs_data_clean$election_date))
-unique(wvs_data_clean$isoname[is.na(wvs_data_clean$election_date)])
+wvs_data_clean <- wvs_data_clean %>%
+  mutate(type = case_when(
+    isoname %in% pays_regimes_presidentiels ~ "Presidential election",
+    TRUE ~ "Parliamentary election"))
+
 
 #wvs income
 wvs_data_clean_income <- wvs_data_clean %>%
@@ -784,6 +789,7 @@ build_wvs_base_long <- function(df, annee, country){
   # sécurité
   election_year <- unique(df$election_year)[1]
   election_date <- unique(df$election_date)[1]
+  type <- unique(df$type)[1]
   survey <- unique(df$survey)[1]
   source <- unique(df$source)[1]
   source_recode <- unique(df$source_recode)[1]
@@ -875,11 +881,12 @@ build_wvs_base_long <- function(df, annee, country){
       election_year = election_year,
       election_date = election_date,
       isoname = country,
+      type = type,
       survey = survey,
       source = source,
       source_recode = source_recode
     ) %>%
-    relocate(isoname, annee, election_year,election_date, vote, decile, survey)
+    relocate(isoname, annee, election_year,election_date, vote, decile, survey,type)
 }
 
 # PIPELINE MULTI-PAYS
@@ -944,7 +951,7 @@ build_votes_by_gender <- function(df){
     )
 }
 meta_info_wvs <- wvs_data_clean %>%
-  distinct(isoname, election_year,election_date, survey, source, source_recode)
+  distinct(isoname, election_year,election_date, survey, source, source_recode,type)
 
 wvs_dataset_gender <- wvs_data_clean_sexe %>%
   group_by(isoname, election_year,election_date) %>%
@@ -1069,6 +1076,7 @@ wvs_dataset_educ <- wvs_dataset_educ %>%
 
 
 
+
 ##WVS age ----
 wvs_data_clean_age <- wvs_data_clean %>%
   filter(age >= 1)
@@ -1176,10 +1184,19 @@ wvs_dataset_age <- wvs_dataset_age %>%
     )
   )
 
-
+unique(wvs_dataset_age$type)
+unique(wvs_dataset_gender$type)
+unique(wvs_dataset_income$type)
+unique(wvs_dataset_educ$type)
 
 #ESS ----
 ess_data_clean <- read.csv("data/intermediary/elections/ess elections dataset.csv")
+
+ess_data_clean <- ess_data_clean %>%
+  mutate(type = case_when(
+      isoname %in% pays_regimes_presidentiels ~ "Presidential election",
+      TRUE ~ "Parliamentary election"))
+
 
 #ess income
 sum(ess_data_clean$partyfacts_id == "Abstention", na.rm = TRUE)
@@ -1191,6 +1208,7 @@ build_ess_base_long <- function(df, annee, country){
   # sécurité
   election_year <- unique(df$election_year)[1]
   election_date <- unique(df$election_date)[1]
+  type <- unique(df$type)[1]
   survey <- unique(df$survey)[1]
   source <- unique(df$source)[1]
   source_recode <- unique(df$source_recode)[1]
@@ -1281,12 +1299,13 @@ build_ess_base_long <- function(df, annee, country){
       annee = annee,
       election_year = election_year,
       election_date = election_date,
+      type = type,
       isoname = country,
       survey = survey,
       source = source,
       source_recode = source_recode
     ) %>%
-    relocate(isoname, annee, election_year,election_date, vote, decile, survey)
+    relocate(isoname, annee, election_year,election_date, vote, decile, survey,type)
 }
 
 # PIPELINE MULTI-PAYS
@@ -1351,7 +1370,7 @@ build_votes_by_gender <- function(df){
     )
 }
 meta_info_ess <- ess_data_clean %>%
-  distinct(isoname, election_year,election_date, survey, source, source_recode)
+  distinct(isoname, election_year,election_date, survey, source, source_recode,type)
 
 ess_dataset_gender <- ess_data_clean_sexe %>%
   group_by(isoname, election_year,election_date) %>%
@@ -1581,7 +1600,10 @@ ess_dataset_age <- ess_dataset_age %>%
     )
   )
 
-
+unique(ess_dataset_age$type)
+unique(ess_dataset_gender$type)
+unique(ess_dataset_income$type)
+unique(ess_dataset_educ$type)
 
 #Traitement des df income ----
 Base_legislatives_deciles2 <- Base_legislatives_deciles2 %>%
@@ -1642,13 +1664,13 @@ unique(Base_all_clivages$category)
 unique(Base_all_clivages$source_recode)
 
 Base_all_clivages <- Base_all_clivages %>%
-  select(source,source_recode,survey,bias,isoname,election_year,election_date, 
+  select(source,source_recode,type,survey,bias,isoname,election_year,election_date, 
          category,vote,partyfacts_id,votes, pct_votes,nbr_obs,votes_valides,taux_participation)
 
-
+unique(Base_all_clivages$type)
 #Liste de toutes nos élections par années et datasets
 elections_legislatives_valides2 <- Base_all_clivages %>%
-  group_by(isoname,election_year,source, source_recode) %>%
+  group_by(isoname,election_year,type,source, source_recode) %>%
   summarise(.groups = "drop")
 
 write.csv(

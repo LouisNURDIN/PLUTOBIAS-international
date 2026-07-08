@@ -7,7 +7,7 @@ library(fixest)
 library(lubridate)
 library(purrr)
 
-Base_complete_index <-  read.csv("data/final/dataset complete with index.csv", sep = ",")
+Base_complete_legislative_index <-  read.csv("data/final/legislative dataset complete with index.csv", sep = ",")
 all_elections <- read.csv ("data/intermediary/elections/all elections update.csv", sep = ";")
 
 unique(Base_complete_index$source_recode)
@@ -15,7 +15,7 @@ unique(Base_complete_index$source_recode)
 annees_elections <- all_elections %>%
   distinct(isoname,year) %>%  mutate(wpid_election = 1L)
 
-Base_complete_index <- Base_complete_index %>%
+Base_complete_legislative_index <- Base_complete_legislative_index %>%
   left_join(annees_elections,
     by = c("isoname", "year")) %>%
   mutate(
@@ -26,16 +26,17 @@ Base_complete_index <- Base_complete_index %>%
   select(-wpid_election)
 
 #Hiérarchiser les sources ---- 
-Base_complete_index <- Base_complete_index  %>%
+Base_complete_legislative_index <- Base_complete_legislative_index  %>%
   mutate(
     survey_post = case_when(
       survey == "Post-electoral" ~ "1",
       survey == "Pre/Post-electoral" ~ "1",
       survey == "Pre-electoral" ~ "0",
       TRUE ~ survey))
-table(Base_complete_index$survey_post)
 
-Base_complete_index <- Base_complete_index  %>%
+table(Base_complete_legislative_index$survey_post)
+
+Base_complete_legislative_index <- Base_complete_legislative_index  %>%
   mutate(
     survey_specific = case_when(
       source_recode == "CSES" ~ "1",
@@ -43,9 +44,9 @@ Base_complete_index <- Base_complete_index  %>%
       source_recode == "ESS" ~ "0",
       source_recode == "WVS" ~ "0",
       TRUE ~ source_recode))
-table(Base_complete_index$survey_specific)
+table(Base_complete_legislative_index$survey_specific)
 
-Base_complete_index <- Base_complete_index  %>%
+Base_complete_legislative_index <- Base_complete_legislative_index  %>%
   mutate(
     score_source = case_when(
       survey_post == "1" & survey_specific == "1" ~ "1",  #Post-electoral + specific = meilleure source,
@@ -53,10 +54,10 @@ Base_complete_index <- Base_complete_index  %>%
       survey_post == "0" & survey_specific == "1" ~ "3", #Pre-electoral et specific,
       survey_post == "0" & survey_specific == "0" ~ "4", #Pre-electoral et général,
       TRUE ~ survey))
-table(Base_complete_index$score_source)
+table(Base_complete_legislative_index$score_source)
 
 #Filtre pour garder pour chaque combinaison pays/année/biais la meilleure source
-Base_complete_best_sources <- Base_complete_index %>%
+Base_complete_best_sources <- Base_complete_legislative_index %>%
   group_by(isoname, year, bias) %>%
   filter(
     !is.na(score_source),

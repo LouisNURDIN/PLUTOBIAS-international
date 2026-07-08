@@ -71,18 +71,6 @@ Data_elections_global_elections_valides <- Data_elections_global_group %>%
 Data_elections_global_elections_valides <- Data_elections_global_elections_valides %>%
   rename(isoname = country_name)
 
-check_electionsglobal_wpid_legislatives <- elections_legislatives_valides %>%
-  left_join(
-    Data_elections_global_elections_valides, by = c("isoname", "year")
-  )
-
-
-
-#Vérifier le nombre d'élections compatibles entre les deux groupes
-intersect(
-  paste(elections_legislatives_valides$isoname, elections_legislatives_valides$year),
-  paste(Data_elections_global_elections_valides$isoname, Data_elections_global_elections_valides$year)
-) %>% length()
 
 #Join entre base élections et base parlement ----
 ##Rajouter l'abstention dans elections_global----
@@ -202,12 +190,16 @@ Elections_global2 <- Elections_global2  %>%
   mutate(seats_share = seats / seats_total * 100)
 
 ## Join entre les bases ----
+library(stringr)
 Base_all_clivages <- Base_all_clivages %>%
   mutate(election_date = as.Date(election_date))
 
-
+# 1. Parlement + date
 Base_vote_parlement_global_date <- Base_all_clivages %>%
-  filter(!is.na(election_date)) %>%
+  filter(
+    !is.na(election_date),
+    !str_detect(type, "Presidential")
+  ) %>%
   left_join(
     Elections_global2 %>%
       select(
@@ -226,8 +218,12 @@ Base_vote_parlement_global_date <- Base_all_clivages %>%
     )
   )
 
+# 2. Parlement sans date
 Base_vote_parlement_global_nodate <- Base_all_clivages %>%
-  filter(is.na(election_date)) %>%
+  filter(
+    is.na(election_date),
+    !str_detect(type, "Presidential")
+  ) %>%
   left_join(
     Elections_global2 %>%
       select(
@@ -246,9 +242,21 @@ Base_vote_parlement_global_nodate <- Base_all_clivages %>%
     )
   )
 
+# 3. Présidentiel : aucune jointure
+Base_vote_parlement_global_pres <- Base_all_clivages %>%
+  filter(str_detect(type, "Presidential")) %>%
+  mutate(
+    party = NA_character_,
+    seats = NA_real_,
+    seats_total = NA_real_,
+    seats_share = NA_real_
+  )
+
+# Assemblage
 Base_vote_parlement_global <- bind_rows(
   Base_vote_parlement_global_date,
-  Base_vote_parlement_global_nodate
+  Base_vote_parlement_global_nodate,
+  Base_vote_parlement_global_pres
 ) %>%
   arrange(isoname, election_year, election_date)
 
@@ -384,6 +392,7 @@ write.csv(
   elections_dans_elections_global,
   "data/intermediary/elections/list all elections.csv",
   row.names = FALSE)
+
 
 
 all_elections_update <- read.csv ("data/intermediary/elections/all elections update.csv", sep = ";")

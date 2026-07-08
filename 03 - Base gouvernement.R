@@ -416,11 +416,15 @@ Base_complete <- Base_vote_parlement_global %>%
 Base_complete <- Base_complete[!is.na(Base_complete$year),]
 
 Base_complete <- Base_complete %>%
-  select(isoname,year,join_year,election_year, election_date, source, source_recode,survey, bias,category, partyfacts_id, votes, pct_votes,
-         votes_valides, taux_participation, seats, seats_total, seats_share, ministers_party, total_ministers, ministers_share,women_party,women_share_party,Percentage.of.women.diputees,women_share_government, election_couverture_seats
-  )
+  select(isoname,year,join_year,election_year, election_date,type, source, source_recode,survey, bias,category, partyfacts_id, votes, pct_votes,
+         votes_valides, taux_participation, seats, seats_total, seats_share, ministers_party, total_ministers, ministers_share,women_party,women_share_party,Percentage.of.women.diputees,women_share_government, election_couverture_seats)
+
 Base_complete <- Base_complete %>%
   arrange(isoname, year)
+
+Base_complete <- Base_complete %>%
+  rename(join_year_whogov = join_year)
+
 
 #vérifier ici
 Base_complete <- Base_complete %>%
@@ -461,12 +465,12 @@ Base_complete <- Base_complete %>%
 
 
 missing_parties <- whogov_parties %>%
-  filter(ministers_share >= 0.20 %>%
+  filter(ministers_share >= 0.20) %>%
   distinct(isoname, year, partyfacts_id, ministers_share) %>%
   anti_join(
     Base_complete %>%
       distinct(isoname, year, partyfacts_id),
-    by = c("isoname", "year", "partyfacts_id")))
+    by = c("isoname", "year", "partyfacts_id"))
 
 View(missing_parties %>%
        left_join(
