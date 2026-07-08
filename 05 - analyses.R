@@ -10,7 +10,7 @@ library(purrr)
 Base_complete_legislative_index <-  read.csv("data/final/legislative dataset complete with index.csv", sep = ",")
 all_elections <- read.csv ("data/intermediary/elections/all elections update.csv", sep = ";")
 
-unique(Base_complete_index$source_recode)
+
 
 annees_elections <- all_elections %>%
   distinct(isoname,year) %>%  mutate(wpid_election = 1L)
@@ -34,7 +34,7 @@ Base_complete_legislative_index <- Base_complete_legislative_index  %>%
       survey == "Pre-electoral" ~ "0",
       TRUE ~ survey))
 
-table(Base_complete_legislative_index$survey_post)
+
 
 Base_complete_legislative_index <- Base_complete_legislative_index  %>%
   mutate(
@@ -44,7 +44,7 @@ Base_complete_legislative_index <- Base_complete_legislative_index  %>%
       source_recode == "ESS" ~ "0",
       source_recode == "WVS" ~ "0",
       TRUE ~ source_recode))
-table(Base_complete_legislative_index$survey_specific)
+
 
 Base_complete_legislative_index <- Base_complete_legislative_index  %>%
   mutate(
@@ -54,7 +54,7 @@ Base_complete_legislative_index <- Base_complete_legislative_index  %>%
       survey_post == "0" & survey_specific == "1" ~ "3", #Pre-electoral et specific,
       survey_post == "0" & survey_specific == "0" ~ "4", #Pre-electoral et général,
       TRUE ~ survey))
-table(Base_complete_legislative_index$score_source)
+
 
 #Filtre pour garder pour chaque combinaison pays/année/biais la meilleure source
 Base_complete_legislative_best_sources <- Base_complete_legislative_index %>%
@@ -283,13 +283,13 @@ grid::grid.newpage()
 p_50_50_legislatives
 ggsave(
   filename = "results/figures/Boxplot plutocracy 50 50.jpg",
-  plot = p_50_50,width = 10,height = 6,dpi = 300)
+  plot = p_50_50_legislatives,width = 10,height = 6,dpi = 300)
 
 grid::grid.newpage()
 p_10_10_legislatives
 ggsave(
   filename = "results/figures/Boxplot plutocracy 10 10.jpg",
-  plot = p_10_10,width = 10,height = 6,dpi = 300)
+  plot = p_10_10_legislatives,width = 10,height = 6,dpi = 300)
 
 ##Box plot androcracy ----
 Base_gender_legislative_long <- Base_legislative_index_gender %>%
@@ -464,7 +464,7 @@ ggsave(
   plot = plot_top_bot_educ_legislatives,width = 10,height = 6,dpi = 300)
 
 ##Box plot gerontocracy ----
-Base_age_legislatives_long <- Base_legislatives_index_age %>%
+Base_age_legislatives_long <- Base_legislative_index_age %>%
   pivot_longer(
     cols = starts_with("ratio_") & !ends_with("top_bot2"),
     names_to = "Indice",
@@ -604,7 +604,7 @@ plot = plot_all_global_bias_50_50_legislatives,width = 10,height = 6,dpi = 300)
 
 #HEATMAP corrélations biais/indices ----
 ##Garder la meilleure source au sein de chaque source_recode
-Base_complete_grosses_sources <- Base_complete_index %>%
+Base_legislative_grosses_sources <- Base_complete_legislative_index %>%
   group_by(isoname, year, bias,source_recode) %>%
   filter(
     !is.na(score_source),
@@ -616,16 +616,16 @@ Base_complete_grosses_sources <- Base_complete_index %>%
   ungroup()
 
 #check si on a bien une observation par pays/année/bias
-Base_complete_grosses_sources <- Base_complete_grosses_sources %>%
+Base_legislative_grosses_sources <- Base_legislative_grosses_sources %>%
   filter(election_couverture_seats >= 80 & election_couverture_ministers >= 0.80)
 
-Base_complete_grosses_sources %>% count(isoname, year, bias,source_recode) %>% filter(n > 1)
+Base_legislative_grosses_sources %>% count(isoname, year, bias,source_recode) %>% filter(n > 1)
 
 
 #Calcul moyenne indices quand on a plusieurs sources ----
-ratio_cols <- names(Base_complete_grosses_sources)[grepl("^ratio", names(Base_complete_grosses_sources))]
+ratio_cols <- names(Base_legislative_grosses_sources)[grepl("^ratio", names(Base_legislative_grosses_sources))]
 
-Base_complete_global_sources <- Base_complete_grosses_sources %>%
+Base_legislative_global_sources <- Base_legislative_grosses_sources %>%
   group_by(isoname, year, bias,source_recode) %>%
   summarise(
     
@@ -655,22 +655,22 @@ Base_complete_global_sources <- Base_complete_grosses_sources %>%
     
     .groups = "drop"
   )
-Base_complete_global_sources %>%
+Base_legislative_global_sources %>%
   count(isoname, year, bias, source_recode) %>%
   filter(n > 1)
 
 ##Prépa base heatmap ----
-Base_complete_global_sources_long <- Base_complete_global_sources %>%
+Base_legislative_global_sources_long <- Base_legislative_global_sources %>%
   pivot_longer(
     cols = starts_with("ratio_") & !ends_with("top_bot2"),
     names_to = "Indice",
     values_to = "Value")
 
-table(Base_complete_global_sources_long$Indice)
+table(Base_legislative_global_sources_long$Indice)
 
-Base_complete_global_sources_long <- recodage(Base_complete_global_sources_long)
+Base_legislative_global_sources_long <- recodage(Base_legislative_global_sources_long)
 
-Base_complete_global_sources_long <- Base_complete_global_sources_long %>%
+Base_legislative_global_sources_long <- Base_legislative_global_sources_long %>%
   filtre_annees_electorales()
 
 
@@ -714,7 +714,7 @@ indices <- c(
 
 
 heatmaps <- crossing(bias = biases, indice = indices) %>%
-  mutate(data = map2(bias, indice, ~ make_heatmap(Base_complete_global_sources_long, .x, .y)))
+  mutate(data = map2(bias, indice, ~ make_heatmap(Base_legislative_global_sources_long, .x, .y)))
 
 plot_heatmap <- function(df, title) {
   
