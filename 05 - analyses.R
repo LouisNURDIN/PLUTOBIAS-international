@@ -1585,9 +1585,6 @@ plots$plot[[12]] #Plutocracy - Votes → Ministres
 setwd("C:/Users/nurdin/Desktop/PLUTOBIAS-international")
 
 
-  plot_bias_by_country_legislative <- ggplot(
-  Base_legislative_finale,
-
 base_graph_bias_countries_leg_1980 <- Base_legislative_finale %>%
   filter(
     year >= 1980,
@@ -1595,7 +1592,8 @@ base_graph_bias_countries_leg_1980 <- Base_legislative_finale %>%
     ratio_gouvernement_top_bot2 > 0
   ) %>%
   group_by(isoname, bias) %>%
-  filter(n_distinct(year) >= 20)
+  filter(n_distinct(year) >= 20) %>%
+  complete(year = full_seq(year, 1))
 
 
   plot_bias_by_country_legislative <- ggplot(
@@ -1624,21 +1622,19 @@ ggsave(
   filename = "results/figures/evolution bias by country (legislative).jpg",
   plot = plot_bias_by_country_legislative,width = 10,height = 6,dpi = 300)
 
-<<<<<<< HEAD
-#Avec régimes présidentiels 
-plot_bias_by_country_presidentielles <- ggplot(
-  Base_finale_presidentielles,
-=======
 
 #Avec régimes présidentiels 
-base_graph_bias_countries_pres_1980 <- Base_finale_presidentielles %>%
+  
+  base_graph_bias_countries_pres_1980 <- Base_finale_presidentielles %>%
   filter(
     year >= 1980,
     !is.na(ratio_gouvernement_top_bot2),
     ratio_gouvernement_top_bot2 > 0
   ) %>%
   group_by(isoname, bias) %>%
-  filter(n_distinct(year) >= 20)
+  filter(n_distinct(year) >= 10) %>%
+  complete(year = full_seq(year, 1))
+
 
 plot_bias_by_country_presidentielles <- ggplot(
   base_graph_bias_countries_pres_1980,
@@ -1712,34 +1708,68 @@ ggsave(
 
 
 #Fonction 
-plot_bias <- function(bias_value) {
+# Colonnes de ratios à utiliser
+ratios <- names(Base_legislative_finale) %>%
+  str_subset("^ratio_.*2$")
+
+# Libellés des ratios (facultatif)
+labels_ratios <- c(
+  ratio_participation_top_bot2 = "Participation",
+  ratio_votes_valides_en_sieges_top_bot2 = "Votes → sièges",
+  ratio_sieges_ministres_top_bot2 = "Sièges → ministres",
+  ratio_gouvernement_top_bot2 = "Gouvernement"
+)
+
+plot_bias <- function(bias_value){
   
   base_bias <- Base_legislative_finale %>%
     filter(
       bias == bias_value,
-      year >= 2000,
-      !is.na(ratio_gouvernement_top_bot2),
-      ratio_gouvernement_top_bot2 > 0
+      year >= 2000
     ) %>%
     group_by(isoname) %>%
     filter(n_distinct(year) >= 10) %>%
     summarise(
-      moyenne_geo = exp(mean(log(ratio_gouvernement_top_bot2))),
-      n_annees = n_distinct(year),
-      .groups = "drop") %>%
-    arrange(moyenne_geo)
-  
+      across(
+        all_of(ratios),
+        ~{
+          x <- .x[!is.na(.x) & .x > 0]
+          
+          if(length(x) == 0){
+            NA_real_
+          } else{
+            exp(mean(log(x)))
+          }
+        }
+      ),
+      .groups = "drop"
+    ) %>%
+    pivot_longer(
+      cols = all_of(ratios),
+      names_to = "ratio",
+      values_to = "moyenne_geo"
+    ) %>%
+    mutate(
+      ratio = recode(ratio, !!!labels_ratios),
+      ratio = factor(
+        ratio,
+        levels = labels_ratios
+      )
+    )
   
   ggplot(
-    base_bias,aes(
-      x = reorder(isoname, moyenne_geo),
-      y = log(moyenne_geo))
+    base_bias,
+    aes(
+      x = reorder(isoname, moyenne_geo, mean, na.rm = TRUE),
+      y = log(moyenne_geo),
+      fill = ratio
+    )
   ) +
-    geom_col() +
+    geom_col(position = position_dodge(width = .8)) +
     geom_hline(
       yintercept = 0,
       linetype = "dashed",
-      color = "grey50"
+      colour = "grey50"
     ) +
     scale_y_continuous(
       breaks = log(c(0.25, 0.5, 1, 2, 4)),
@@ -1748,10 +1778,20 @@ plot_bias <- function(bias_value) {
     labs(
       title = paste("Bias :", bias_value),
       x = "Pays",
-      y = "Moyenne géométrique du ratio gouvernement top/bot"
+      y = "Moyenne géométrique depuis 2000",
+      fill = "Ratio"
     ) +
-    theme_minimal()
+    theme_minimal() +
+    theme(
+      axis.text.x = element_text(
+        angle = 90,
+        hjust = 1,
+        vjust = .5
+      )
+    )
+  
 }
+
 biais <- c(
   "plutocracy",
   "androcracy",
@@ -1759,15 +1799,9 @@ biais <- c(
   "epistocracy"
 )
 
-graphiques_index_legislatives <- lapply(
-  biais,
-  plot_bias
-)
-
-setwd("C:/Users/nurdin/Desktop/PLUTOBIAS-international")
 walk(
   biais,
-  function(b) {
+  function(b){
     
     p <- plot_bias(b)
     
@@ -1775,91 +1809,82 @@ walk(
       filename = paste0(
         "results/figures/Mean_",
         b,
-        "_legislative.jpg"
+        "legislative_all_ratios.jpg"
       ),
       plot = p,
-      width = 10,
+      width = 16,
       height = 8,
       dpi = 300
     )
+    
   }
-)
+) #Les graphiques s'exportent directement dans "results/figures"
 
-graphiques_index_legislatives[[1]] #Moyenne ploutocratie 2000's
-graphiques_index_legislatives[[2]] #Moyenne androcratie 2000's
-graphiques_index_legislatives[[3]] #Moyenne gérontocratie 2000's
-graphiques_index_legislatives[[4]] #Moyenne épistocratie 2000's
 
 
 
 #Avec les régimes présidentiels ----
 #Avec les élections présidentielles 1ère version
-base_graph_bias_countries_pres_2000 <- Base_finale_presidentielles %>%
-  filter(
-    year >= 2000,
-    !is.na(ratio_gouvernement_top_bot2),
-    ratio_gouvernement_top_bot2 > 0
-  ) %>%
-  group_by(isoname, bias) %>%
-  filter(n_distinct(year) >= 10) %>%
-  summarise(
-    moyenne_geo = exp(mean(log(ratio_gouvernement_top_bot2))),
-    n_annees = n_distinct(year),
-    .groups = "drop")
+ratios <- names(Base_finale_presidentielles) %>%
+  str_subset("^ratio_.*2$")
 
-base_graph_bias_countries_pres_2000  <- base_graph_bias_countries_pres_2000  %>%
-  mutate(moyenne_geo_log = log(moyenne_geo))
+# Libellés des ratios (facultatif)
+labels_ratios <- c(
+  ratio_participation_top_bot2 = "Participation",
+  ratio_votes_valides_en_ministres_top_bot2 = "Votes → Ministres",
+  ratio_gouvernement_top_bot2 = "Gouvernement"
+)
 
-plot_biais_pres_2000 <- ggplot(
-  base_graph_bias_countries_pres_2000 ,
-  aes(
-    x = bias,
-    y = moyenne_geo_log,
-    fill = bias
-  )
-) +
-  geom_col() +
-  geom_hline(yintercept = 0, linetype = "dashed", color = "grey50") +
-  facet_wrap(~ isoname) +
-  scale_y_continuous(
-    breaks = log(c(0.25, 0.5, 1, 2, 4)),
-    labels = c("0.25", "0.5", "1", "2", "4")
-  ) +
-  theme_minimal()
-ggsave(
-  filename = "results/figures/Mean bias by country (presidential).jpg",
-  plot = plot_biais_pres_2000 ,width = 10,height = 6,dpi = 300)
-
-
-#Fonction 
-plot_bias_pres <- function(bias_value) {
+plot_bias_presidentiels <- function(bias_value){
   
-  base_bias_pres <- Base_finale_presidentielles %>%
+  base_bias_presidentiels <- Base_finale_presidentielles %>%
     filter(
       bias == bias_value,
-      year >= 2000,
-      !is.na(ratio_gouvernement_top_bot2),
-      ratio_gouvernement_top_bot2 > 0
+      year >= 2000
     ) %>%
     group_by(isoname) %>%
     filter(n_distinct(year) >= 10) %>%
     summarise(
-      moyenne_geo = exp(mean(log(ratio_gouvernement_top_bot2))),
-      n_annees = n_distinct(year),
-      .groups = "drop") %>%
-    arrange(moyenne_geo)
-  
+      across(
+        all_of(ratios),
+        ~{
+          x <- .x[!is.na(.x) & .x > 0]
+          
+          if(length(x) == 0){
+            NA_real_
+          } else{
+            exp(mean(log(x)))
+          }
+        }
+      ),
+      .groups = "drop"
+    ) %>%
+    pivot_longer(
+      cols = all_of(ratios),
+      names_to = "ratio",
+      values_to = "moyenne_geo"
+    ) %>%
+    mutate(
+      ratio = recode(ratio, !!!labels_ratios),
+      ratio = factor(
+        ratio,
+        levels = labels_ratios
+      )
+    )
   
   ggplot(
-    base_bias_pres,aes(
-      x = reorder(isoname, moyenne_geo),
-      y = log(moyenne_geo))
+    base_bias_presidentiels,
+    aes(
+      x = reorder(isoname, moyenne_geo, mean, na.rm = TRUE),
+      y = log(moyenne_geo),
+      fill = ratio
+    )
   ) +
-    geom_col() +
+    geom_col(position = position_dodge(width = .8)) +
     geom_hline(
       yintercept = 0,
       linetype = "dashed",
-      color = "grey50"
+      colour = "grey50"
     ) +
     scale_y_continuous(
       breaks = log(c(0.25, 0.5, 1, 2, 4)),
@@ -1868,10 +1893,20 @@ plot_bias_pres <- function(bias_value) {
     labs(
       title = paste("Bias :", bias_value),
       x = "Pays",
-      y = "Moyenne géométrique du ratio gouvernement top/bot"
+      y = "Moyenne géométrique depuis 2000",
+      fill = "Ratio"
     ) +
-    theme_minimal()
+    theme_minimal() +
+    theme(
+      axis.text.x = element_text(
+        angle = 90,
+        hjust = 1,
+        vjust = .5
+      )
+    )
+  
 }
+
 biais <- c(
   "plutocracy",
   "androcracy",
@@ -1879,37 +1914,26 @@ biais <- c(
   "epistocracy"
 )
 
-graphiques_index_pres <- lapply(
-  biais,
-  plot_bias_pres
-)
-setwd("C:/Users/nurdin/Desktop/PLUTOBIAS-international")
 walk(
   biais,
-  function(b) {
+  function(b){
     
-    p <- plot_bias_pres(b)
+    p <- plot_bias_presidentiels(b)
     
     ggsave(
       filename = paste0(
         "results/figures/Mean_",
         b,
-        "_presidential.jpg"
+        "presidentiels_all_ratios.jpg"
       ),
       plot = p,
-      width = 10,
+      width = 16,
       height = 8,
       dpi = 300
     )
+    
   }
-)
-
-
-graphiques_index_pres[[1]] #Moyenne ploutocratie 2000's
-graphiques_index_pres[[2]] #Moyenne androcratie 2000's
-graphiques_index_pres[[3]] #Moyenne gérontocratie 2000's
-graphiques_index_pres[[4]] #Moyenne épistocratie 2000's
-
+)   #Les graphiques s'exportent directement dans "results/figures"
 
 
 
