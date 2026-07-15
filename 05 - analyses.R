@@ -1584,9 +1584,24 @@ plots$plot[[12]] #Plutocracy - Votes → Ministres
 #Plot de mes indices par biais ----*
 setwd("C:/Users/nurdin/Desktop/PLUTOBIAS-international")
 
+<<<<<<< HEAD
 
   plot_bias_by_country_legislative <- ggplot(
   Base_legislative_finale,
+=======
+base_graph_bias_countries_leg_1980 <- Base_legislative_finale %>%
+  filter(
+    year >= 1980,
+    !is.na(ratio_gouvernement_top_bot2),
+    ratio_gouvernement_top_bot2 > 0
+  ) %>%
+  group_by(isoname, bias) %>%
+  filter(n_distinct(year) >= 20)
+
+
+  plot_bias_by_country_legislative <- ggplot(
+    base_graph_bias_countries_leg_1980,
+>>>>>>> 171cc0c1774bb3a752993f53a409a69ee50377d3
   aes(x = year,y = ratio_gouvernement_top_bot2,color = bias
   )
 ) +
@@ -1611,9 +1626,25 @@ ggsave(
   filename = "results/figures/evolution bias by country (legislative).jpg",
   plot = plot_bias_by_country_legislative,width = 10,height = 6,dpi = 300)
 
+<<<<<<< HEAD
 #Avec régimes présidentiels 
 plot_bias_by_country_presidentielles <- ggplot(
   Base_finale_presidentielles,
+=======
+
+#Avec régimes présidentiels 
+base_graph_bias_countries_pres_1980 <- Base_finale_presidentielles %>%
+  filter(
+    year >= 1980,
+    !is.na(ratio_gouvernement_top_bot2),
+    ratio_gouvernement_top_bot2 > 0
+  ) %>%
+  group_by(isoname, bias) %>%
+  filter(n_distinct(year) >= 20)
+
+plot_bias_by_country_presidentielles <- ggplot(
+  base_graph_bias_countries_pres_1980,
+>>>>>>> 171cc0c1774bb3a752993f53a409a69ee50377d3
   aes(x = year,y = ratio_gouvernement_top_bot2,color = bias
   )
 ) +
@@ -1674,6 +1705,9 @@ plot_bias_countries_leg_2000 <- ggplot(
     labels = c("0.25", "0.5", "1", "2", "4")
   ) +
   theme_minimal()
+
+print(plot_bias_countries_leg_2000)
+
 ggsave(
   filename = "results/figures/Mean bias by country (legislative).jpg",
   plot = plot_bias_countries_leg_2000 ,width = 10,height = 6,dpi = 300)
