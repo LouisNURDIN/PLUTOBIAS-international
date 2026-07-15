@@ -1584,11 +1584,10 @@ plots$plot[[12]] #Plutocracy - Votes → Ministres
 #Plot de mes indices par biais ----*
 setwd("C:/Users/nurdin/Desktop/PLUTOBIAS-international")
 
-<<<<<<< HEAD
 
   plot_bias_by_country_legislative <- ggplot(
   Base_legislative_finale,
-=======
+
 base_graph_bias_countries_leg_1980 <- Base_legislative_finale %>%
   filter(
     year >= 1980,
@@ -1601,7 +1600,6 @@ base_graph_bias_countries_leg_1980 <- Base_legislative_finale %>%
 
   plot_bias_by_country_legislative <- ggplot(
     base_graph_bias_countries_leg_1980,
->>>>>>> 171cc0c1774bb3a752993f53a409a69ee50377d3
   aes(x = year,y = ratio_gouvernement_top_bot2,color = bias
   )
 ) +
@@ -1644,7 +1642,7 @@ base_graph_bias_countries_pres_1980 <- Base_finale_presidentielles %>%
 
 plot_bias_by_country_presidentielles <- ggplot(
   base_graph_bias_countries_pres_1980,
->>>>>>> 171cc0c1774bb3a752993f53a409a69ee50377d3
+
   aes(x = year,y = ratio_gouvernement_top_bot2,color = bias
   )
 ) +
