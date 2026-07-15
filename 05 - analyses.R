@@ -763,7 +763,7 @@ setwd("results/figures")
 
 walk2(
   plots$plot,
-  paste0("heatmap_", plots$bias, "_", plots$indice, ".png"),
+  paste0("heatmap_legislatives", plots$bias, "_", plots$indice, ".png"),
   ~ ggsave(
     filename = .y,
     plot = .x,
@@ -1549,7 +1549,7 @@ setwd("results/figures")
 
 walk2(
   plots$plot,
-  paste0("heatmap_", plots$bias, "_", plots$indice, ".png"),
+  paste0("heatmap_presidentiels", plots$bias, "_", plots$indice, ".png"),
   ~ ggsave(
     filename = .y,
     plot = .x,
