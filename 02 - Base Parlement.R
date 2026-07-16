@@ -326,10 +326,26 @@ manquants <- Elections_global2 %>%
          Base_vote_parlement_global %>% distinct(source,source_recode,isoname,election_year,election_date, partyfacts_id,seats_share,election_couverture_seats),
          by = c("isoname","election_year", "election_date", "partyfacts_id"
                 ))
+
 View(
- manquants %>%
-left_join(Base_vote_parlement_global %>%distinct(isoname, election_year,election_date,source, source_recode),
-               by = c("isoname", "election_year", "election_date")))
+  manquants %>%
+    left_join(
+      Base_vote_parlement_global %>%
+        distinct(
+          isoname,
+          election_year,
+          election_date,
+          source,
+          source_recode
+        ),
+      by = c(
+        "isoname",
+        "election_year",
+        "election_date"
+      )
+    ) %>%
+    filter(!is.na(source_recode), source_recode != "")
+)
 
 
 unique(Base_vote_parlement_global$source_recode)
@@ -373,7 +389,13 @@ Base_vote_parlement_global <- Base_vote_parlement_global %>%
 Base_vote_parlement_global <- Base_vote_parlement_global %>%
   arrange(isoname, election_year,election_date)
 
-unique(parlgov$isoname)
+verification_pct_votes <- Base_vote_parlement_global %>%
+  group_by(isoname,source, election_year,election_date,type,bias, category) %>%
+  summarise(
+    somme_pct_votes = sum(pct_votes, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  filter(abs(somme_pct_votes - 100) > 0.01)
 
 #Export base avec méthode dinc
 write.csv(
@@ -395,15 +417,28 @@ write.csv(
 
 
 
-all_elections_update <- read.csv ("data/intermediary/elections/all elections update.csv", sep = ";")
+all_elections_update <- read.csv ("data/intermediary/elections/all elections update.csv", sep = ",")
 
 all_elections_update <- all_elections_update %>%
   mutate(year = as.integer(year)) %>%
   left_join(
     Elections_global %>%
-      mutate(year = as.integer(year)) %>%
+      mutate(year = as.integer(election_year)) %>%
       dplyr::select(isoname, year, election_date),
     by = c("isoname", "year")
+  )
+
+all_elections_update <- all_elections_update %>%
+  select(-election_date.x)
+all_elections_update <- all_elections_update %>%
+  select(-election_date.y)
+
+all_elections_update <- all_elections_update %>%
+  distinct(
+    isoname,
+    year,
+    election_date,
+    .keep_all = TRUE
   )
 
 write.csv(
@@ -411,3 +446,4 @@ write.csv(
   "data/intermediary/elections/all elections update.csv",
   row.names = FALSE)
             
+unique(Base_vote_parlement_global$bias[Base_vote_parlement_global$source_recode == "CSES"])

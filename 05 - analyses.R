@@ -8,7 +8,7 @@ library(lubridate)
 library(purrr)
 
 Base_complete_legislative_index <-  read.csv("data/final/legislative dataset complete with index.csv", sep = ",")
-all_elections <- read.csv ("data/intermediary/elections/all elections update.csv", sep = ";")
+all_elections <- read.csv ("data/intermediary/elections/all elections update.csv", sep = ",")
 
 
 
@@ -54,6 +54,63 @@ Base_complete_legislative_index <- Base_complete_legislative_index  %>%
       survey_post == "0" & survey_specific == "1" ~ "3", #Pre-electoral et specific,
       survey_post == "0" & survey_specific == "0" ~ "4", #Pre-electoral et général,
       TRUE ~ survey))
+
+
+#Filtre pour garder pour chaque combinaison la meilleure source au sein de chaque source_recode
+Base_legislative_grosses_sources <- Base_complete_legislative_index %>%
+  group_by(isoname, year, bias,source_recode) %>%
+  filter(
+    !is.na(score_source),
+    score_source == min(score_source, na.rm = TRUE)
+  ) %>%
+  mutate(
+    nbr_sources = n_distinct(source)
+  ) %>%
+  ungroup()
+
+#check si on a bien une observation par pays/année/bias
+Base_legislative_grosses_sources <- Base_legislative_grosses_sources %>%
+  filter(election_couverture_seats >= 80 & election_couverture_ministers >= 0.80)
+
+Base_legislative_grosses_sources %>% count(isoname, year, bias,source_recode) %>% filter(n > 1)
+
+
+#Calcul moyenne indices quand on a plusieurs sources ----
+ratio_cols <- names(Base_legislative_grosses_sources)[grepl("^ratio", names(Base_legislative_grosses_sources))]
+
+Base_legislative_global_sources <- Base_legislative_grosses_sources %>%
+  group_by(isoname, year, bias,source_recode) %>%
+  summarise(
+    
+    # nombre de sources conservées
+    nbr_sources = n_distinct(source),
+    
+    # moyenne géométrique des ratios
+    across(
+      all_of(ratio_cols),
+      ~ {
+        x <- .x
+        x <- x[!is.na(x) & x > 0]
+        
+        if (length(x) == 0) {
+          NA_real_
+        } else {
+          exp(mean(log(x)))
+        }
+      }
+    ),
+    
+    # autres variables inchangées
+    across(
+      -c(all_of(ratio_cols), source),
+      first
+    ),
+    
+    .groups = "drop"
+  )
+Base_legislative_global_sources %>%
+  count(isoname, year, bias, source_recode) %>%
+  filter(n > 1)
 
 
 #Filtre pour garder pour chaque combinaison pays/année/biais la meilleure source
@@ -111,13 +168,13 @@ Base_legislative_finale <- Base_complete_legislative_best_sources %>%
 #Création des datasets par biais
 Base_regimes_presidentiels_index <-  read.csv("data/final/dataset complete regimes presidentiels.csv", sep = ",")
 
-Base_legislative_index_income <- Base_legislative_finale %>%filter(Base_legislative_finale$bias == "plutocracy")
+Base_legislative_index_income <- Base_legislative_grosses_sources %>%filter(Base_legislative_grosses_sources$bias == "plutocracy")
 
-Base_legislative_index_gender<- Base_legislative_finale %>%filter(Base_legislative_finale$bias == "androcracy")
+Base_legislative_index_gender<- Base_legislative_grosses_sources %>%filter(Base_legislative_grosses_sources$bias == "androcracy")
 
-Base_legislative_index_educ <- Base_legislative_finale %>%filter(Base_legislative_finale$bias == "epistocracy")
+Base_legislative_index_educ <- Base_legislative_grosses_sources %>%filter(Base_legislative_grosses_sources$bias == "epistocracy")
 
-Base_legislative_index_age <- Base_legislative_finale %>%filter(Base_legislative_finale$bias == "gerontocracy")
+Base_legislative_index_age <- Base_legislative_grosses_sources %>%filter(Base_legislative_grosses_sources$bias == "gerontocracy")
 
 #Filtre pour travailler sur des bases propres
 Base_legislative_index_income <- Base_legislative_index_income %>%
@@ -604,60 +661,7 @@ plot = plot_all_global_bias_50_50_legislatives,width = 10,height = 6,dpi = 300)
 
 #HEATMAP corrélations biais/indices ----
 ##Garder la meilleure source au sein de chaque source_recode
-Base_legislative_grosses_sources <- Base_complete_legislative_index %>%
-  group_by(isoname, year, bias,source_recode) %>%
-  filter(
-    !is.na(score_source),
-    score_source == min(score_source, na.rm = TRUE)
-  ) %>%
-  mutate(
-    nbr_sources = n_distinct(source)
-  ) %>%
-  ungroup()
 
-#check si on a bien une observation par pays/année/bias
-Base_legislative_grosses_sources <- Base_legislative_grosses_sources %>%
-  filter(election_couverture_seats >= 80 & election_couverture_ministers >= 0.80)
-
-Base_legislative_grosses_sources %>% count(isoname, year, bias,source_recode) %>% filter(n > 1)
-
-
-#Calcul moyenne indices quand on a plusieurs sources ----
-ratio_cols <- names(Base_legislative_grosses_sources)[grepl("^ratio", names(Base_legislative_grosses_sources))]
-
-Base_legislative_global_sources <- Base_legislative_grosses_sources %>%
-  group_by(isoname, year, bias,source_recode) %>%
-  summarise(
-    
-    # nombre de sources conservées
-    nbr_sources = n_distinct(source),
-    
-    # moyenne géométrique des ratios
-    across(
-      all_of(ratio_cols),
-      ~ {
-        x <- .x
-        x <- x[!is.na(x) & x > 0]
-        
-        if (length(x) == 0) {
-          NA_real_
-        } else {
-          exp(mean(log(x)))
-        }
-      }
-    ),
-    
-    # autres variables inchangées
-    across(
-      -c(all_of(ratio_cols), source),
-      first
-    ),
-    
-    .groups = "drop"
-  )
-Base_legislative_global_sources %>%
-  count(isoname, year, bias, source_recode) %>%
-  filter(n > 1)
 
 ##Prépa base heatmap ----
 Base_legislative_global_sources_long <- Base_legislative_global_sources %>%

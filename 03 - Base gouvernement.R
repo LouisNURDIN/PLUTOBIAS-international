@@ -15,7 +15,7 @@ elections_legislatives_valides2 <- elections_legislatives_valides2 %>%
 
 pays_gmp_legislatives <- unique(elections_legislatives_valides2$isoname)
 annees_gmp_legislatives <- unique(elections_legislatives_valides2$year)
-all_elections <- read.csv ("data/intermediary/elections/all elections update.csv", sep = ";")
+all_elections <- read.csv ("data/intermediary/elections/all elections update.csv", sep = ",")
 all_elections <- all_elections %>%
   mutate(year = as.numeric(year))
 
@@ -503,7 +503,7 @@ View(
     filter(election_couverture_seats > 100) %>%
     distinct(year,isoname,election_couverture_seats,source,source_recode))
 
-
+unique(Base_complete$bias[Base_complete$source_recode == "WPID"])
 
 
 #Export des bases ----
