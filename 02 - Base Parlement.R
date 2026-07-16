@@ -260,7 +260,7 @@ Base_vote_parlement_global <- bind_rows(
 ) %>%
   arrange(isoname, election_year, election_date)
 
-
+unique(Base_vote_parlement_global$bias[Base_vote_parlement_global$source_recode == "WVS"])
 
 ###Traitement pour avoir le taux de députés par partis sur l'ensemble des députéss
 Base_vote_parlement_global <- Base_vote_parlement_global %>%
@@ -431,7 +431,7 @@ all_elections_update <- all_elections_update %>%
 all_elections_update <- all_elections_update %>%
   select(-election_date.x)
 all_elections_update <- all_elections_update %>%
-  select(-election_date.y)
+  rename(election_date = election_date.y)
 
 all_elections_update <- all_elections_update %>%
   distinct(
@@ -447,3 +447,4 @@ write.csv(
   row.names = FALSE)
             
 unique(Base_vote_parlement_global$bias[Base_vote_parlement_global$source_recode == "CSES"])
+unique(Base_all_clivages$bias[Base_all_clivages$source_recode == "CSES"])

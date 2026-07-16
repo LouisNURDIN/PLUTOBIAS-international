@@ -441,6 +441,7 @@ build_cses_base_long <- function(df, annee, country){
   # sécurité
   election_year <- unique(df$election_year)[1]
   survey <- unique(df$survey)[1]
+  type <- unique(df$type)[1]
   source <- unique(df$source)[1]
   source_recode <- unique(df$source_recode)[1]
   # 1. distribution revenu (par pays + année)
@@ -528,12 +529,13 @@ build_cses_base_long <- function(df, annee, country){
       annee = annee,
       election_year = election_year,
       election_date = election_date,
+      type = type,
       isoname = country,
       survey = survey,
       source = source,
       source_recode = source_recode
     ) %>%
-    relocate(isoname, annee, election_year, vote, decile, survey)
+    relocate(isoname, annee, election_year, vote, decile, survey,type)
 }
 
 
@@ -851,6 +853,7 @@ build_wvs_base_long <- function(df, annee, country){
   election_year <- unique(df$election_year)[1]
   election_date <- unique(df$election_date)[1]
   survey <- unique(df$survey)[1]
+  type <- unique(df$type)[1]
   source <- unique(df$source)[1]
   source_recode <- unique(df$source_recode)[1]
   # 1. distribution revenu (par pays + année)
@@ -938,12 +941,13 @@ build_wvs_base_long <- function(df, annee, country){
       annee = annee,
       election_year = election_year,
       election_date = election_date,
+      type = type,
       isoname = country,
       survey = survey,
       source = source,
       source_recode = source_recode
     ) %>%
-    relocate(isoname, annee, election_year, election_date,vote, decile, survey)
+    relocate(isoname, annee, election_year, election_date,vote, decile, survey,type)
 }
 
 
@@ -1932,6 +1936,9 @@ write.csv(
   "data/intermediary/elections/dataset with all clivages and elections.csv",
   row.names = FALSE)
 
-table(Base_all_clivages$bias[Base_all_clivages$source_recode == "ESS"])
+Base_all_clivages %>%
+  filter(source_recode == "WVS") %>% count(type, bias)
+
+table(Base_all_clivages$bias[Base_all_clivages$source_recode == "WPID"])
 
 
