@@ -194,6 +194,15 @@ library(stringr)
 Base_all_clivages <- Base_all_clivages %>%
   mutate(election_date = as.Date(election_date))
 
+Base_all_clivages <- Base_all_clivages %>%
+  mutate(
+    election_date = case_when(
+      isoname == "France" & election_year == 2017 ~ as.Date("2017-06-18"),
+      TRUE ~ as.Date(election_date)
+    ))
+
+
+
 # 1. Parlement + date
 Base_vote_parlement_global_date <- Base_all_clivages %>%
   filter(
@@ -344,8 +353,7 @@ View(
         "election_date"
       )
     ) %>%
-    filter(!is.na(source_recode), source_recode != "")
-)
+    filter(!is.na(source_recode), source_recode != ""))
 
 
 unique(Base_vote_parlement_global$source_recode)
@@ -416,35 +424,6 @@ write.csv(
   row.names = FALSE)
 
 
-
-all_elections_update <- read.csv ("data/intermediary/elections/all elections update.csv", sep = ",")
-
-all_elections_update <- all_elections_update %>%
-  mutate(year = as.integer(year)) %>%
-  left_join(
-    Elections_global %>%
-      mutate(year = as.integer(election_year)) %>%
-      dplyr::select(isoname, year, election_date),
-    by = c("isoname", "year")
-  )
-
-all_elections_update <- all_elections_update %>%
-  select(-election_date.x)
-all_elections_update <- all_elections_update %>%
-  rename(election_date = election_date.y)
-
-all_elections_update <- all_elections_update %>%
-  distinct(
-    isoname,
-    year,
-    election_date,
-    .keep_all = TRUE
-  )
-
-write.csv(
-  all_elections_update,
-  "data/intermediary/elections/all elections update.csv",
-  row.names = FALSE)
             
 unique(Base_vote_parlement_global$bias[Base_vote_parlement_global$source_recode == "CSES"])
-unique(Base_all_clivages$bias[Base_all_clivages$source_recode == "CSES"])
+unique(Base_vote_parlement_global$isoname)

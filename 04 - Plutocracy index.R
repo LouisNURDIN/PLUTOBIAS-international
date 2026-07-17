@@ -10,7 +10,7 @@ pays_regimes_presidentiels <- unique(pays_regimes_presidentiels$isoname)
 Base_complete <- Base_complete[!is.na(Base_complete$category),]
 Base_complete <- Base_complete[!is.na(Base_complete$partyfacts_id),]
 
-
+unique(Base_complete$year[Base_complete$isoname == "United States"])
 
 Base_complete<- Base_complete %>% filter(Base_complete$partyfacts_id != "Other")
 Base_complete <- Base_complete %>%filter(Base_complete$year >= 1966)
@@ -237,7 +237,7 @@ Base_complete_clean <- Base_complete %>%
     election_couverture_ministers,Percentage.of.women.diputees,women_share_party,women_share_government
   ) 
 
-unique(Base_complete_clean$type)
+unique(Base_complete_clean$year[Base_complete$isoname == "United States"])
 
 
 #Isoler les régimes présidentiels dans une autre base ----
@@ -335,8 +335,7 @@ Base_regimes_presidentiels_index_test <- Base_regimes_presidentiels_index %>%
   slice(1) %>%
   ungroup()  #
 
-table(Base_complete_clean$source_recode)
-table(Base_complete_index$source_recode)
+
 ##Export des bases ----
 write.csv(
   Base_regimes_presidentiels_index,

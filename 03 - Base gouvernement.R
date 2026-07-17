@@ -14,11 +14,35 @@ elections_legislatives_valides2 <- elections_legislatives_valides2 %>%
   rename(year = election_year)
 
 pays_gmp_legislatives <- unique(elections_legislatives_valides2$isoname)
+pays_gmp_legislatives <- unique(elections_legislatives_valides2$isoname) |>
+  recode(
+    "United States of America" = "United States"
+  )
+
+
+
 annees_gmp_legislatives <- unique(elections_legislatives_valides2$year)
-all_elections <- read.csv ("data/intermediary/elections/all elections update.csv", sep = ",")
+all_elections <- read.csv ("data/intermediary/elections/all elections update.csv", sep = ";")
 all_elections <- all_elections %>%
   mutate(year = as.numeric(year))
 
+all_elections <- all_elections %>%
+  mutate(
+    isoname = case_when(
+      isoname == "United States of America" ~ "United States",
+      TRUE ~ isoname))
+
+elections_legislatives_valides <- elections_legislatives_valides %>%
+  mutate(
+    isoname = case_when(
+      isoname == "United States of America" ~ "United States",
+      TRUE ~ isoname))
+
+elections_legislatives_valides2 <- elections_legislatives_valides2 %>%
+  mutate(
+    isoname = case_when(
+      isoname == "United States of America" ~ "United States",
+      TRUE ~ isoname))
 #Calcul nombre de ministres par année
 whogov <- whogov %>%
   rename(isoname = country_name)
@@ -33,7 +57,11 @@ whogov_parties <- whogov %>%
     ministers_party = n(),
     women_party = sum(gender == "Female", na.rm = TRUE),
     
-    prime_minister = first(name[position == "Prime Min."]),
+    prime_minister = first(
+      name[position == "Prime Min."],
+      default = NA_character_
+    ),
+    
     .groups = "drop_last"
   ) %>%
   mutate(
@@ -44,6 +72,9 @@ whogov_parties <- whogov %>%
     women_share_government = total_women / total_ministers
   ) %>%
   ungroup()
+
+unique(whogov_parties$isoname)
+unique(whogov$isoname)
 
 #Join whogov dans ma base vote-parlement ----
 whogov_parties <- whogov_parties %>%
@@ -71,9 +102,10 @@ whogov_parties_bonnes_elections <- whogov_parties_bonnes_elections %>%
   )
 
 whogov_parties <- whogov_parties %>%
-  filter(isoname %in% pays_gmp_legislatives)  
+  filter(isoname %in% pays_gmp_legislatives) 
+print(pays_gmp_legislatives)
   
-      
+ 
 whogov_parties <- whogov_parties %>%
   mutate(
     partyfacts_id = case_when(
@@ -211,12 +243,18 @@ whogov_parties <- whogov_parties %>%
   ungroup()
 
 
-#DINC ----
+#Base vote parlement ----
 Base_vote_parlement_global <- read.csv("data/intermediary/parliament/Elections and parliament global dataset.csv", sep = ",")
 
 Base_vote_parlement_global <- Base_vote_parlement_global %>%
   mutate(year = election_year)
 
+Base_vote_parlement_global <- Base_vote_parlement_global %>%
+  mutate(
+    isoname = case_when(
+      isoname == "United States of America" ~ "United States",
+      
+      TRUE ~ isoname))
 
 unique(Base_vote_parlement_global$partyfacts_id[Base_vote_parlement_global$isoname == "Zimbabwe" & 
                                                   Base_vote_parlement_global$year == 2013] )
@@ -270,6 +308,20 @@ rows_to_add <- Base_vote_parlement_global %>%
     dat <- arrange(.x, year)
     country <- .y$isoname
     
+    # Élections de référence pour ce pays
+    elections_country <- all_elections %>%
+      filter(isoname == country)
+    
+    # Si le pays possède à la fois des élections présidentielles et non présidentielles,
+    # on ne garde que les présidentielles
+    if (
+      any(elections_country$election_presidentielle == 1, na.rm = TRUE) &&
+      any(elections_country$election_presidentielle == 0, na.rm = TRUE)
+    ) {
+      elections_country <- elections_country %>%
+        filter(election_presidentielle == 1)
+    }
+    
     map_dfr(sort(unique(dat$year)), function(y1){
       
       bloc <- filter(dat, year == y1)
@@ -282,9 +334,9 @@ rows_to_add <- Base_vote_parlement_global %>%
       
       if(survey_type == "Pre-electoral"){
         
-        # Première élection officielle après y1
-        next_election <- all_elections %>%
-          filter(isoname == country, year > y1) %>%
+        # Première élection après l'année du survey
+        next_election <- elections_country %>%
+          filter(year > y1) %>%
           summarise(next_year = min(year, na.rm = TRUE)) %>%
           pull(next_year)
         
@@ -296,16 +348,13 @@ rows_to_add <- Base_vote_parlement_global %>%
       } else if(survey_type %in% c("Post-electoral", "Pre/post-electoral")){
         
         # L'année du survey est-elle une année d'élection ?
-        is_election_year <- y1 %in%
-          (all_elections %>%
-             filter(isoname == country) %>%
-             pull(year))
+        is_election_year <- y1 %in% elections_country$year
         
         if(is_election_year){
           
-          # Même année qu'une élection : on propage vers l'élection suivante
-          next_election <- all_elections %>%
-            filter(isoname == country, year > y1) %>%
+          # Propagation jusqu'à l'élection suivante
+          next_election <- elections_country %>%
+            filter(year > y1) %>%
             summarise(next_year = min(year, na.rm = TRUE)) %>%
             pull(next_year)
           
@@ -314,11 +363,11 @@ rows_to_add <- Base_vote_parlement_global %>%
           
           new_years <- seq(y1 + 1, next_election - 1)
           
-        } else {
+        } else{
           
-          # Pas une année d'élection : on rattache à la précédente
-          previous_election <- all_elections %>%
-            filter(isoname == country, year < y1) %>%
+          # Propagation depuis l'élection précédente
+          previous_election <- elections_country %>%
+            filter(year < y1) %>%
             summarise(prev_year = max(year, na.rm = TRUE)) %>%
             pull(prev_year)
           
@@ -351,7 +400,8 @@ Base_vote_parlement_global <- bind_rows(
   distinct() %>%
   arrange(isoname, source, source_recode, year)
 
-
+unique(Base_vote_parlement_global$year[Base_vote_parlement_global$isoname == "France"])
+unique(all_elections$year[all_elections$isoname == "United States"])
 #Créer la bonne année de join pour mes élections
 
 Base_vote_parlement_global <- Base_vote_parlement_global %>%
@@ -503,7 +553,7 @@ View(
     filter(election_couverture_seats > 100) %>%
     distinct(year,isoname,election_couverture_seats,source,source_recode))
 
-unique(Base_complete$bias[Base_complete$source_recode == "WPID"])
+unique(Base_complete$year[Base_complete$isoname == "France"])
 
 
 #Export des bases ----
@@ -512,6 +562,7 @@ write.csv(
   "data/final/final dataset all countries and clivages.csv",
   row.names = FALSE)
 
-
+unique(Base_vote_parlement_global$isoname)
+unique(whogov$isoname)
 
 

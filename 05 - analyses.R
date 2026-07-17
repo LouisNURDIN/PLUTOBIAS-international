@@ -9,7 +9,7 @@ library(purrr)
 
 
 Base_complete_legislative_index <-  read.csv("data/final/legislative dataset complete with index.csv", sep = ",")
-all_elections <- read.csv ("data/intermediary/elections/all elections update.csv", sep = ",")
+all_elections <- read.csv ("data/intermediary/elections/all elections update.csv", sep = ";")
 
 
 
@@ -118,6 +118,7 @@ Base_legislative_global_sources %>%
 Base_complete_legislative_best_sources <- Base_complete_legislative_index %>%
   group_by(isoname, year, bias) %>%
   filter(
+    !is.na(ratio_gouvernement_top_bot2),
     !is.na(score_source),
     score_source == min(score_source, na.rm = TRUE)
   ) %>%
@@ -1578,7 +1579,7 @@ plots$plot[[12]] #Plutocracy - Votes → Ministres
 #____________________________________________________________________________
 #Graphiques articles ----
 #Plot de mes indices par biais ----*
-setwd("C:/Users/nurdin/Desktop/PLUTOBIAS-international")
+setwd("C:/Users/nurdin/Desktop/PLUTOBIAS-international/results/figures")
 
 Base_legislative_finale <- Base_legislative_finale %>% mutate(regime = "legislatif")
 Base_finale_presidentielles <- Base_finale_presidentielles %>% mutate(regime = "présidentiel")
@@ -1586,6 +1587,7 @@ Base_finale_presidentielles <- Base_finale_presidentielles %>% mutate(regime = "
 Base_all_regimes <- Base_legislative_finale %>%
   bind_rows(Base_finale_presidentielles) 
 
+unique(Base_all_regimes$isoname)
 
 base_graph_bias_countries_leg_1980 <- Base_all_regimes %>%
   filter(
@@ -1593,11 +1595,14 @@ base_graph_bias_countries_leg_1980 <- Base_all_regimes %>%
     !is.na(ratio_gouvernement_top_bot2),
     ratio_gouvernement_top_bot2 > 0
   ) %>%
-  group_by(isoname, bias) %>%
+  group_by(isoname) %>%
   filter(n_distinct(year) >= 15) %>%
-  tidyr::complete(year = full_seq(year, 1)) %>%
+  ungroup() %>%
+  group_by(isoname, bias) %>%
+  tidyr::complete(
+    year = full_seq(year, 1)
+  ) %>%
   fill(regime, .direction = "downup") %>%
-  fill(isoname, bias, .direction = "downup") %>%
   ungroup() %>%
   mutate(
     isoname_label = if_else(
@@ -1608,7 +1613,7 @@ base_graph_bias_countries_leg_1980 <- Base_all_regimes %>%
   )
 
 
-  plot_bias_by_country_legislative <- ggplot(
+  plot_evolution_bias_by_country <- ggplot(
     base_graph_bias_countries_leg_1980,
   aes(x = year,y = ratio_gouvernement_top_bot2,color = bias
   )
@@ -1616,7 +1621,7 @@ base_graph_bias_countries_leg_1980 <- Base_all_regimes %>%
   geom_line(linewidth = 1) +
   geom_hline(yintercept = 1, linetype = "dashed", color = "grey50") +
   facet_wrap(~ isoname_label) +
-  coord_cartesian(ylim = c(0,4)) +
+  coord_cartesian(ylim = c(0,5)) +
   scale_color_manual(
     values = c(
       "androcracy" = "red",
@@ -1631,10 +1636,10 @@ base_graph_bias_countries_leg_1980 <- Base_all_regimes %>%
   ) +
   
   theme_minimal()
-print(plot_bias_by_country_legislative)
+print(plot_evolution_bias_by_country)
 ggsave(
   filename = "results/figures/evolution bias by country (legislative).jpg",
-  plot = plot_bias_by_country_legislative,width = 10,height = 6,dpi = 300)
+  plot = plot_evolution_bias_by_country,width = 10,height = 6,dpi = 300)
 
 
 #Barres valeur moyenne des indices finaux ----
