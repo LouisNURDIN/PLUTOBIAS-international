@@ -53,6 +53,12 @@ GMP_inc <- GMP_inc %>%
 unique(GMP_inc$source)
 
 table(GMP_inc$dinc)
+
+names(GMP_inc)
+unique(GMP_inc$year[GMP_inc$isoname == "United States"])
+table(GMP_inc$dataset_party_id[GMP_inc$isoname == "United States" & GMP_inc$year == 2000])
+
+
 #Ajout Partyfacts avedc id WPID ----
 Partyfacts_id <- read.csv("data/raw/partyfacts-external-parties (1).csv", sep = ";")
 unique(Partyfacts_id$dataset_key)
@@ -87,6 +93,8 @@ GMP_inc_2 <- GMP_inc_2 %>%
   filter(
     !(dataset_party_id == "" & (turnout == 1 | is.na(turnout))))
 
+table(GMP_inc_2$dataset_party_id[GMP_inc_2$isoname == "United States" & GMP_inc_2$year == 2000])
+
 
 #Abstention dans la 2ème méthode
 GMP_inc_2 <- GMP_inc_2 %>%
@@ -100,6 +108,7 @@ GMP_inc_2 <- GMP_inc_2 %>%
     )
   )
 
+table(GMP_inc_2$dataset_party_id[GMP_inc_2$isoname == "United States" & GMP_inc_2$year == 2000])
 ##Ajout iso dans le nom des partis ----
 GMP_inc_2 <- GMP_inc_2 %>%
   mutate(
@@ -109,6 +118,8 @@ GMP_inc_2 <- GMP_inc_2 %>%
     )
   )
 
+table(GMP_inc_2$dataset_party_id[GMP_inc_2$isoname == "United States" & GMP_inc_2$year == 2000])
+table(GMP_inc$dataset_party_id[GMP_inc$isoname == "United States" & GMP_inc$year == 2000])
 GMP_inc_2 <- GMP_inc_2 %>%
   rename(gender = sex)
 
@@ -135,7 +146,7 @@ unique(GMP_inc_2$age)
 GMP_inc_2_clean <- GMP_inc_2 %>%
   select(isoname,year,interview_date, source, source_recode, survey,type, dinc,gender,educ, age, turnout,dataset_party_id,weight)
 
-
+table(GMP_inc_2$dataset_party_id[GMP_inc_2$isoname == "United States" & GMP_inc_2$year == 2000])
 ##Join Partyfacts dans GMP inc ----
 Base_all_elections <- GMP_inc_2_clean %>%
   left_join(
@@ -155,7 +166,7 @@ Base_all_elections <- Base_all_elections %>%
     )
   )
 
-
+table(Base_all_elections$partyfacts_id[Base_all_elections$isoname == "United States" & Base_all_elections$year == 2008])
 
 
 
@@ -164,6 +175,9 @@ Base_elections_legislatives <- Base_all_elections %>%
   filter(
     isoname %in% pays_regimes_presidentiels & type %in% c("Presidential", "Presidential, round 1") |
       (!(isoname %in% pays_regimes_presidentiels) & type == "Lower house"))
+
+table(Base_elections_legislatives$partyfacts_id[Base_elections_legislatives$isoname == "United States" & Base_elections_legislatives$year == 2000])
+
 
 table(Base_elections_legislatives$type)
 unique(Base_elections_legislatives$isoname)

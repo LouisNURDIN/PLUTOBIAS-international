@@ -2,6 +2,7 @@
 library(dplyr)
 Base_complete <-  read.csv("data/final/final dataset all countries and clivages.csv", sep = ",")
 
+unique(Base_complete$year[Base_complete$isoname == "France" & Base_complete$bias == "plutocracy"])
 
 table(Base_complete$source_recode)
 pays_regimes_presidentiels <- read.csv("data/raw/Liste régimes présidentiels.csv", sep = ",")
@@ -237,7 +238,8 @@ Base_complete_clean <- Base_complete %>%
     election_couverture_ministers,Percentage.of.women.diputees,women_share_party,women_share_government
   ) 
 
-unique(Base_complete_clean$year[Base_complete$isoname == "United States"])
+unique(Base_complete_clean$year[Base_complete_clean$source_recode == "ESS" & Base_complete_clean$isoname == "France"])
+
 
 
 #Isoler les régimes présidentiels dans une autre base ----
@@ -273,6 +275,7 @@ Base_complete_legislative_index <- Base_complete_clean  %>%
 Base_complete_legislative_index <- Base_complete_legislative_index %>%
   arrange(isoname, year)
 
+unique(Base_complete_legislative_index$year[Base_complete_legislative_index$source_recode == "ESS" & Base_complete_legislative_index$isoname == "France"])
 #Lister pays/années où mes indices se dupliquent (on est censé en avoir 4)
 View(
 Base_complete_legislative_index %>%

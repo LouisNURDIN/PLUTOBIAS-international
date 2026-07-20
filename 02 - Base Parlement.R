@@ -37,9 +37,12 @@ parlgov <- parlgov %>% mutate(partyfacts_id = as.character(partyfacts_id))
 #Import de ma base avec mes clivages ----
 Base_all_clivages <- read.csv("data/intermediary/elections/dataset with all clivages and elections.csv", sep = ",")
 
+unique(Base_all_clivages$election_year[Base_all_clivages$isoname == "France" & Base_all_clivages$source_recode == "ESS"])
+unique(Base_all_clivages$category[Base_all_clivages$isoname == "France" & Base_all_clivages$election_year == 2002])
+
 Base_all_clivages <- Base_all_clivages %>%
   mutate(election_year = as.integer(election_year)) %>%
-  filter(election_year <= 2020)
+  filter(election_year <= 2022)
 
 Base_all_clivages <- Base_all_clivages %>%
   filter(isoname != "Hong Kong")
@@ -198,9 +201,9 @@ Base_all_clivages <- Base_all_clivages %>%
   mutate(
     election_date = case_when(
       isoname == "France" & election_year == 2017 ~ as.Date("2017-06-18"),
-      TRUE ~ as.Date(election_date)
-    ))
+      TRUE ~ as.Date(election_date)))
 
+unique(Base_all_clivages$election_year[Base_all_clivages$source_recode == "ESS" & Base_all_clivages$isoname == "France"])
 
 
 # 1. Parlement + date
@@ -423,7 +426,8 @@ write.csv(
   "data/intermediary/elections/list all elections.csv",
   row.names = FALSE)
 
-
+unique(Base_vote_parlement_global$election_year[Base_vote_parlement_global$source_recode == "ESS" & Base_vote_parlement_global$isoname == "France"])
             
 unique(Base_vote_parlement_global$bias[Base_vote_parlement_global$source_recode == "CSES"])
 unique(Base_vote_parlement_global$isoname)
+

@@ -11,8 +11,6 @@ library(purrr)
 Base_complete_legislative_index <-  read.csv("data/final/legislative dataset complete with index.csv", sep = ",")
 all_elections <- read.csv ("data/intermediary/elections/all elections update.csv", sep = ";")
 
-
-
 annees_elections <- all_elections %>%
   distinct(isoname,year) %>%  mutate(wpid_election = 1L)
 
@@ -71,7 +69,7 @@ Base_legislative_grosses_sources <- Base_complete_legislative_index %>%
 
 #check si on a bien une observation par pays/année/bias
 Base_legislative_grosses_sources <- Base_legislative_grosses_sources %>%
-  filter(election_couverture_seats >= 80 & election_couverture_ministers >= 0.80)
+  filter(election_couverture_seats >= 75 & election_couverture_ministers >= 0.75)
 
 Base_legislative_grosses_sources %>% count(isoname, year, bias,source_recode) %>% filter(n > 1)
 
@@ -116,20 +114,26 @@ Base_legislative_global_sources %>%
 
 #Filtre pour garder pour chaque combinaison pays/année/biais la meilleure source
 Base_complete_legislative_best_sources <- Base_complete_legislative_index %>%
-  group_by(isoname, year, bias) %>%
   filter(
     !is.na(ratio_gouvernement_top_bot2),
-    !is.na(score_source),
-    score_source == min(score_source, na.rm = TRUE)
+    !is.na(score_source)
+  ) %>%
+  group_by(isoname, year, bias) %>%
+  filter(
+    score_source == min(score_source)
   ) %>%
   mutate(
     nbr_sources = n_distinct(source)
   ) %>%
   ungroup()
 
+unique(Base_complete_legislative_best_sources$year[Base_complete_legislative_best_sources$isoname == "France" & Base_complete_legislative_best_sources$bias == "plutocracy"])
+unique(Base_complete_legislative_index$year[Base_complete_legislative_index$isoname == "France"& Base_complete_legislative_index$bias == "plutocracy"])
+unique(Base_complete_legislative_best_sources$year[Base_complete_legislative_best_sources$isoname == "France"])
+
 #check si on a bien une observation par pays/année/bias
 Base_complete_legislative_best_sources <- Base_complete_legislative_best_sources %>%
-  filter(election_couverture_seats >= 80 & election_couverture_ministers >= 0.80)
+  filter(election_couverture_seats >= 75 & election_couverture_ministers >= 0.75)
 
 Base_complete_legislative_best_sources %>% count(isoname, year, bias) %>% filter(n > 1)
 
@@ -167,6 +171,8 @@ Base_legislative_finale <- Base_complete_legislative_best_sources %>%
     
     .groups = "drop"
   )
+
+unique(Base_complete_legislative_best_sources$year[Base_complete_legislative_best_sources$isoname == "France"])
 #Création des datasets par biais
 Base_regimes_presidentiels_index <-  read.csv("data/final/dataset complete regimes presidentiels.csv", sep = ",")
 
@@ -180,16 +186,16 @@ Base_legislative_index_age <- Base_legislative_finale %>%filter(Base_legislative
 
 #Filtre pour travailler sur des bases propres
 Base_legislative_index_income <- Base_legislative_index_income %>%
-  filter(election_couverture_seats >= 80 & election_couverture_ministers >= 0.80)
+  filter(election_couverture_seats >= 75 & election_couverture_ministers >= 0.75)
 
 Base_legislative_index_gender <- Base_legislative_index_gender %>%
-  filter(election_couverture_seats >= 80 & election_couverture_ministers >= 0.80)
+  filter(election_couverture_seats >= 75 & election_couverture_ministers >= 0.75)
 
 Base_legislative_index_educ <- Base_legislative_index_educ %>%
-  filter(election_couverture_seats >= 80 & election_couverture_ministers >= 0.80)
+  filter(election_couverture_seats >= 75 & election_couverture_ministers >= 0.75)
 
 Base_legislative_index_age <- Base_legislative_index_age %>%
-  filter(election_couverture_seats >= 80 & election_couverture_ministers >= 0.80)
+  filter(election_couverture_seats >= 75 & election_couverture_ministers >= 0.75)
 
 
 #Code pour chaque biais et par source ----
@@ -353,7 +359,7 @@ ggsave(
 ##Box plot androcracy ----
 Base_gender_legislative_long <- Base_legislative_index_gender %>%
   pivot_longer(
-    cols = starts_with("ratio_") & !ends_with("top_bot2"),
+    cols = starts_with("ratio_") & !ends_with("top_bot"),
     names_to = "Indice",
     values_to = "Value"
   ) 
@@ -367,10 +373,10 @@ recodage <- function(df) {
     mutate(
       Indice = recode(
         Indice,
-        "ratio_participation_top_bot" = "Participation",
-        "ratio_votes_valides_en_sieges_top_bot" = "Votes → sièges",
-        "ratio_sieges_ministres_top_bot" = "Sièges → ministres",
-        "ratio_gouvernement_top_bot" = "Gouvernement"
+        "ratio_participation_top_bot2" = "Participation",
+        "ratio_votes_valides_en_sieges_top_bot2" = "Votes → sièges",
+        "ratio_sieges_ministres_top_bot2" = "Sièges → ministres",
+        "ratio_gouvernement_top_bot2" = "Gouvernement"
       ),
       Indice = factor(Indice, levels = c(
         "Participation",
@@ -440,7 +446,7 @@ ggsave(
 ##Box plot epistocracy ----
 Base_educ_legislative_long <- Base_legislative_index_educ %>%
   pivot_longer(
-    cols = starts_with("ratio_") & !ends_with("top_bot2"),
+    cols = starts_with("ratio_") & !ends_with("top_bot"),
     names_to = "Indice",
     values_to = "Value"
   ) 
@@ -454,10 +460,10 @@ recodage <- function(df) {
     mutate(
       Indice = recode(
         Indice,
-        "ratio_participation_top_bot" = "Participation",
-        "ratio_votes_valides_en_sieges_top_bot" = "Votes → sièges",
-        "ratio_sieges_ministres_top_bot" = "Sièges → ministres",
-        "ratio_gouvernement_top_bot" = "Gouvernement"
+        "ratio_participation_top_bot2" = "Participation",
+        "ratio_votes_valides_en_sieges_top_bot2" = "Votes → sièges",
+        "ratio_sieges_ministres_top_bot2" = "Sièges → ministres",
+        "ratio_gouvernement_top_bot2" = "Gouvernement"
       ),
       Indice = factor(Indice, levels = c(
         "Participation",
@@ -525,7 +531,7 @@ ggsave(
 ##Box plot gerontocracy ----
 Base_age_legislatives_long <- Base_legislative_index_age %>%
   pivot_longer(
-    cols = starts_with("ratio_") & !ends_with("top_bot2"),
+    cols = starts_with("ratio_") & !ends_with("top_bot"),
     names_to = "Indice",
     values_to = "Value"
   ) 
@@ -539,10 +545,10 @@ recodage <- function(df) {
     mutate(
       Indice = recode(
         Indice,
-        "ratio_participation_top_bot" = "Participation",
-        "ratio_votes_valides_en_sieges_top_bot" = "Votes → sièges",
-        "ratio_sieges_ministres_top_bot" = "Sièges → ministres",
-        "ratio_gouvernement_top_bot" = "Gouvernement"
+        "ratio_participation_top_bot2" = "Participation",
+        "ratio_votes_valides_en_sieges_top_bot2" = "Votes → sièges",
+        "ratio_sieges_ministres_top_bot2" = "Sièges → ministres",
+        "ratio_gouvernement_top_bot2" = "Gouvernement"
       ),
       Indice = factor(Indice, levels = c(
         "Participation",
@@ -668,7 +674,7 @@ plot = plot_all_global_bias_50_50_legislatives,width = 10,height = 6,dpi = 300)
 ##Prépa base heatmap ----
 Base_legislative_global_sources_long <- Base_legislative_global_sources %>%
   pivot_longer(
-    cols = starts_with("ratio_") & !ends_with("top_bot2"),
+    cols = starts_with("ratio_") & !ends_with("top_bot"),
     names_to = "Indice",
     values_to = "Value")
 
@@ -768,7 +774,7 @@ plots <- heatmaps %>%
 
 walk2(
   plots$plot,
-  paste0("heatmap_legislatives", plots$bias, "_", plots$indice, ".png"),
+  paste0("results/figures/heatmap_legislatives", plots$bias, "_", plots$indice, ".png"),
   ~ ggsave(
     filename = .y,
     plot = .x,
@@ -804,7 +810,7 @@ plots$plot[[15]] #Plutocracy - Sièges → Ministres
 
 #REGIMES PRESIDENTIELS ----
 Base_complete_presidentielles_index <- read.csv("data/final/dataset complete regimes presidentiels.csv", sep = ",")
-dir.exists("data/final")
+
 Base_complete_presidentielles_index <- Base_complete_presidentielles_index %>%
   left_join(annees_elections,
             by = c("isoname", "year")) %>%
@@ -860,7 +866,7 @@ Base_complete_best_sources_presidentielles <- Base_complete_presidentielles_inde
 
 #check si on a bien une observation par pays/année/bias
 Base_complete_best_sources_presidentielles <- Base_complete_best_sources_presidentielles %>%
-  filter(election_couverture_ministers >= 0.80)
+  filter(election_couverture_ministers >= 0.75)
 
 Base_complete_best_sources_presidentielles %>% count(isoname, year, bias) %>% filter(n > 1)
 
@@ -909,16 +915,16 @@ Base_finale_presidentielles_age <- Base_finale_presidentielles %>%filter(Base_fi
 
 #Filtre pour travailler sur des bases propres
 Base_finale_presidentielles_income <- Base_finale_presidentielles_income %>%
-  filter(election_couverture_ministers >= 0.80)
+  filter(election_couverture_ministers >= 0.75)
 
 Base_finale_presidentielles_gender <- Base_finale_presidentielles_gender %>%
-  filter(election_couverture_ministers >= 0.80)
+  filter(election_couverture_ministers >= 0.75)
 
 Base_finale_presidentielles_educ <- Base_finale_presidentielles_educ %>%
-  filter( election_couverture_ministers >= 0.80)
+  filter( election_couverture_ministers >= 0.75)
 
 Base_finale_presidentielles_age <- Base_finale_presidentielles_age %>%
-  filter(election_couverture_ministers >= 0.80)
+  filter(election_couverture_ministers >= 0.75)
 
 
 #Code pour chaque biais et par source ----
@@ -1081,7 +1087,7 @@ ggsave(
 ##Box plot androcracy ----
 Base_gender_long_presidentielles <- Base_finale_presidentielles_gender %>%
   pivot_longer(
-    cols = starts_with("ratio_") & !ends_with("top_bot2"),
+    cols = starts_with("ratio_") & !ends_with("top_bot"),
     names_to = "Indice",
     values_to = "Value"
   ) 
@@ -1095,9 +1101,9 @@ recodage <- function(df) {
     mutate(
       Indice = recode(
         Indice,
-        "ratio_participation_top_bot" = "Participation",
-        "ratio_votes_valides_en_ministres_top_bot" = "Votes → Ministres",
-        "ratio_gouvernement_top_bot" = "Gouvernement"
+        "ratio_participation_top_bot2" = "Participation",
+        "ratio_votes_valides_en_ministres_top_bot2" = "Votes → Ministres",
+        "ratio_gouvernement_top_bot2" = "Gouvernement"
       ),
       Indice = factor(Indice, levels = c(
         "Participation",
@@ -1168,7 +1174,7 @@ ggsave(
 ##Box plot epistocracy ----
 Base_educ_long_presidentielles <- Base_finale_presidentielles_educ %>%
   pivot_longer(
-    cols = starts_with("ratio_") & !ends_with("top_bot2"),
+    cols = starts_with("ratio_") & !ends_with("top_bot"),
     names_to = "Indice",
     values_to = "Value"
   ) 
@@ -1182,9 +1188,9 @@ recodage <- function(df) {
     mutate(
       Indice = recode(
         Indice,
-        "ratio_participation_top_bot" = "Participation",
-        "ratio_votes_valides_en_ministres_top_bot" = "Votes → Ministres ",
-        "ratio_gouvernement_top_bot" = "Gouvernement"
+        "ratio_participation_top_bot2" = "Participation",
+        "ratio_votes_valides_en_ministres_top_bot2" = "Votes → Ministres",
+        "ratio_gouvernement_top_bot2" = "Gouvernement"
       ),
       Indice = factor(Indice, levels = c(
         "Participation",
@@ -1251,7 +1257,7 @@ ggsave(
 ##Box plot gerontocracy ----
 Base_age_long_presidentielles <- Base_finale_presidentielles_age %>%
   pivot_longer(
-    cols = starts_with("ratio_") & !ends_with("top_bot2"),
+    cols = starts_with("ratio_") & !ends_with("top_bot"),
     names_to = "Indice",
     values_to = "Value"
   ) 
@@ -1265,9 +1271,9 @@ recodage <- function(df) {
     mutate(
       Indice = recode(
         Indice,
-        "ratio_participation_top_bot" = "Participation",
-        "ratio_votes_valides_en_ministres_top_bot" = "Votes → Ministres",
-        "ratio_gouvernement_top_bot" = "Gouvernement"
+        "ratio_participation_top_bot2" = "Participation",
+        "ratio_votes_valides_en_ministres_top_bot2" = "Votes → Ministres",
+        "ratio_gouvernement_top_bot2" = "Gouvernement"
       ),
       Indice = factor(Indice, levels = c(
         "Participation",
@@ -1400,7 +1406,7 @@ Base_presidentielles_grosses_sources <- Base_complete_presidentielles_index %>%
 
 #check si on a bien une observation par pays/année/bias
 Base_presidentielles_grosses_sources <- Base_presidentielles_grosses_sources %>%
-  filter(election_couverture_ministers >= 0.80)
+  filter(election_couverture_ministers >= 0.75)
 
 Base_presidentielles_grosses_sources %>% count(isoname, year, bias,source_recode) %>% filter(n > 1)
 
@@ -1445,7 +1451,7 @@ Base_presidentielles_global_sources %>%
 ##Prépa base heatmap ----
 Base_presidentielles_global_sources_long <- Base_presidentielles_global_sources %>%
   pivot_longer(
-    cols = starts_with("ratio_") & !ends_with("top_bot2"),
+    cols = starts_with("ratio_") & !ends_with("top_bot"),
     names_to = "Indice",
     values_to = "Value")
 
@@ -1493,7 +1499,7 @@ make_heatmap <- function(df, bias_i, indice_i) {
 
 biases <- c("androcracy", "plutocracy", "gerontocracy", "epistocracy")
 indices <- c(
-  "Participation","Votes → ministres","Gouvernement")
+  "Participation","Votes → Ministres","Gouvernement")
 
 
 heatmaps <- crossing(bias = biases, indice = indices) %>%
@@ -1542,11 +1548,10 @@ plot_heatmap <- function(df, title) {
 plots <- heatmaps %>%
   mutate(plot = map2(data, paste(bias, indice, sep = " — "), plot_heatmap))
 
-setwd("results/figures")
 
 walk2(
   plots$plot,
-  paste0("heatmap_presidentiels", plots$bias, "_", plots$indice, ".png"),
+  paste0("results/figures/heatmap_presidentiels", plots$bias, "_", plots$indice, ".png"),
   ~ ggsave(
     filename = .y,
     plot = .x,
@@ -1578,8 +1583,7 @@ plots$plot[[12]] #Plutocracy - Votes → Ministres
 
 #____________________________________________________________________________
 #Graphiques articles ----
-#Plot de mes indices par biais ----*
-setwd("C:/Users/nurdin/Desktop/PLUTOBIAS-international/results/figures")
+
 
 Base_legislative_finale <- Base_legislative_finale %>% mutate(regime = "legislatif")
 Base_finale_presidentielles <- Base_finale_presidentielles %>% mutate(regime = "présidentiel")
@@ -1596,7 +1600,7 @@ base_graph_bias_countries_leg_1980 <- Base_all_regimes %>%
     ratio_gouvernement_top_bot2 > 0
   ) %>%
   group_by(isoname) %>%
-  filter(n_distinct(year) >= 15) %>%
+  filter(n_distinct(year) >= 10) %>%
   ungroup() %>%
   group_by(isoname, bias) %>%
   tidyr::complete(
@@ -1638,13 +1642,14 @@ base_graph_bias_countries_leg_1980 <- Base_all_regimes %>%
   theme_minimal()
 print(plot_evolution_bias_by_country)
 ggsave(
-  filename = "results/figures/evolution bias by country (legislative).jpg",
+  filename = "results/figures/evolution bias by country.jpg",
   plot = plot_evolution_bias_by_country,width = 10,height = 6,dpi = 300)
 
 
 #Barres valeur moyenne des indices finaux ----
 #Fonction 
 # Colonnes de ratios à utiliser
+getwd()
 ratios <- names(Base_all_regimes) %>%
   str_subset("^ratio_gouvernement.*2$")
 
