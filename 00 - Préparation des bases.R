@@ -17,6 +17,12 @@ all_elections <- all_elections %>%
   mutate(election_date = as.Date(election_date, format = "%Y.%m.%d")) %>%
   distinct()
 
+all_elections <- all_elections%>%
+  mutate(
+    isoname = case_when(
+      isoname == "United States of America" ~ "United States",
+      TRUE ~ isoname))
+
 #Liste des régimes présidentiels
 pays_regimes_presidentiels <- read.csv("data/raw/Liste régimes présidentiels.csv", sep = ",")
 pays_regimes_presidentiels <- unique(pays_regimes_presidentiels$isoname)
@@ -604,10 +610,22 @@ write.csv(
 #CSES ----
 cses_data <- read.csv("data/raw/cses/cses_imd.csv")
 
+unique(cses_data$IMD1006_NAM)
+unique(cses_data$IMD1009)
 
+
+      
 ###Identifier les variables qui nous intéressent pour les harmoniser----
 cses_data <- cses_data %>%
   rename(isoname = IMD1006_NAM)
+
+cses_data <- cses_data %>%
+  mutate(
+    isoname = case_when(
+      isoname == "United States of America" ~ "United States",
+      TRUE ~ isoname))
+
+
 cses_data <- cses_data %>%
   rename(annee = IMD1013_Y)
 cses_data <- cses_data %>%
@@ -627,7 +645,13 @@ cses_data <- cses_data %>%
 cses_data <- cses_data %>%
   rename(turnout = IMD3001_LH)
 cses_data <- cses_data %>%
-  rename(dataset_party_id = IMD3002_LH_PL)
+  mutate(
+    dataset_party_id = if_else(
+      isoname %in% pays_regimes_presidentiels,
+      as.character(IMD3002_PR_1),    #vote à l'élection présidentielle pour les régimes présidentiels
+      as.character(IMD3002_LH_PL)   # vote à l'élection Lower House
+    )
+  )
 cses_data <- cses_data %>%
   rename(type = IMD1009)
 cses_data <- cses_data %>%
@@ -643,6 +667,11 @@ cses_data <- cses_data %>%
 cses_data <- cses_data %>%
   mutate(survey = "Post-electoral")
 
+
+
+unique(cses_data$year[cses_data$isoname == "Mexico"])
+unique(cses_data$dataset_party_id[cses_data$isoname == "United States" & cses_data$year == "2004"])
+unique(pays_regimes_presidentiels)
 
 #Recréer la date de l'interview
 cses_data <- cses_data %>%
@@ -675,18 +704,10 @@ sum(cses_data$turnout == 0, na.rm = TRUE)
 
 
 cses_data <- cses_data %>%
-  filter(
-    isoname %in% pays_regimes_presidentiels & type %in% c(20, 12) |
-      (!(isoname %in% pays_regimes_presidentiels) & type <= 13 ))
-
-cses_data <- cses_data %>%
   mutate(
     type = case_when(
-      type == 12 ~ "Parliamentary and Presidential",   
-      gender == 20 ~ "Presidential",
-      type == 13 ~ "Parliamentary/Legislative",
-      type == 10 ~ "Parliamentary/Legislative",
-      TRUE ~ as.character(type)
+      isoname %in% pays_regimes_presidentiels ~ "Presidential",
+      TRUE ~ "Parliamentary/Legislative"
     )
   )
 
@@ -896,6 +917,10 @@ cses_data_clean <- cses_data_clean %>%
 cses_data_clean <- cses_data_clean %>%
   select(-year)
 
+unique(cses_data_clean$partyfacts_id[cses_data_clean$isoname == "United States" & cses_data_clean$election_year == "2004"])
+unique(cses_data_clean$partyfacts_id[cses_data_clean$isoname == "Mexico" & cses_data_clean$election_year == "2012"])
+unique(cses_data_clean$election_year[cses_data_clean$isoname == "Mexico"])
+unique(cses_data_clean$isoname)
 ###Export Base CSES ----
 write.csv(
   cses_data_clean,

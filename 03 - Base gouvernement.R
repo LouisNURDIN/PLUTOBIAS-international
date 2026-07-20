@@ -564,7 +564,6 @@ write.csv(
 
 unique(Base_complete$election_year[Base_complete$source_recode == "ESS" & Base_complete$isoname == "France"])
 
-unique(Base_vote_parlement_global$isoname)
-unique(whogov$isoname)
+
 
 

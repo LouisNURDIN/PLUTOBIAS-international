@@ -9,6 +9,7 @@ library(purrr)
 
 
 Base_complete_legislative_index <-  read.csv("data/final/legislative dataset complete with index.csv", sep = ",")
+unique(Base_complete_legislative_index$isoname[Base_complete_legislative_index$source_recode == "CSES"])
 all_elections <- read.csv ("data/intermediary/elections/all elections update.csv", sep = ";")
 
 annees_elections <- all_elections %>%
@@ -654,7 +655,7 @@ plot_all_global_bias_50_50_legislatives <- ggplot(Base_legislative_finale, aes(x
     text = element_text(size = 14) ) +
   
   labs(
-    title = "Distribution des indices globaux par biais et sources > 80% des députés et ministres)",
+    title = "Distribution des indices globaux par biais et sources > 75% des députés et ministres)",
     x = "",
     y = "Poids électoral top 50% / bottom 50%"
   )
@@ -1333,7 +1334,7 @@ plot_top_bot_age_presidentielles <- ggplot(data_top_bot_age_presidentielles, aes
 grid::grid.newpage()
 plot_top_bot_age_presidentielles
 ggsave(
-  filename = "results/figures/Boxplot gerontocracy 50 50.jpg",
+  filename = "results/figures/Boxplot gerontocracy presidentielles 50 50.jpg",
   plot = plot_top_bot_age_presidentielles,width = 10,height = 6,dpi = 300)
 
 
@@ -1378,7 +1379,7 @@ plot_all_global_bias_50_50_presidentielles <- ggplot(Base_finale_presidentielles
     text = element_text(size = 14) ) +
   
   labs(
-    title = "Distribution des indices globaux dans les régimes présidentiels par biais et sources > 80% des députés et ministres)",
+    title = "Distribution des indices globaux dans les régimes présidentiels par biais et sources > 75% des députés et ministres)",
     x = "",
     y = "Poids électoral top 50% / bottom 50%"
   )
@@ -1485,9 +1486,16 @@ make_heatmap <- function(df, bias_i, indice_i) {
         
         inner <- inner_join(d1, d2, by = c("isoname", "year"))
         
+        inner_complete <- inner %>%
+          filter(!is.na(v1), !is.na(v2))
+        
         list(
-          cor = if (nrow(inner) < 5) NA_real_ else cor(inner$v1, inner$v2, use = "complete.obs"),
-          n = nrow(inner)
+          cor = if (nrow(inner_complete) < 5) {
+            NA_real_
+          } else {
+            cor(inner_complete$v1, inner_complete$v2)
+          },
+          n = nrow(inner_complete)
         )
       }),
       
@@ -1546,7 +1554,7 @@ plot_heatmap <- function(df, title) {
 }
 
 plots <- heatmaps %>%
-  mutate(plot = map2(data, paste(bias, indice, sep = " — "), plot_heatmap))
+  mutate(plot = map2(data, paste(bias, indice,"régimes présidentiels", sep = " — "), plot_heatmap))
 
 
 walk2(
@@ -1560,7 +1568,8 @@ walk2(
     dpi = 300
   )
 )
-
+crossing(bias = biases, indice = indices) %>%
+  mutate(id = row_number())
 #Visualiser les heatmap
 plots$plot[[1]]  #Androcracy - Gouvernement
 plots$plot[[4]]  #Epistocracy - Gouvernement

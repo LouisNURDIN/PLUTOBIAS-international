@@ -2,6 +2,9 @@
 library(dplyr)
 Base_complete <-  read.csv("data/final/final dataset all countries and clivages.csv", sep = ",")
 
+unique(Base_complete$type[Base_complete$source_recode == "WVS"])
+unique(Base_complete)
+
 unique(Base_complete$year[Base_complete$isoname == "France" & Base_complete$bias == "plutocracy"])
 
 table(Base_complete$source_recode)
@@ -111,7 +114,7 @@ first_index <- categories_index %>%
     ),
     
     ratio_votes_valides_en_ministres_top_bot = case_when(
-      str_detect(first(type), "Presidential") ~
+      str_detect(first(type), "Presidential") | first(type) == "General election" ~
         first(votes_valides_en_ministres[category_recode1 == "top"]) /
         first(votes_valides_en_ministres[category_recode1 == "bot"]),
       TRUE ~ NA_real_
@@ -158,7 +161,7 @@ second_index <- categories_index %>%
     ),
     
     ratio_votes_valides_en_ministres_top_bot2 = case_when(
-      str_detect(first(type), "Presidential") ~
+      str_detect(first(type), "Presidential") | first(type) == "General election" ~
         first(votes_valides_en_ministres[category_recode2 == "top"]) /
         first(votes_valides_en_ministres[category_recode2 == "bot"]),
       TRUE ~ NA_real_
@@ -210,14 +213,14 @@ Base_complete_clean <- Base_complete %>%
     ),
     
     verif_ratio_presidentiel_top_bot = case_when(
-      str_detect(type, "Presidential") ~
+      str_detect(first(type), "Presidential") | first(type) == "General election" ~
         ratio_participation_top_bot *
         ratio_votes_valides_en_ministres_top_bot,
       TRUE ~ NA_real_
     ),
     
     verif_ratio_presidentiel_top_bot2 = case_when(
-      str_detect(type, "Presidential") ~
+      str_detect(first(type), "Presidential") | first(type) == "General election"  ~
         ratio_participation_top_bot2 *
         ratio_votes_valides_en_ministres_top_bot2,
       TRUE ~ NA_real_
@@ -244,7 +247,7 @@ unique(Base_complete_clean$year[Base_complete_clean$source_recode == "ESS" & Bas
 
 #Isoler les régimes présidentiels dans une autre base ----
 Base_regimes_presidentiels <- Base_complete_clean %>%
-  filter(str_detect(type, "Presidential"))
+  filter(isoname %in% pays_regimes_presidentiels)
 
 
 #Garder les pays qui ne sont pas des régimes présidentiels ----
