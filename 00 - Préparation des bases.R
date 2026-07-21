@@ -925,8 +925,7 @@ unique(cses_data_clean$isoname)
 write.csv(
   cses_data_clean,
   "data/intermediary/elections/cses elections dataset.csv",
-  row.names = FALSE
-)
+  row.names = FALSE)
 
 #WVS ----
 wvs_data <- read.csv  ("data/raw/wvs/WVS_Time_Series_1981-2022_csv_v5_0.csv")
