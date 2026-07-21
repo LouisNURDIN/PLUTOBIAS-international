@@ -1495,7 +1495,8 @@ ess_dataset_gender <- ess_data_clean_sexe %>%
 
 ##ESS educ ----
 ess_data_clean_educ <- ess_data_clean %>%
-  filter(educ < 55) #véroifier à quoi correspond educ = 55
+  filter(educ < 55)
+ess_data_clean_educ <- ess_data_clean %>% filter(!is.na(educ))#vérifier à quoi correspond educ = 55
 
 build_votes_by_educ_fractional <- function(df){
   
@@ -1973,9 +1974,5 @@ write.csv(
   "data/intermediary/elections/dataset with all clivages and elections.csv",
   row.names = FALSE)
 
-Base_all_clivages %>%
-  filter(source_recode == "WVS") %>% count(type, bias)
-
-table(Base_all_clivages$bias[Base_all_clivages$source_recode == "WPID"])
 
 

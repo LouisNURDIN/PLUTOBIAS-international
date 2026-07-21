@@ -225,6 +225,7 @@ whogov_parties <- whogov_parties %>%
       partyfacts_id == "2960"&  isoname == "Ukraine" ~ "Other",
       partyfacts_id == "2974"&  isoname == "Venezuela" ~ "Other",
       partyfacts_id == "482"&  isoname == "Bulgaria" & year <= 2001  ~ "1183", #attention avec celle-là
+      partyfacts_id == "3563"&  isoname == "Algeria" ~ "Other",
       
       
       

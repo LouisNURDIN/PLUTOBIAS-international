@@ -128,13 +128,14 @@ table(GMP_inc_2$dataset_party_id[GMP_inc_2$isoname == "United States" & GMP_inc_
 table(GMP_inc$dataset_party_id[GMP_inc$isoname == "United States" & GMP_inc$year == 2000])
 GMP_inc_2 <- GMP_inc_2 %>%
   rename(gender = sex)
+unique(GMP_inc_2$gender)
 
 GMP_inc_2 <- GMP_inc_2 %>%
   mutate(
     gender = as.character(gender),
     gender = case_when(
-      gender == "0" ~ "men",
-      gender == "1" ~ "women",
+      gender == "0" ~ "women",
+      gender == "1" ~ "men",
       TRUE ~ gender
     )
   )
@@ -146,6 +147,11 @@ GMP_inc_2 <- GMP_inc_2 %>%
   mutate(
     interview_date = year)
 
+GMP_inc_2 <- GMP_inc_2 %>%
+  select(-educ)
+
+GMP_inc_2 <- GMP_inc_2 %>%
+  rename(educ = educ2)
 unique(GMP_inc_2$educ)
 unique(GMP_inc_2$age)
 
@@ -275,6 +281,7 @@ write.csv(
 
 #ESS ----
 ess_data <- read.csv("data/raw/ess/Datafile-subset.csv")
+names(ess_data)
 
 table(ess_data$inwyys)
 
@@ -332,11 +339,12 @@ ess_data_long <- ess_data_long %>%
 ess_data_long <- ess_data_long %>%
   mutate(type = "General election")
 ess_data_long <- ess_data_long %>%
-  rename(inc = hinctnta)
+  mutate(
+    inc = coalesce(hinctnta, hinctnt))
 ess_data_long <- ess_data_long %>%
   rename(gender = gndr)
 ess_data_long <- ess_data_long %>%
-  rename(educ = eisced)
+  rename(educ = eduyrs)
 
 ess_data_long <- ess_data_long %>%
   rename(age = agea)
@@ -346,6 +354,8 @@ ess_data_long <- ess_data_long %>%
 
 sum(is.na(ess_data_long$inwdd))
 
+unique(ess_data_long$educ)
+sum(is.na(ess_data_long$educ))
 #Filtrer mes données sur le vote
 sum(ess_data_long$turnout == 2, na.rm = TRUE)
 sum(ess_data_long$turnout == 3, na.rm = TRUE) #32 989 422 ont turnout 2 ou turnout 3 dans ma base
@@ -438,26 +448,8 @@ ess_data_clean <- ess_data_clean %>%
       gender == "1" ~ "men",   
       gender == "2" ~ "women",
       TRUE ~ as.character(gender)
-    )
-  )
+    ))
 
-ess_data_clean <- ess_data_clean %>%
-  mutate(
-    year = case_when(
-      year == "1" ~ "2002",   
-      year == "2" ~ "2004",
-      year == "3" ~ "2006",
-      year == "4" ~ "2008",
-      year == "5" ~ "2010",
-      year == "6" ~ "2012",
-      year == "7" ~ "2014",
-      year == "8" ~ "2016",
-      year == "9" ~ "2018",
-      year == "10" ~ "2020",
-      year == "11" ~ "2023",
-      
-      TRUE ~ as.character(year)))
-unique(ess_data_clean$survey_year)
 
 ess_data_clean <- ess_data_clean %>%
   mutate(
@@ -598,12 +590,16 @@ ess_data_clean <- ess_data_clean %>%
 ess_data_clean <- ess_data_clean %>%
   select(-year)
 
+unique(ess_data_long$essround[ess_data_long$isoname == "FR"])
+unique(ess_data_long$dataset_party_id[ess_data_long$isoname == "FR"  & ess_data_long$essround == 11])
+unique(ess_data$prtvtfr[ess_data$cntry == "FR"  & ess_data$essround == 9])
+sum(ess_data$prtvtfr == "FR-9-7-v", na.rm = TRUE)
+
 ###Export Base ESS ----
 write.csv(
   ess_data_clean,
   "data/intermediary/elections/ess elections dataset.csv",
-  row.names = FALSE
-)
+  row.names = FALSE)
 
 
 

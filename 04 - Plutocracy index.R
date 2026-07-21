@@ -351,44 +351,7 @@ write.csv(
 
 
 
-library(ggplot2)
-library(ggrepel)
 
-ggplot(Base_complete_index,
-       aes(x = ratio_gouvernement_top_bot,
-           y = ratio_gouvernement_top_bot2,
-           color = bias,
-           label = paste(isoname, year))) +
-  geom_point(alpha = 0.7) +
-  geom_text_repel(size = 3, max.overlaps = 50) +
-  theme_minimal() +
-  labs(
-    x = "Ratio gouvernement 1 vs 10",
-    y = "Ratio gouvernement 50 vs 50",
-    title = "Comparaison des ratios gouvernementaux"
-  )
-
-
-#Regarder dans quels pays/années se situent les indices les plus élevés
-Base_complete_index %>%
-  filter(bias == "plutocracy") %>%
-  filter(ratio_gouvernement_top_bot == max(ratio_gouvernement_top_bot, na.rm = TRUE)) %>%
-  select(source_recode, isoname, year, ratio_gouvernement_top_bot)
-
-Base_complete_index %>%
-  filter(bias == "androcracy") %>%
-  filter(ratio_gouvernement_top_bot == max(ratio_gouvernement_top_bot, na.rm = TRUE)) %>%
-  select(source_recode, isoname, year, ratio_gouvernement_top_bot)
-
-Base_complete_index %>%
-  filter(bias == "epistocracy") %>%
-  filter(ratio_gouvernement_top_bot == max(ratio_gouvernement_top_bot, na.rm = TRUE)) %>%
-  select(source_recode, isoname, year, ratio_gouvernement_top_bot)
-
-Base_complete_index %>%
-  filter(bias == "gerontocracy") %>%
-  filter(ratio_gouvernement_top_bot == max(ratio_gouvernement_top_bot, na.rm = TRUE)) %>%
-  select(source_recode, isoname, year, ratio_gouvernement_top_bot)
 
 
 
