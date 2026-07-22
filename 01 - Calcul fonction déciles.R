@@ -5,33 +5,6 @@ library(purrr)
 library(stringr)
 Base_elections_legislatives <- read.csv("data/intermediary/elections/legislative elections dataset.csv", sep = ",")
 
-table(Base_elections_legislatives$partyfacts_id[Base_elections_legislatives$isoname == "United States" & Base_elections_legislatives$election_year == 2000])
-
-Base_elections_legislatives %>%
-  filter(
-    isoname == "United States",
-    election_year == 2000
-  ) %>%
-  group_by(partyfacts_id) %>%
-  summarise(
-    n = n(),
-    poids = sum(weight)
-  )
-
-Base_elections_legislatives %>%
-  filter(
-    isoname == "United States",
-    election_year == 2000
-  ) %>%
-  group_by(dataset_party_id) %>%
-  summarise(
-    n = n(),
-    poids_total = sum(weight),
-    poids_moyen = mean(weight),
-    poids_median = median(weight),
-    poids_max = max(weight)
-  )
-
 unique(Base_elections_legislatives$gender)
 unique(Base_elections_legislatives$isoname[Base_elections_legislatives$source == "CSES"])
 sum(is.na(Base_elections_legislatives$weight))
@@ -104,17 +77,7 @@ Base_legislatives_deciles2 <- Base_legislatives_deciles2 %>%
   mutate(bias = "plutocracy")
 
 
-table(Base_legislatives_deciles2$partyfacts_id[Base_legislatives_deciles2$isoname == "United States" & Base_legislatives_deciles2$election_year == 2000])
-Base_legislatives_deciles2 %>%
-  filter(
-    isoname == "United States",
-    election_year == 2000
-  ) %>%
-  select(partyfacts_id, category, pct_votes) %>%
-  pivot_wider(
-    names_from = category,
-    values_from = pct_votes
-  )
+
 ##wpid gender ----
 Base_elections_legislatives_sexe <- Base_elections_legislatives[!is.na(Base_elections_legislatives$gender),]
 ###Calcul fonction sexe wpid ----
