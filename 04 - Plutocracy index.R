@@ -193,6 +193,7 @@ Base_complete <- Base_complete %>%
 
 unique(Base_complete$source_recode)
 
+unique(Base_complete$type)
 # Base finale
 Base_complete_clean <- Base_complete %>%
   mutate(
@@ -212,15 +213,30 @@ Base_complete_clean <- Base_complete %>%
       TRUE ~ NA_real_
     ),
     
+    verif_ratio_parlement_top_bot = case_when(
+      !str_detect(type, "Presidential") ~
+        ratio_participation_top_bot *
+        ratio_votes_valides_en_sieges_top_bot,
+      TRUE ~ NA_real_
+    ),
+    
+    verif_ratio_parlement_top_bot2 = case_when(
+      !str_detect(type, "Presidential") ~
+        ratio_participation_top_bot2 *
+        ratio_votes_valides_en_sieges_top_bot2,
+      TRUE ~ NA_real_
+    ),
+    
+    
     verif_ratio_presidentiel_top_bot = case_when(
-      str_detect(first(type), "Presidential") | first(type) == "General election" ~
+      str_detect(type, "Presidential")  ~
         ratio_participation_top_bot *
         ratio_votes_valides_en_ministres_top_bot,
       TRUE ~ NA_real_
     ),
     
     verif_ratio_presidentiel_top_bot2 = case_when(
-      str_detect(first(type), "Presidential") | first(type) == "General election"  ~
+      str_detect(type, "Presidential")   ~
         ratio_participation_top_bot2 *
         ratio_votes_valides_en_ministres_top_bot2,
       TRUE ~ NA_real_
@@ -236,12 +252,15 @@ Base_complete_clean <- Base_complete %>%
     total_sieges, total_ministres,
     ratio_participation_top_bot,ratio_votes_valides_en_sieges_top_bot,
     ratio_sieges_ministres_top_bot,ratio_votes_valides_en_ministres_top_bot,ratio_gouvernement_top_bot,
-    verif_ratio_top_bot,verif_ratio_presidentiel_top_bot, ratio_participation_top_bot2, ratio_votes_valides_en_sieges_top_bot2,
-    ratio_sieges_ministres_top_bot2,ratio_votes_valides_en_ministres_top_bot2, ratio_gouvernement_top_bot2, verif_ratio_top_bot2,verif_ratio_presidentiel_top_bot2,election_couverture_seats,
+    verif_ratio_top_bot,verif_ratio_presidentiel_top_bot,ratio_sieges_top_bot,verif_ratio_parlement_top_bot, ratio_participation_top_bot2, ratio_votes_valides_en_sieges_top_bot2,
+    ratio_sieges_ministres_top_bot2,ratio_votes_valides_en_ministres_top_bot2, ratio_gouvernement_top_bot2,verif_ratio_top_bot2,verif_ratio_presidentiel_top_bot2,
+    ratio_sieges_top_bot2,verif_ratio_parlement_top_bot2,election_couverture_seats,
     election_couverture_ministers,Percentage.of.women.diputees,women_share_party,women_share_government
   ) 
 
-unique(Base_complete_clean$year[Base_complete_clean$source_recode == "ESS" & Base_complete_clean$isoname == "France"])
+
+
+
 
 
 
@@ -262,12 +281,16 @@ Base_complete_legislative_index <- Base_complete_clean  %>%
     ratio_sieges_ministres_top_bot = mean(ratio_sieges_ministres_top_bot, na.rm = TRUE),
     ratio_gouvernement_top_bot = mean(ratio_gouvernement_top_bot, na.rm = TRUE),
     verif_ratio_top_bot = mean(verif_ratio_top_bot, na.rm = TRUE),
+    ratio_sieges_top_bot = mean(ratio_sieges_top_bot, na.rm = TRUE),
+    verif_ratio_parlement_top_bot = mean(verif_ratio_parlement_top_bot, na.rm = TRUE),
     
     ratio_participation_top_bot2 = mean(ratio_participation_top_bot2, na.rm = TRUE),
     ratio_votes_valides_en_sieges_top_bot2 = mean(ratio_votes_valides_en_sieges_top_bot2, na.rm = TRUE),
     ratio_sieges_ministres_top_bot2 = mean(ratio_sieges_ministres_top_bot2, na.rm = TRUE),
     ratio_gouvernement_top_bot2 = mean(ratio_gouvernement_top_bot2, na.rm = TRUE),
     verif_ratio_top_bot2 = mean(verif_ratio_top_bot2, na.rm = TRUE),
+    ratio_sieges_top_bot2 = mean(ratio_sieges_top_bot2, na.rm = TRUE),
+    verif_ratio_parlement_top_bot2 = mean(verif_ratio_parlement_top_bot2, na.rm = TRUE),
     election_couverture_seats = mean(election_couverture_seats, na.rm = TRUE),
     election_couverture_ministers = mean(election_couverture_ministers, na.rm = TRUE),
     Percentage.of.women.diputees = mean(Percentage.of.women.diputees, na.rm = TRUE),
@@ -277,6 +300,11 @@ Base_complete_legislative_index <- Base_complete_clean  %>%
 
 Base_complete_legislative_index <- Base_complete_legislative_index %>%
   arrange(isoname, year)
+
+cor(
+  Base_complete_legislative_index$ratio_sieges_top_bot2,
+  Base_complete_legislative_index$verif_ratio_parlement_top_bot2,
+  use = "complete.obs")
 
 unique(Base_complete_legislative_index$year[Base_complete_legislative_index$source_recode == "ESS" & Base_complete_legislative_index$isoname == "France"])
 #Lister pays/années où mes indices se dupliquent (on est censé en avoir 4)

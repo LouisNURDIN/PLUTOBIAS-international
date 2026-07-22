@@ -1959,8 +1959,16 @@ walk(
 
 
 #EXPLORATOIRE ----
+base_androcracy <- Base_all_regimes %>% filter(bias == "androcracy")
+
+base_plutocracy <- Base_all_regimes %>% filter(bias == "plutocracy")
+
+base_epistocracy <- Base_all_regimes %>% filter(bias == "epistocracy")
+
+base_gerontocracy <- Base_all_regimes %>% filter(bias == "gerontocracy")
+
 #Autres boxplot ----
-base_androcracy <- Base_all_regimes %>%
+base_androcracy_plot <- Base_all_regimes %>%
   filter(
     bias == "androcracy",
     year >= 1980,
@@ -1986,7 +1994,7 @@ base_androcracy <- Base_all_regimes %>%
 
 
 plot_evolution_androcracy_by_country <- ggplot(
-  base_androcracy,
+  base_androcracy_plot,
   aes(x = year,y = ratio_gouvernement_top_bot2,color = bias
   )
 ) +
@@ -2093,7 +2101,8 @@ women_representation <- parline %>%
       select(isoname, year, women_share_government),
     by = c("isoname", "year"))
 
-
+women_representation <- women_representation %>%
+  filter(isoname %in% Base_all_regimes$isoname)
 
 #Graphique représentation des femmes dans les institutions par pays  ----
 women_representation <- women_representation %>%
@@ -2102,18 +2111,18 @@ women_representation <- women_representation %>%
 women_representation <- women_representation %>%
   mutate(Percentage.of.women.diputees = as.numeric(Percentage.of.women.diputees))
 
-women_representation <- women_representation %>%
+
+
+women_representation_long <- women_representation %>%
   pivot_longer(
     cols = c(Percentage.of.women.diputees, women_share_government),
     names_to = "Indice",
-    values_to = "Value"
-  )
+    values_to = "Value")
 
-women_representation <- women_representation %>%
-  filter(isoname %in% Base_all_regimes$isoname)
+
 
 plot_women_representation <- ggplot(
-  women_representation,
+  women_representation_long,
   aes(x = year,y = Value,color = Indice,group = Indice
   )
 ) +
@@ -2141,18 +2150,130 @@ ggsave(
 
 
 
+
+women_representation_androcracy <- women_representation %>%
+  left_join(base_androcracy %>% select(isoname, year, ratio_gouvernement_top_bot2,ratio_sieges_top_bot2),
+            by = c("isoname", "year"))
+
+women_representation_plutocracy <- women_representation %>%
+  left_join(base_plutocracy %>% select(isoname, year, ratio_gouvernement_top_bot2,ratio_sieges_top_bot2),
+            by = c("isoname", "year"))
+
+women_representation_epistocracy <- women_representation %>%
+  left_join(base_epistocracy %>% select(isoname, year, ratio_gouvernement_top_bot2,ratio_sieges_top_bot2),
+            by = c("isoname", "year"))
+
+women_representation_gerontocracy <- women_representation %>%
+  left_join(base_gerontocracy %>% select(isoname, year, ratio_gouvernement_top_bot2,ratio_sieges_top_bot2),
+            by = c("isoname", "year"))
+
+
+#Régression entre les biais et la proportion de femmes ministres ----
+library(modelsummary)
+reg_androcracy_femmes_ministres <- lm(
+  women_share_government ~ ratio_gouvernement_top_bot2 + year + factor(isoname),
+  data = women_representation_androcracy)
+summary(reg_androcracy_femmes_ministres)
+
+modelsummary(
+  reg_androcracy_femmes_ministres,
+  coef_map = c(
+    "(Intercept)" = "Intercept",
+    "ratio_gouvernement_top_bot2" = "Indice global d'androcratie",
+    "year" = "Année"
+  ),
+  statistic = "std.error",
+  stars = c('*' = .05, '**' = .01, '***' = .001),
+  fmt = 3,
+  title = "Effet de l'androcratie sur le taux de femmes ministres, en contrôlant par l'année")
+
+
+
+##Test avec d'autres biais ----
+### Education et femmes ministres ----
+reg_epistocracy_femmes_ministres <- lm(
+  women_share_government ~ ratio_gouvernement_top_bot2 + year + factor(isoname),
+  data = women_representation_epistocracy)
+modelsummary(
+  reg_epistocracy_femmes_ministres,
+  coef_map = c(
+    "(Intercept)" = "Intercept",
+    "ratio_gouvernement_top_bot2" = "Indice global d'épistocratie",
+    "year" = "Année"),
+  statistic = "std.error", stars = c('*' = .05, '**' = .01, '***' = .001),
+  fmt = 3,title = "Effet de l'épistocratie sur le taux de femmes ministres, en contrôlant par l'année")
+
+### Revenu et femmes ministres ----
+women_representation_plutocracy <- women_representation_plutocracy %>%
+  filter(!is.infinite(ratio_gouvernement_top_bot2))
+
+reg_plutocracy_femmes_ministres <- lm(
+  women_share_government ~ ratio_gouvernement_top_bot2 + year + factor(isoname),
+  data = women_representation_plutocracy)
+summary(reg_plutocracy_femmes_ministres)
+modelsummary(
+  reg_plutocracy_femmes_ministres,
+  coef_map = c(
+    "(Intercept)" = "Intercept",
+    "ratio_gouvernement_top_bot2" = "Indice global de ploutocratie",
+    "year" = "Année"),
+  statistic = "std.error", stars = c('*' = .05, '**' = .01, '***' = .001),
+  fmt = 3,title = "Effet de la ploutocratie sur le taux de femmes ministres, en contrôlant par l'année")
+
+
+
+### Age et femmes ministres ----
+reg_gerontocracy_femmes_ministres <- lm(
+  women_share_government ~ ratio_gouvernement_top_bot2 + year + factor(isoname),
+  data = women_representation_gerontocracy)
+summary(reg_gerontocracy_femmes_ministres)
+
+modelsummary(reg_gerontocracy_femmes_ministres,
+  coef_map = c(
+    "(Intercept)" = "Intercept",
+    "ratio_gouvernement_top_bot2" = "Indice global de gérontocratie",
+    "year" = "Année"),
+  statistic = "std.error", stars = c('*' = .05, '**' = .01, '***' = .001),
+  fmt = 3,title = "Effet de la gérontocratie sur le taux de femmes ministres, en contrôlant par l'année")
+
+library(modelsummary)
+modelsummary(
+  list(
+    "Androcratie et taux de femmes ministres" = reg_androcracy_femmes_ministres,
+    "Epistocratie et taux de femmes ministres" = reg_epistocracy_femmes_ministres,
+    "Ploutocratie et taux de femmes ministres" = reg_plutocracy_femmes_ministres,
+    "Gérontocratie et taux de femmes ministres" = reg_gerontocracy_femmes_ministres
+  ),
+  coef_map = c(
+    "(Intercept)" = "Intercept",
+    "ratio_gouvernement_top_bot2" = "Indice de représentation au gouvernement (top50 / bot50)",
+    "year" = "Année supplémentaire",
+    "session.label_recodePublic Good" = "Public Good",
+    "revele_cache_recodeRevele:session.label_recodeAltruistic" = "Révélé × Altruistic",
+    "revele_cache_recodeRevele:session.label_recodePublic Good" = "Révélé × Public Good"
+  ),
+  stars = c('*' = .05, '**' = .01, '***' = .001),
+  statistic = "std.error",
+  fmt = 3,
+  title = "Effet de nos indices de représentation au gouvernement sur le taux de femmes ministres, par clivages 
+  (contrôle de l'année et du pays) ",
+  output = "results/tables androcracy/indices par clivages et femmes ministres.tex"
+)
+
+
+#Brouillon ----
 #Bias et femmes ministres----
 ##Graphiques ----
 ggplot(
-  Base_complete_index_gender,
-  aes(x = ratio_gouvernement_top_bot,y = women_share_government)) +
+  women_representation,
+  aes(x = ratio_gouvernement_top_bot2,y = women_share_government)) +
   geom_point(alpha = 0.4) +
   geom_smooth(method = "lm", se = TRUE) +
   labs(x = "Ratio gouvernement top/bottom",y = "Part des femmes au gouvernement (%)") +
   theme_minimal()
 
 ggplot(Base_complete_index_educ,
-  aes(x = ratio_gouvernement_top_bot2, y = women_share_government)) +
+       aes(x = ratio_gouvernement_top_bot2, y = women_share_government)) +
   geom_point(alpha = 0.4) +
   geom_smooth(method = "lm", se = TRUE) +
   labs(x = "Ratio gouvernement éducation top/bottom",y = "Part des femmes au gouvernement (%)") +
@@ -2171,76 +2292,4 @@ ggplot(Base_complete_index_age,
   geom_smooth(method = "lm", se = TRUE) +
   labs(x = "Ratio gouvernement âge top/bottom", y = "Part des femmes au gouvernement (%)") +
   theme_minimal()
-
-
-#Régression entre les biais et la proportion de femmes ministres ----
-library(modelsummary)
-reg_androcracy_femmes_ministres <- lm(
-  women_share_government ~ ratio_gouvernement_top_bot2 + year + factor(isoname),
-  data = Base_complete_index_gender)
-summary(reg_androcracy_femmes_ministres)
-
-modelsummary(
-  reg_androcracy_femmes_ministres,
-  coef_map = c(
-    "(Intercept)" = "Intercept",
-    "ratio_gouvernement_top_bot2" = "Indice global d'androcratie",
-    "year" = "Année"
-  ),
-  statistic = "std.error",
-  stars = c('*' = .05, '**' = .01, '***' = .001),
-  fmt = 3,
-  title = "Effet de l'androcratie sur le taux de femmes ministres, en contrôlant par l'année")
-
-
-reg_androcracy_femmes_ministres2 <- feols(
-  women_share_government ~ ratio_gouvernement_top_bot2 | isoname + year,
-  data = Base_complete_index_gender)
-summary(reg_androcracy_femmes_ministres2)
-
-##Test avec d'autres biais ----
-### Education et femmes ministres ----
-reg_epistocracy_femmes_ministres <- lm(
-  women_share_government ~ ratio_gouvernement_top_bot2 + year + factor(isoname),
-  data = Base_complete_index_educ)
-modelsummary(
-  reg_epistocracy_femmes_ministres,
-  coef_map = c(
-    "(Intercept)" = "Intercept",
-    "ratio_gouvernement_top_bot2" = "Indice global d'épistocratie",
-    "year" = "Année"),
-  statistic = "std.error", stars = c('*' = .05, '**' = .01, '***' = .001),
-  fmt = 3,title = "Effet de l'épistocratie sur le taux de femmes ministres, en contrôlant par l'année")
-
-### Revenu et femmes ministres ----
-reg_plutocracy_femmes_ministres <- lm(
-  women_share_government ~ ratio_gouvernement_top_bot2 + year + factor(isoname),
-  data = Base_complete_index_income)
-summary(reg_plutocracy_femmes_ministres)
-modelsummary(
-  reg_plutocracy_femmes_ministres,
-  coef_map = c(
-    "(Intercept)" = "Intercept",
-    "ratio_gouvernement_top_bot2" = "Indice global de ploutocratie",
-    "year" = "Année"),
-  statistic = "std.error", stars = c('*' = .05, '**' = .01, '***' = .001),
-  fmt = 3,title = "Effet de la ploutocratie sur le taux de femmes ministres, en contrôlant par l'année")
-
-
-
-### Age et femmes ministres ----
-reg_gerontocracy_femmes_ministres <- lm(
-  women_share_government ~ ratio_gouvernement_top_bot2 + year + factor(isoname),
-  data = Base_complete_index_age)
-summary(reg_gerontocracy_femmes_ministres)
-
-modelsummary(reg_gerontocracy_femmes_ministres,
-  coef_map = c(
-    "(Intercept)" = "Intercept",
-    "ratio_gouvernement_top_bot2" = "Indice global de gérontocratie",
-    "year" = "Année"),
-  statistic = "std.error", stars = c('*' = .05, '**' = .01, '***' = .001),
-  fmt = 3,title = "Effet de la gérontocratie sur le taux de femmes ministres, en contrôlant par l'année")
-
-
 
