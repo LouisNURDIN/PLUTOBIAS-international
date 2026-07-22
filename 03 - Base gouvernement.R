@@ -93,7 +93,7 @@ whogov_parties_bonnes_elections <- whogov_parties %>%
 
 #Correctifs de mes partis dans whogov pouyr faire les bons joins ----
 
-whogov_parties_bonnes_elections <- whogov_parties_bonnes_elections %>%
+whogov_parties <- whogov_parties %>%
   mutate(
     isoname = case_when(
       isoname == "Czechia" ~ "Czech Republic",
@@ -243,6 +243,11 @@ whogov_parties <- whogov_parties %>%
   ) %>%
   ungroup()
 
+#Export base whogov clean ----
+write.csv(
+  whogov_parties,
+  "data/intermediary/government/whogov clean.csv",
+  row.names = FALSE)
 
 #Base vote parlement ----
 Base_vote_parlement_global <- read.csv("data/intermediary/parliament/Elections and parliament global dataset.csv", sep = ",")

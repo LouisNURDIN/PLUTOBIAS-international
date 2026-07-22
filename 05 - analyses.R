@@ -1993,7 +1993,7 @@ plot_evolution_androcracy_by_country <- ggplot(
   geom_line(linewidth = 1) +
   geom_hline(yintercept = 1, linetype = "dashed", color = "grey50") +
   facet_wrap(~ isoname_label) +
-  coord_cartesian(ylim = c(0,5)) +
+  coord_cartesian(ylim = c(0,2)) +
 
   labs(
     title = "Evolution dans le temps des indices d'androcratie par pays",
@@ -2003,28 +2003,115 @@ plot_evolution_androcracy_by_country <- ggplot(
   
   theme_minimal()
 print(plot_evolution_androcracy_by_country)
-
+ggsave(
+  filename = "results/figures androcracy/evolution adrocracy par pays.jpg",
+  plot = plot_evolution_androcracy_by_country,width = 10,height = 6,dpi = 300)
 
 
 #Test androcracy ----
-cor(Base_complete_index_gender$women_share_government, Base_complete_index_gender$Percentage.of.women.diputees, 
+cor(base_androcracy$women_share_government, base_androcracy$Percentage.of.women.diputees, 
     use = "complete.obs")
 
 
-#Box-plot représentation des femmes dans les institutions par pays  ----
-Base_complete_index_gender <- Base_complete_index_gender %>%
+
+#Représentation des femmes ----
+parline <- read.csv("data/raw/parline/share of women diputees accross all countries.csv", sep = ";")
+whogov_clean <- read.csv("data/intermediary/government/whogov clean.csv", sep = ",")
+
+#vérification rapide qu'il n'y a qu'une seule valeur pour le taux de femmes ministres par pays/années
+whogov_clean %>%
+  group_by(isoname, year) %>%
+  summarise(n_valeurs = n_distinct(women_share_government),
+    .groups = "drop") %>% filter(n_valeurs > 1)
+
+parline <- parline %>%
+  mutate(election_year = substr(date_from, nchar(date_from) - 3, nchar(date_from)))
+
+parline <- parline %>%
+  rename(isoname = Country)
+parline <- parline %>%
+  rename(Percentage.of.women.diputees = Percentage.of.women)
+parline <- parline %>%
+  mutate(election_year = as.integer(election_year))
+
+parline <- parline %>%
+  arrange(isoname, election_year) %>%   # si tu as une date
+  group_by(isoname, election_year) %>%
+  slice_tail(n = 1) %>%                                # garde la dernière élection de l'année
+  ungroup()
+
+
+parline <- parline %>%
+  arrange(isoname, election_year) %>%
+  group_by(isoname) %>%
+  group_modify(~{
+    
+    dat <- arrange(.x, election_year)
+    
+    map_dfr(seq_len(nrow(dat)), function(i){
+      
+      ligne <- dat[i, ]
+      
+      debut <- ligne$election_year
+      
+      if(i < nrow(dat)){
+        fin <- dat$election_year[i + 1] - 1
+      } else {
+        fin <- debut
+      }
+      
+      ligne[rep(1, fin - debut + 1), ] %>%
+        mutate(year = debut:fin)
+      
+    })
+    
+  }) %>%
+  ungroup()
+
+#vérif qu'on ait une observation par pays/année (ça doit renvoyer 0 observations)
+parline %>%
+  count(isoname, year) %>%
+  filter(n > 1)
+
+
+whogov_unique <- whogov_clean %>%
+  distinct(isoname, year, .keep_all = TRUE)
+
+parline <- parline %>%
+  mutate(
+    isoname = case_when(
+      isoname == "Türkiye" ~ "Turkey",
+      isoname == "Venezuela (Bolivarian Republic of)" ~ "Venezuela",
+      isoname == "Republic of Korea" ~ "South Korea",
+      TRUE ~ isoname))
+
+
+
+women_representation <- parline %>%
+  left_join(
+    whogov_unique %>%
+      select(isoname, year, women_share_government),
+    by = c("isoname", "year"))
+
+
+
+#Graphique représentation des femmes dans les institutions par pays  ----
+women_representation <- women_representation %>%
   mutate(women_share_government = women_share_government * 100)
 
-women_representation <- Base_complete_index_gender %>%
+women_representation <- women_representation %>%
+  mutate(Percentage.of.women.diputees = as.numeric(Percentage.of.women.diputees))
+
+women_representation <- women_representation %>%
   pivot_longer(
     cols = c(Percentage.of.women.diputees, women_share_government),
     names_to = "Indice",
     values_to = "Value"
   )
 
+women_representation <- women_representation %>%
+  filter(isoname %in% Base_all_regimes$isoname)
 
-
-#Représentation des femmes ----
 plot_women_representation <- ggplot(
   women_representation,
   aes(x = year,y = Value,color = Indice,group = Indice
@@ -2048,6 +2135,9 @@ plot_women_representation <- ggplot(
   
   theme_minimal()
 print(plot_women_representation)
+ggsave(
+  filename = "results/figures androcracy/taux de femmes deputees et ministres par pays.jpg",
+  plot = plot_women_representation,width = 10,height = 6,dpi = 300)
 
 
 
