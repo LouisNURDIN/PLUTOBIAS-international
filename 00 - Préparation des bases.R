@@ -639,7 +639,13 @@ cses_data <- cses_data %>%
 cses_data <- cses_data %>%
   rename(year = IMD1008_YEAR)
 cses_data <- cses_data %>%
-  rename(turnout = IMD3001_LH)
+  mutate(
+    turnout = if_else(
+      isoname %in% pays_regimes_presidentiels,
+      IMD3001_PR_1,    #turnout à l'élection présidentielle pour les régimes présidentiels
+      IMD3001_LH   # turnout à l'élection Lower House
+    )
+  )
 cses_data <- cses_data %>%
   mutate(
     dataset_party_id = if_else(
@@ -1238,6 +1244,155 @@ wvs_data_clean <- wvs_data_clean %>%
       partyfacts_id == "6303" & isoname == "Italy" & year == 2013  ~ "1626",
       partyfacts_id == "6303" & isoname == "Italy" & year == 2013  ~ "1626",
       dataset_party_id == "233031" & isoname == "Estonia" ~ "1150",
+      TRUE ~ partyfacts_id
+    )
+  )
+
+wvs_data_clean <- wvs_data_clean %>%
+  mutate(
+    partyfacts_id = case_when(
+      dataset_party_id == "12004" & isoname == "Algeria" & election_year >= 2002  ~ "5222",
+      dataset_party_id == "32013" & isoname == "Argentina" & election_year == 1999  ~ "6116",
+      dataset_party_id == "32012" & isoname == "Argentina" & election_year >= 2006 & election_year <= 2013  ~ "2530",
+      dataset_party_id == "112001" & isoname == "Belarus" & election_year == 1990 ~ "2030",
+      dataset_party_id == "70029" & isoname == "Bosnia and Herzegovina" & election_year == 1998 ~ "1340",
+      dataset_party_id == "152020" & isoname == "Chile" & election_year == 2005 ~ "6061",   #Attention pour le cas du Chili ce n'est peut-être pas le bon, parti
+      dataset_party_id == "218001" & isoname == "Ecuador" ~ "4044",
+      dataset_party_id == "288001" & isoname == "Ghana" & election_year == 2012 ~ "2311",
+      dataset_party_id == "288002" & isoname == "Ghana" & election_year == 2012 ~ "2312",
+      dataset_party_id == "HU-Fidesz" & isoname == "Hungary" & election_year == 2010 ~ "6366",
+      dataset_party_id == "HU-Fidesz" & isoname == "Hungary" & election_year == 2014 ~ "6366",
+      dataset_party_id == "HU-Fidesz" & isoname == "Iran" & election_year == 2000 ~ "5359",
+      dataset_party_id == "HU-Fidesz" & isoname == "Iran" & election_year == 2000 ~ "6875",
+      dataset_party_id == "4280043" & isoname == "Latvia" & election_year == 2011 ~ "1704",
+      dataset_party_id == "4280043" & isoname == "Latvia" & election_year == 2014 ~ "1704",
+      dataset_party_id == "484003" & isoname == "Mexico" & election_year == 2000 ~ "1988",
+      dataset_party_id == "499001" & isoname == "Montenegro" & election_year == 1996 ~ "3162",
+      dataset_party_id == "499103" & isoname == "Montenegro" & election_year == 1996 ~ "3164",
+      dataset_party_id == "499001" & isoname == "Montenegro" & election_year == 2001 ~ "3162",
+      dataset_party_id == "499006" & isoname == "Montenegro" & election_year == 2001 ~ "3645",
+      dataset_party_id == "499005" & isoname == "Montenegro" & election_year == 2001 ~ "3104",
+      dataset_party_id == "504004" & isoname == "Morocco" & election_year == 2007 ~ "2480",
+      dataset_party_id == "504004" & isoname == "Morocco" & election_year == 2011 ~ "2480",
+      dataset_party_id == "NG-People's Democratic Party" & isoname == "Nigeria" & election_year == 1999 ~ "2354",
+      dataset_party_id == "NO-Centrists-Liberals" & isoname == "Norway" & election_year == 1965 ~ "1072",
+      dataset_party_id == "608004" & isoname == "Philippines" & election_year == 2001 ~ "2466",
+      dataset_party_id == "616025" & isoname == "Poland" & election_year == 1989 ~ "1286",
+      dataset_party_id == "616028" & isoname == "Poland" & election_year == 1989 ~ "767",
+      dataset_party_id == "616007" & isoname == "Poland" & election_year == 1997 ~ "1566",
+      dataset_party_id == "642055" & isoname == "Romania" & election_year == 2012 ~ "2474",
+      dataset_party_id == "642063" & isoname == "Romania" & election_year == 2012 ~ "5940",
+      dataset_party_id == "642008" & isoname == "Romania" & election_year == 2012 ~ "5941",
+      dataset_party_id == "642052" & isoname == "Romania" & election_year == 2012 ~ "5941",
+      dataset_party_id == "643018" & isoname == "Russia" & election_year == 1995 ~ "2247",
+      dataset_party_id == "703018" & isoname == "Slovakia" & election_year == 1990 ~ "5",
+      dataset_party_id == "152004" & isoname == "Chile"  ~ "390",
+      dataset_party_id == "152005" & isoname == "Chile" & election_year == 1990 ~ "256",
+      dataset_party_id == "152005" & isoname == "Chile" & election_year == 2000 ~ "256",
+      dataset_party_id == "233003" & isoname == "Estonia" ~ "1556",
+      dataset_party_id == "233005" & isoname == "Estonia" ~ "174",
+      dataset_party_id == "268123"&  isoname == "Georgia" ~ "2988",
+      dataset_party_id == "268107"&  isoname == "Georgia" ~ "5885",
+      dataset_party_id == "8002" & isoname == "Albania" & election_year >= 1998 ~ "7075",
+      dataset_party_id == "76001" & isoname == "Brazil" & election_year == 1991 ~ "654",
+      dataset_party_id == "76001" & isoname == "Brazil" & election_year == 1997 ~ "654",
+      dataset_party_id == "76003" & isoname == "Brazil" & election_year == 1991 ~ "4402",  #76003 ou 76021 pour celui-là, à vérifier
+      dataset_party_id == "203019" & isoname == "Czech Republic" & election_year == 1991 ~ "3921",
+      dataset_party_id == "203009" & isoname == "Czech Republic" & election_year == 1991 ~ "3921", #alliance civic democratic et christian democratic party
+      dataset_party_id == "818128" & isoname == "Egypt" & election_year == 2013 ~ "5871",
+      dataset_party_id == "233010" & isoname == "Estonia" & election_year == 1996 ~ "779",
+      dataset_party_id == "233031" & isoname == "Estonia" & election_year == 1996 ~ "1150",
+      dataset_party_id == "268002" & isoname == "Georgia" & election_year == 1996 ~ "2168",
+      dataset_party_id == "276005" & isoname == "Germany" & election_year == 2006 ~ "1545",#le parti n'existait pas encore au momet de l'enquête donc je le rattache au parti qui l'a précédé
+      dataset_party_id == "278001" & isoname == "Ghana" & election_year == 2007 ~ "2311",
+      dataset_party_id == "288002" & isoname == "Ghana" & election_year == 2012 ~ "2312",
+      dataset_party_id == "348018" & isoname == "Hungary" & election_year == 2009 ~ "42",
+      dataset_party_id == "356068" & isoname == "India" & election_year == 1990 ~ "1207",
+      dataset_party_id == "360007" & isoname == "Indonesia" & election_year == 2006 ~ "2560",
+      dataset_party_id == "364012" & isoname == "Iran" & election_year == 2007 ~ "6322",
+      dataset_party_id == "364011" & isoname == "Iran" & election_year == 2007 ~ "5358",
+      dataset_party_id == "368003" & isoname == "Iraq" & election_year == 2006 ~ "5919",
+      dataset_party_id == "368002" & isoname == "Iraq" & election_year == 2006 ~ "5897",
+      dataset_party_id == "368018" & isoname == "Iraq" & election_year == 2013 ~ "5927",
+      dataset_party_id == "376002" & isoname == "Israel"  ~ "615",
+      dataset_party_id == "428032" & isoname == "Latvia" & election_year == 1996 ~ "1043",
+      dataset_party_id == "428023" & isoname == "Latvia" & election_year == 1996 ~ "1704", #attention le parti à l'élection 1998 était dans une alliance qui n'existe pas encore au moment de l'enquête
+      dataset_party_id == "428002" & isoname == "Latvia" & election_year == 1996 ~ "1719",
+      dataset_party_id == "440013" & isoname == "Lithuania" & election_year == 1997 ~ "1357",
+      dataset_party_id == "440005" & isoname == "Lithuania" & election_year == 1997 ~ "738",
+      dataset_party_id == "458001" & isoname == "Malaysia" & election_year == 2012 ~ "2485",
+      dataset_party_id == "458005" & isoname == "Malaysia" & election_year == 2012 ~ "3637",
+      dataset_party_id == "566002" & isoname == "Nigeria" & election_year == 2012 ~ "5538",#le parti n'existe pas encore au moment de l'enquête, donc je l'ai associé à son prédécesseur
+      dataset_party_id == "586002" & isoname == "Pakistan" & election_year == 2001  ~ "2385",
+      dataset_party_id == "604008" & isoname == "Peru" & election_year == 1996  ~ "5130",
+      dataset_party_id == "604008" & isoname == "Peru" & election_year == 1996  ~ "5130",
+      dataset_party_id == "608004" & isoname == "Philippines" & election_year == 2012  ~ "2466",
+      dataset_party_id == "642003" & isoname == "Romania" & election_year == 2005  ~ "660",
+      dataset_party_id == "642060" & isoname == "Romania" & election_year == 2005  ~ "481",
+      dataset_party_id == "646109" & isoname == "Rwanda" & election_year == 2012  ~ "3658",
+      dataset_party_id == "688001" & isoname == "Serbia" & election_year == 2001  ~ "2190", #je ne sais pas si il faut le relier au 2189 ou 2190, les noms sont très proches
+      dataset_party_id == "68804" & isoname == "Serbia" & election_year == 2001  ~ "2175",
+      dataset_party_id == "688001" & isoname == "Serbia" & election_year == 2006  ~ "2190", #je ne sais pas si il faut le relier au 2189 ou 2190, les noms sont très proches
+      dataset_party_id == "68804" & isoname == "Serbia" & election_year == 2006 ~ "2175",
+      dataset_party_id == "705006" & isoname == "Slovenia" & election_year == 1995 ~ "472",
+      dataset_party_id == "705006" & isoname == "Slovenia" & election_year == 2005 ~ "472",
+      dataset_party_id == "705003" & isoname == "Slovenia" & election_year == 2005 ~ "474",
+      dataset_party_id == "710008" & isoname == "South Africa" & election_year == 1990 ~ "1630",
+      dataset_party_id == "410002" & isoname == "South Korea" & election_year == 2005 ~ "2305",
+      dataset_party_id == "410001" & isoname == "South Korea" & election_year == 2005 ~ "2307",
+      dataset_party_id == "410002" & isoname == "South Korea" & election_year == 2010 ~ "2305",
+      dataset_party_id == "410001" & isoname == "South Korea" & election_year == 2010 ~ "2307",
+      dataset_party_id == "756022" & isoname == "Switzerland" & election_year == 1989 ~ "1808",
+      dataset_party_id == "756026" & isoname == "Switzerland" & election_year == 1989 ~ "360",
+      dataset_party_id == "756024" & isoname == "Switzerland" & election_year == 1989 ~ "308",
+      dataset_party_id == "756023" & isoname == "Switzerland" & election_year == 1989 ~ "29",
+      dataset_party_id == "788023" & isoname == "Tunisia" & election_year == 2003 ~ "5832",
+      dataset_party_id == "788022" & isoname == "Tunisia" & election_year == 2003 ~ "4530",
+      dataset_party_id == "792042" & isoname == "Turkey" & election_year == 1990 ~ "1253",
+      dataset_party_id == "792015" & isoname == "Turkey" & election_year == 1996 ~ "1463", #le parti n'existait pas au moment de l'enquête je l'ai rattaché à son prédécesseur 
+      dataset_party_id == "792025" & isoname == "Turkey" & election_year == 2001 ~ "306", #le parti n'existait pas au moment de l'enquête je l'ai rattaché à son prédécesseur 
+      dataset_party_id == "716007" & isoname == "Zimbabwe" & election_year == 2001 ~ "3305",
+      dataset_party_id == "716002" & isoname == "Zimbabwe" & election_year == 2012 ~ "3559",
+      dataset_party_id == "716007" & isoname == "Zimbabwe" & election_year == 2001 ~ "3305",
+      dataset_party_id == "76003" & isoname == "Brazil" & election_year >= 1991 ~ "225",
+      dataset_party_id == "BE-1-3-V" & isoname == "Belgium" & election_year == 2004 & election_year == 2006  ~ "1586",
+      dataset_party_id == "BE-1-13-V" & isoname == "Belgium" & election_year == 2002 ~ "554", 
+      dataset_party_id == "BG-3-1-V" & isoname == "Bulgaria" & election_year >= 2006 ~ "1665",
+      dataset_party_id == "CZ-1-10-V" & isoname == "Czech Republic" & election_year == 2004 ~ "676",
+      dataset_party_id == "CZ-1-2-V" & isoname == "Czech Republic" & election_year == 2008 ~ "466",
+      dataset_party_id == "EE-2-4-V" & isoname == "Estonia" & election_year >= 2008 ~ "685",
+      dataset_party_id == "IT-1-8-V" & isoname == "Italy" & election_year == 2002 ~ "6241",
+      dataset_party_id == "IT-1-9-V" & isoname == "Italy" & election_year == 2002 ~ "6241",
+      dataset_party_id == "IT-1-11-V" & isoname == "Italy" & election_year == 2002 ~ "6241",
+      dataset_party_id == "IT-1-10-V" & isoname == "Italy" & election_year == 2002 ~ "6241",
+      dataset_party_id == "IT-1-1-V" & isoname == "Italy" & election_year == 2002 ~ "1737",
+      dataset_party_id == "IT-1-2-V" & isoname == "Italy" & election_year == 2002 ~ "1737",
+      dataset_party_id == "IT-1-3-V" & isoname == "Italy" & election_year == 2002 ~ "1737",
+      dataset_party_id == "IT-1-1-V" & isoname == "Italy" & election_year >= 2016 ~ "802",
+      dataset_party_id == "PL-1-1-V" & isoname == "Poland" & election_year >= 2002 & election_year <= 2004 ~ "57",
+      dataset_party_id == "PL-1-6-V" & isoname == "Poland" & election_year >= 2002 & election_year == 2006 ~ "1117",
+      dataset_party_id == "PL-1-1-V" & isoname == "Poland" & election_year >= 2008 & election_year <= 2010 ~ "1588",
+      dataset_party_id == "PT-1-11-V" & isoname == "Portugal" & election_year >= 2016  ~ "655",
+      dataset_party_id == "RO-4-2-V" & isoname == "Romania" & election_year == 2008  ~ "120",
+      
+      
+      #Cas plus problématique de join dans ESS
+      dataset_party_id == "BG-5-1-V" & isoname == "Bulgaria" & election_year >= 2010 ~ "760", #*
+      dataset_party_id == "HR-9-3-V" & isoname == "Croatia" & election_year >= 2018 ~ "4865", #*
+      dataset_party_id == "CZ-1-9-V" & isoname == "Czech Republic" & election_year >= 2008 ~ "1728", #*
+      dataset_party_id == "CZ-5-5-V" & isoname == "Czech Republic" & election_year >= 2010 ~ "223", #*
+      dataset_party_id == "CZ-7-4-V" & isoname == "Czech Republic" & election_year >= 2014 ~ "2141", #*
+      dataset_party_id == "CZ-5-6-V" & isoname == "Czech Republic" & election_year == 2012 ~ "1202", #*
+      dataset_party_id == "FI-1-9-V" & isoname == "Finland" & election_year >= 2012 ~ "1303", #*
+      dataset_party_id == "IT-6-4-V" & isoname == "Italy" & election_year >= 2016 ~ "2046", #*
+      dataset_party_id == "NL-4-11-V" & isoname == "Netherlands" & election_year >= 2014 ~ "298", #*
+      dataset_party_id == "RU-3-3-V" & isoname == "Russia" ~ "2245", #*
+      dataset_party_id == "SK-6-1-V" & isoname == "Slovakia" ~ "2130", #*
+      dataset_party_id == "SI-4-9-V" & isoname == "Slovenia" ~ "474", #*
+      dataset_party_id == "SI-6-7-V" & isoname == "Slovenia" ~ "1773", #*
+      dataset_party_id == "SI-7-8-v" & isoname == "Slovenia" ~ "3098", #*
+      dataset_party_id == "UA-3-1-V" & isoname == "Ukraine" ~ "2234", #*
+      dataset_party_id == "UA-2-10-V" & isoname == "Ukraine" ~ "2228", #*
       TRUE ~ partyfacts_id
     )
   )

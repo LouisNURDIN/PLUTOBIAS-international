@@ -1899,9 +1899,7 @@ Base_all_clivages <- Base_all_clivages %>%
     )
   )
 
-unique(Base_all_clivages$vote[Base_all_clivages$isoname == "Bulgaria" & 
-                                          Base_all_clivages$election_year == 2006
-                                        & Base_all_clivages$source_recode == "ESS"])
+
 
 
 
