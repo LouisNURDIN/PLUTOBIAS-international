@@ -1,6 +1,8 @@
 #Calcul des indices de ploutocratie 
 library(dplyr)
+library(stringr)
 Base_complete <-  read.csv("data/final/final dataset all countries and clivages.csv", sep = ",")
+unique(Base_complete$bias[Base_complete$source_recode == "WPID"])
 
 table(Base_complete$source_recode)
 pays_regimes_presidentiels <- read.csv("data/raw/Liste régimes présidentiels.csv", sep = ",")
@@ -55,6 +57,9 @@ unique(Base_complete$category_recode1)
 unique(Base_complete$category_recode2)
 
 unique(Base_complete$category_recode2[Base_complete$category == "top-income-10"])
+
+
+
 #DINC ----
 library(dplyr)
 Base_complete <- Base_complete %>%
@@ -71,7 +76,20 @@ Base_complete <- Base_complete %>%
 # 3. Agrégation PROPRE au niveau décile
 
 categories_index_10 <- Base_complete %>%
-  group_by(source,source_recode, isoname,year,type, bias, category,category_recode1) %>%
+  filter(
+    category %in% c("men", "women") |
+      str_detect(category, "-10$")
+  ) %>%
+  group_by(
+    source,
+    source_recode,
+    isoname,
+    year,
+    type,
+    bias,
+    category,
+    category_recode1
+  ) %>%
   summarise(
     taux_participation = first(na.omit(taux_participation)),
     total_sieges = sum(votes_en_siege, na.rm = TRUE),
@@ -79,14 +97,14 @@ categories_index_10 <- Base_complete %>%
     votes_valides_en_sieges =
       total_sieges / taux_participation * 100,
     votes_valides_en_ministres =
-     total_ministres / taux_participation * 100,
-    .groups = "drop"
-  )
+      total_ministres / taux_participation * 100,
+    .groups = "drop")
+
 
 # 4. Ratios 1 vs 10
 
 first_index <- categories_index_10 %>%
-  group_by(source,source_recode,isoname, year,bias) %>%
+  group_by(source,source_recode,isoname,type, year,bias) %>%
   summarise(
     
     ratio_participation_top_bot =
@@ -133,7 +151,20 @@ first_index <- categories_index_10 %>%
 
 # Agrégation PROPRE au niveau décile
 categories_index_50 <- Base_complete %>%
-  group_by(source,source_recode, isoname,year,type, bias, category,category_recode2) %>%
+  filter(
+    category %in% c("men", "women") |
+      str_detect(category, "-50$")
+  ) %>%
+  group_by(
+    source,
+    source_recode,
+    isoname,
+    year,
+    type,
+    bias,
+    category,
+    category_recode2
+  ) %>%
   summarise(
     taux_participation = first(na.omit(taux_participation)),
     total_sieges = sum(votes_en_siege, na.rm = TRUE),
@@ -147,7 +178,7 @@ categories_index_50 <- Base_complete %>%
 
 # 5. Ratios 50 / 50
 second_index <- categories_index_50 %>%
-  group_by(source,source_recode,isoname,year,bias) %>%
+  group_by(source,source_recode,isoname,type,year,bias) %>%
   summarise(
     
     ratio_participation_top_bot2 =
@@ -192,19 +223,20 @@ second_index <- categories_index_50 %>%
     .groups = "drop"
   )
 
+categories_index <- bind_rows(categories_index_10,categories_index_50)
 # 6. Réintégration dans la base principale
 Base_complete <- Base_complete %>%
   left_join(
     categories_index %>%
-      select(source,source_recode,isoname,year,bias, category,category_recode1,category_recode2,total_sieges, total_ministres),
-    by = c("source","source_recode","isoname","year", "bias","category","category_recode1","category_recode2")
+      select(source,source_recode,isoname,year,type,bias, category,category_recode1,category_recode2,total_sieges, total_ministres),
+    by = c("source","source_recode","isoname","year","type", "bias","category","category_recode1","category_recode2")
   )
 
 Base_complete <- Base_complete %>%
-  left_join(first_index, by = c("source","source_recode","isoname", "year","bias")) %>%
-  left_join(second_index, by = c("source","source_recode","isoname","year","bias"))
+  left_join(first_index, by = c("source","source_recode","isoname", "year","type","bias")) %>%
+  left_join(second_index, by = c("source","source_recode","isoname","year","type","bias"))
 
-unique(Base_complete$source_recode)
+unique(Base_complete$bias[Base_complete$source_recode == "WPID"])
 
 unique(Base_complete$type)
 # Base finale
@@ -390,6 +422,33 @@ write.csv(
   row.names = FALSE
 )
 
+
+#Commande pour vérifier que nos indices 10 / 10 et 50 / 50 soient corrélées au sein des biais
+#(on peut adapter le code en fonction du biais que l'on veut vérifier)
+#=> pour androcacy cela doit être égal à 1
+Base_complete_legislative_index %>%
+  filter(
+    bias == "gerontocracy",
+    is.finite(ratio_gouvernement_top_bot),
+    is.finite(ratio_gouvernement_top_bot2)
+  ) %>%
+  summarise(
+    cor = cor(ratio_gouvernement_top_bot, ratio_gouvernement_top_bot2)
+  )
+
+#Commande pour vérifier que nos indices finaux soient corrects (on peut adapter le code en fonction du code que l'on veut vérifier)
+# Les corrélations doivent être égales à 1 à chaque fois
+Base_complete_legislative_index %>%
+  filter(
+    is.finite(verif_ratio_top_bot),
+    is.finite(ratio_gouvernement_top_bot)
+  ) %>%
+  summarise(
+    cor = cor(
+      verif_ratio_top_bot,
+      ratio_gouvernement_top_bot
+    )
+  )
 
 
 

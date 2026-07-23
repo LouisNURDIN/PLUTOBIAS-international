@@ -216,7 +216,7 @@ Base_wpid_income <- Base_wpid_income %>% filter(!is.na(category))
 Base_wpid_income <- Base_wpid_income %>% arrange(isoname,election_year,source)
 Base_wpid_income <- Base_wpid_income %>% select(-annee)
 unique(Base_wpid_income$category)
-
+unique(Base_wpid_income$bias)
 
 ##wpid gender ----
 Base_elections_legislatives_sexe <- Base_elections_legislatives[!is.na(Base_elections_legislatives$gender),]
@@ -3201,7 +3201,7 @@ unique(Base_ess_age$category)
 
 #Espace pour empiler les bases votes entre elles ----
 bases <- list(
-  Base_wpid_gender,
+  Base_wpid_income,
   Base_wpid_educ,
   Base_wpid_age,
   Base_wpid_gender,
@@ -3227,6 +3227,7 @@ Base_all_clivages <- bind_rows(bases)
 
 #vérif qu'on a bien tout 
 unique(Base_all_clivages$bias)
+unique(Base_all_clivages$bias[Base_all_clivages$source_recode == "WPID"])
 unique(Base_all_clivages$category)
 unique(Base_all_clivages$source_recode)
 

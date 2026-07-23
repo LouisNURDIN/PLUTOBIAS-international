@@ -8,6 +8,8 @@ library(lubridate)
 library(purrr)
 
 
+
+#REGIMES LEGISLATIFS ----
 Base_complete_legislative_index <-  read.csv("data/final/legislative dataset complete with index.csv", sep = ",")
 unique(Base_complete_legislative_index$isoname[Base_complete_legislative_index$source_recode == "CSES"])
 all_elections <- read.csv ("data/intermediary/elections/all elections update.csv", sep = ";")
@@ -359,17 +361,18 @@ ggsave(
   filename = "results/figures/Boxplot plutocracy 10 10.jpg",
   plot = p_10_10_legislatives,width = 10,height = 6,dpi = 300)
 
-##Box plot androcracy ----
-Base_gender_legislative_long <- Base_legislative_global_sources %>%
+
+##Androcracy 50 50 ----
+Base_gender_legislative_long_50 <- Base_legislative_global_sources %>%
   filter(Base_legislative_global_sources$bias == "androcracy") %>%
   pivot_longer(
-    cols = starts_with("ratio_") & !ends_with("top_bot"),
+    cols = starts_with("ratio_") & !ends_with("top_bot")& !ends_with("ratio_sieges_top_bot2"),
     names_to = "Indice",
     values_to = "Value"
   ) 
 
 # 3. Séparation 10/10 et 50/50
-data_top_bot_gender_legislative <- Base_gender_legislative_long %>% filter(str_detect(Indice, "top_bot"))
+data_top_bot_gender_legislative_50 <- Base_gender_legislative_long_50 %>% filter(str_detect(Indice, "top_bot"))
 
 # 4. Recodage commun
 recodage <- function(df) {
@@ -391,12 +394,13 @@ recodage <- function(df) {
 
 
 
-data_top_bot_gender_legislative <- recodage(data_top_bot_gender_legislative)
+data_top_bot_gender_legislative_50 <- recodage(data_top_bot_gender_legislative_50)
 
-data_top_bot_gender_legislative <- data_top_bot_gender_legislative %>%
+data_top_bot_gender_legislative_50 <- data_top_bot_gender_legislative_50 %>%
   filtre_annees_electorales()
-### PLOT 50/50 ----
-plot_top_bot_gender_legislative <- ggplot(data_top_bot_gender_legislative, aes(x = Indice, y = Value, fill = Indice)) +
+
+
+plot_top_bot_gender_legislative_50 <- ggplot(data_top_bot_gender_legislative_50, aes(x = Indice, y = Value, fill = Indice)) +
   geom_boxplot(
     position = position_nudge(x = -0.35),
     width = 0.2,
@@ -442,16 +446,17 @@ plot_top_bot_gender_legislative <- ggplot(data_top_bot_gender_legislative, aes(x
   )
 
 grid::grid.newpage()
-plot_top_bot_gender_legislative
+plot_top_bot_gender_legislative_50
 ggsave(
   filename = "results/figures/Boxplot androcracy 50 50.jpg",
-  plot = plot_top_bot_gender_legislative,width = 10,height = 6,dpi = 300)
+  plot = plot_top_bot_gender_legislative_50,width = 10,height = 6,dpi = 300)
 
-##Box plot epistocracy ----
+
+##Epistocracy 50 50  ----
 Base_educ_legislative_long <- Base_legislative_global_sources %>%
   filter(Base_legislative_global_sources$bias == "epistocracy") %>%
   pivot_longer(
-    cols = starts_with("ratio_") & !ends_with("top_bot"),
+    cols = starts_with("ratio_") & !ends_with("top_bot") & !ends_with("ratio_sieges_top_bot2"),
     names_to = "Indice",
     values_to = "Value"
   ) 
@@ -533,7 +538,10 @@ ggsave(
   filename = "results/figures/Boxplot epistocracy 50 50.jpg",
   plot = plot_top_bot_educ_legislatives,width = 10,height = 6,dpi = 300)
 
-##Box plot gerontocracy ----
+
+
+
+##Gerontocracy ----
 Base_age_legislatives_long <- Base_legislative_global_sources %>%
   filter(Base_legislative_global_sources$bias == "gerontocracy") %>%
   pivot_longer(
@@ -1356,7 +1364,7 @@ ggsave(
 Base_best_sources_all_regimes <- bind_rows(Base_legislative_finale, Base_finale_presidentielles)
 
 
-
+#Gouvernement 50 50 ----
 plot_all_global_bias_50_50_all_regimes <- ggplot(Base_best_sources_all_regimes, aes(x = bias, y = ratio_gouvernement_top_bot2, fill = bias)) +
   geom_boxplot(
     position = position_nudge(x = -0.35),
@@ -1396,7 +1404,7 @@ plot_all_global_bias_50_50_all_regimes <- ggplot(Base_best_sources_all_regimes, 
     text = element_text(size = 14) ) +
   
   labs(
-    title = "Distribution des indices globaux par biais et sources (tous types de régimes, avec > 75% des députés et ministres)",
+    title = "Distribution des indices globaux par biais et sources, top 50 / bottom 50 (> 75% des députés et ministres)",
     subtitle = "Indice global de représentation au gouvernement",
     x = "",
     y = "Poids électoral top 50% / bottom 50%"
@@ -1409,8 +1417,61 @@ ggsave(
   filename = "results/figures/Biais global de représentation au gouvernement 50 50.jpg",
   plot = plot_all_global_bias_50_50_all_regimes,width = 10,height = 6,dpi = 300)
 
+##Gouvernement 10 10 ----
+plot_all_global_bias_10_10_all_regimes <- ggplot(Base_best_sources_all_regimes, aes(x = bias, y = ratio_gouvernement_top_bot, fill = bias)) +
+  geom_boxplot(
+    position = position_nudge(x = -0.35),
+    width = 0.2,
+    alpha = 1,
+    color = "black",
+    size = 0.2,
+    outlier.size = 0) +
+  
+  geom_jitter(
+    aes(color = bias),
+    position = position_jitter(width = 0.08, height = 0),
+    alpha = 0.1,
+    size = 2
+  ) +
+  
+  stat_summary(
+    position = position_nudge(x = 0),
+    geom = "pointrange",
+    fun.data = "mean_cl_boot",
+    size = 0.3,
+    color = "black"
+  ) +
+  
+  geom_hline(yintercept = 1, linetype = "dashed") +
+  scale_y_continuous(
+    trans = log_trans(),
+    breaks = c(0.5, 0.75, 1, 1.25, 1.5, 1.75, 2,3,4)) +
+  
+  coord_cartesian(ylim = c(0.5, 4)) +
+  
+  theme_minimal() +
+  theme(
+    legend.position = "bottom",
+    panel.grid.minor = element_blank(),
+    axis.text.x = element_blank(),
+    text = element_text(size = 14) ) +
+  
+  labs(
+    title = "Distribution des indices globaux par biais et sources, top 10 / bottom 10 ( > 75% des députés et ministres)",
+    subtitle = "Indice global de représentation au gouvernement",
+    x = "",
+    y = "Poids électoral top 10% / bottom 10%"
+  )
 
-#Même chose avec l'indice de participation
+grid::grid.newpage()
+plot_all_global_bias_10_10_all_regimes
+
+ggsave(
+  filename = "results/figures/Biais global de représentation au gouvernement 10 10.jpg",
+  plot = plot_all_global_bias_10_10_all_regimes,width = 10,height = 6,dpi = 300)
+
+
+##Participation 50 50 ----
 plot_all_participation_bias_50_50_all_regimes <- ggplot(Base_best_sources_all_regimes, aes(x = bias, y = ratio_participation_top_bot2, fill = bias)) +
   geom_boxplot(
     position = position_nudge(x = -0.35),
@@ -1450,7 +1511,7 @@ plot_all_participation_bias_50_50_all_regimes <- ggplot(Base_best_sources_all_re
     text = element_text(size = 14) ) +
   
   labs(
-    title = "Distribution des indices de participation par biais et sources (tous types de régimes, avec > 75% des députés et ministres)",
+    title = "Distribution des indices de participation par biais et sources, top 50 / bottom 50 (> 75% des députés et ministres)",
     subtitle = "Biais de participation",
     x = "",
     y = "Poids électoral top 50% / bottom 50%"
@@ -1463,7 +1524,62 @@ ggsave(
   filename = "results/figures/Biais de participation tous regimes 50 50.jpg",
   plot = plot_all_participation_bias_50_50_all_regimes,width = 10,height = 6,dpi = 300)
 
-#Même chose avec l'indice de Votes → Sièges
+##Participation 10 10 ----
+plot_all_participation_bias_10_10_all_regimes <- ggplot(Base_best_sources_all_regimes, aes(x = bias, y = ratio_participation_top_bot, fill = bias)) +
+  geom_boxplot(
+    position = position_nudge(x = -0.35),
+    width = 0.2,
+    alpha = 1,
+    color = "black",
+    size = 0.2,
+    outlier.size = 0) +
+  
+  geom_jitter(
+    aes(color = bias),
+    position = position_jitter(width = 0.08, height = 0),
+    alpha = 0.1,
+    size = 2
+  ) +
+  
+  stat_summary(
+    position = position_nudge(x = 0),
+    geom = "pointrange",
+    fun.data = "mean_cl_boot",
+    size = 0.3,
+    color = "black"
+  ) +
+  
+  geom_hline(yintercept = 1, linetype = "dashed") +
+  scale_y_continuous(
+    trans = log_trans(),
+    breaks = c(0.5, 0.75, 1, 1.25, 1.5, 1.75, 2,3,4)) +
+  
+  coord_cartesian(ylim = c(0.5, 4)) +
+  
+  theme_minimal() +
+  theme(
+    legend.position = "bottom",
+    panel.grid.minor = element_blank(),
+    axis.text.x = element_blank(),
+    text = element_text(size = 14) ) +
+  
+  labs(
+    title = "Distribution des indices de participation par biais et sources, top 10 / bottom 10 (> 75% des députés et ministres)",
+    subtitle = "Biais de participation",
+    x = "",
+    y = "Poids électoral top 10% / bottom 10%"
+  )
+
+grid::grid.newpage()
+plot_all_participation_bias_10_10_all_regimes
+
+ggsave(
+  filename = "results/figures/Biais de participation tous regimes 10 10.jpg",
+  plot = plot_all_participation_bias_10_10_all_regimes,width = 10,height = 6,dpi = 300)
+
+
+
+# Votes → Sièges 50 50 ----
 plot_vote_seat_bias_50_50_all_regimes <- ggplot(Base_best_sources_all_regimes, aes(x = bias, y = ratio_votes_valides_en_sieges_top_bot2, fill = bias)) +
   geom_boxplot(
     position = position_nudge(x = -0.35),
@@ -1503,8 +1619,8 @@ plot_vote_seat_bias_50_50_all_regimes <- ggplot(Base_best_sources_all_regimes, a
     text = element_text(size = 14) ) +
   
   labs(
-    title = "Distribution des indices de conversion de votes à sièges par biais et sources (tous types de régimes, avec > 75% des députés et ministres)",
-    subtitle = "Biais Votes → Sièges",
+    title = "Distribution des indices de conversion de votes à sièges par biais et sources, top 50 / bottom 50 ",
+    subtitle = "Biais Votes → Sièges (> 75% des députés et ministres)",
     x = "",
     y = "Poids électoral top 50% / bottom 50%"
   )
@@ -1517,7 +1633,61 @@ ggsave(
   plot = plot_vote_seat_bias_50_50_all_regimes,width = 10,height = 6,dpi = 300)
 
 
-#Même chose avec l'indice de Sièges → Ministres
+# Votes → Sièges 10 10 ----
+plot_vote_seat_bias_10_10_all_regimes <- ggplot(Base_best_sources_all_regimes, aes(x = bias, y = ratio_votes_valides_en_sieges_top_bot, fill = bias)) +
+  geom_boxplot(
+    position = position_nudge(x = -0.35),
+    width = 0.2,
+    alpha = 1,
+    color = "black",
+    size = 0.2,
+    outlier.size = 0) +
+  
+  geom_jitter(
+    aes(color = bias),
+    position = position_jitter(width = 0.08, height = 0),
+    alpha = 0.1,
+    size = 2
+  ) +
+  
+  stat_summary(
+    position = position_nudge(x = 0),
+    geom = "pointrange",
+    fun.data = "mean_cl_boot",
+    size = 0.3,
+    color = "black"
+  ) +
+  
+  geom_hline(yintercept = 1, linetype = "dashed") +
+  scale_y_continuous(
+    trans = log_trans(),
+    breaks = c(0.5, 0.75, 1, 1.25, 1.5, 1.75, 2,3,4)) +
+  
+  coord_cartesian(ylim = c(0.5, 4)) +
+  
+  theme_minimal() +
+  theme(
+    legend.position = "bottom",
+    panel.grid.minor = element_blank(),
+    axis.text.x = element_blank(),
+    text = element_text(size = 14) ) +
+  
+  labs(
+    title = "Distribution des indices de conversion de votes à sièges par biais et sources, top 10 / bottom 10" ,
+    subtitle = "Biais Votes → Sièges (> 75% des députés et ministres)",
+    x = "",
+    y = "Poids électoral top 10% / bottom 10%"
+  )
+
+grid::grid.newpage()
+plot_vote_seat_bias_10_10_all_regimes
+
+ggsave(
+  filename = "results/figures/Biais de conversion de votes à sièges 10 10.jpg",
+  plot = plot_vote_seat_bias_10_10_all_regimes,width = 10,height = 6,dpi = 300)
+
+
+#Sièges → Ministres 50 50 ----
 plot_seat_minister_bias_50_50 <- ggplot(Base_best_sources_all_regimes, aes(x = bias, y = ratio_sieges_ministres_top_bot2, fill = bias)) +
   geom_boxplot(
     position = position_nudge(x = -0.35),
@@ -1557,8 +1727,8 @@ plot_seat_minister_bias_50_50 <- ggplot(Base_best_sources_all_regimes, aes(x = b
     text = element_text(size = 14) ) +
   
   labs(
-    title = "Distribution des indices de conversion de sièges à ministres par biais et sources (tous types de régimes, avec > 75% des députés et ministres)",
-    subtitle = "Biais Sièges → Ministres",
+    title = "Distribution des indices de conversion de sièges à ministres par biais et sources, top 50 / bottom 50 ",
+    subtitle = "Biais Sièges → Ministres ( > 75% des députés et ministres)",
     x = "",
     y = "Poids électoral top 50% / bottom 50%"
   )
@@ -1571,8 +1741,61 @@ ggsave(
   plot = plot_seat_minister_bias_50_50,width = 10,height = 6,dpi = 300)
 
 
+#Sièges → Ministres 10 10 ----
+plot_seat_minister_bias_10_10 <- ggplot(Base_best_sources_all_regimes, aes(x = bias, y = ratio_sieges_ministres_top_bot, fill = bias)) +
+  geom_boxplot(
+    position = position_nudge(x = -0.35),
+    width = 0.2,
+    alpha = 1,
+    color = "black",
+    size = 0.2,
+    outlier.size = 0) +
+  
+  geom_jitter(
+    aes(color = bias),
+    position = position_jitter(width = 0.08, height = 0),
+    alpha = 0.1,
+    size = 2
+  ) +
+  
+  stat_summary(
+    position = position_nudge(x = 0),
+    geom = "pointrange",
+    fun.data = "mean_cl_boot",
+    size = 0.3,
+    color = "black"
+  ) +
+  
+  geom_hline(yintercept = 1, linetype = "dashed") +
+  scale_y_continuous(
+    trans = log_trans(),
+    breaks = c(0.5, 0.75, 1, 1.25, 1.5, 1.75, 2,3,4)) +
+  
+  coord_cartesian(ylim = c(0.5, 4)) +
+  
+  theme_minimal() +
+  theme(
+    legend.position = "bottom",
+    panel.grid.minor = element_blank(),
+    axis.text.x = element_blank(),
+    text = element_text(size = 14) ) +
+  
+  labs(
+    title = "Distribution des indices de conversion de sièges à ministres par biais et sources, top 10 / bottom 10 ",
+    subtitle = "Biais Sièges → Ministres ( > 75% des députés et ministres)",
+    x = "",
+    y = "Poids électoral top 10% / bottom 10%"
+  )
 
-#Même chose avec l'indice de Votes → Ministres (régimes présidentiels)
+grid::grid.newpage()
+plot_seat_minister_bias_10_10
+
+ggsave(
+  filename = "results/figures/Biais de conversion de sièges à ministres 10 10.jpg",
+  plot = plot_seat_minister_bias_10_10,width = 10,height = 6,dpi = 300)
+
+
+#Votes → Ministres (régimes présidentiels) 50 50 ----
 plot_vote_minister_bias_50_50 <- ggplot(Base_best_sources_all_regimes, aes(x = bias, y = ratio_votes_valides_en_ministres_top_bot2, fill = bias)) +
   geom_boxplot(
     position = position_nudge(x = -0.35),
@@ -1612,8 +1835,8 @@ plot_vote_minister_bias_50_50 <- ggplot(Base_best_sources_all_regimes, aes(x = b
     text = element_text(size = 14) ) +
   
   labs(
-    title = "Distribution des indices de conversion de votes à ministres par biais et sources (tous types de régimes, avec > 75% des députés et ministres)",
-    subtitle = "Biais Votes → Ministres",
+    title = "Distribution des indices de conversion de votes à ministres par biais et sources, top 50 - bottom 50 ",
+    subtitle = "Biais Votes → Ministres (> 75% des députés et ministres)",
     x = "",
     y = "Poids électoral top 50% / bottom 50%"
   )
@@ -1624,6 +1847,62 @@ plot_vote_minister_bias_50_50
 ggsave(
   filename = "results/figures/Biais de conversion de votes à ministres (régimes présidentiels) 50 50.jpg",
   plot = plot_vote_minister_bias_50_50,width = 10,height = 6,dpi = 300)
+
+
+#Votes → Ministres (régimes présidentiels) 10 10 ----
+plot_vote_minister_bias_10_10 <- ggplot(Base_best_sources_all_regimes, aes(x = bias, y = ratio_votes_valides_en_ministres_top_bot, fill = bias)) +
+  geom_boxplot(
+    position = position_nudge(x = -0.35),
+    width = 0.2,
+    alpha = 1,
+    color = "black",
+    size = 0.2,
+    outlier.size = 0) +
+  
+  geom_jitter(
+    aes(color = bias),
+    position = position_jitter(width = 0.08, height = 0),
+    alpha = 0.1,
+    size = 2
+  ) +
+  
+  stat_summary(
+    position = position_nudge(x = 0),
+    geom = "pointrange",
+    fun.data = "mean_cl_boot",
+    size = 0.3,
+    color = "black"
+  ) +
+  
+  geom_hline(yintercept = 1, linetype = "dashed") +
+  scale_y_continuous(
+    trans = log_trans(),
+    breaks = c(0.5, 0.75, 1, 1.25, 1.5, 1.75, 2,3,4)) +
+  
+  coord_cartesian(ylim = c(0.5, 4)) +
+  
+  theme_minimal() +
+  theme(
+    legend.position = "bottom",
+    panel.grid.minor = element_blank(),
+    axis.text.x = element_blank(),
+    text = element_text(size = 14) ) +
+  
+  labs(
+    title = "Distribution des indices de conversion de votes à ministres par biais et sources, top 10 - bottom 10 ",
+    subtitle = "Biais Votes → Ministres (> 75% des députés et ministres)",
+    x = "",
+    y = "Poids électoral top 10% / bottom 10%"
+  )
+
+grid::grid.newpage()
+plot_vote_minister_bias_10_10
+
+ggsave(
+  filename = "results/figures/Biais de conversion de votes à ministres (régimes présidentiels) 10 10.jpg",
+  plot = plot_vote_minister_bias_10_10,width = 10,height = 6,dpi = 300)
+
+
 
 
 #HEATMAP corrélations biais/indices ----
@@ -1771,8 +2050,6 @@ plots$plot[[12]] #Plutocracy - Votes → Ministres
 
 #____________________________________________________________________________
 #Graphiques articles ----
-
-
 Base_legislative_finale <- Base_legislative_finale %>% mutate(regime = "legislatif")
 Base_finale_presidentielles <- Base_finale_presidentielles %>% mutate(regime = "présidentiel")
 
@@ -1781,7 +2058,8 @@ Base_all_regimes <- Base_legislative_finale %>%
 
 unique(Base_all_regimes$isoname)
 
-base_graph_bias_countries_leg_1980 <- Base_all_regimes %>%
+#Evolution 1980 50 50 ----
+base_graph_bias_countries_1980_50 <- Base_all_regimes %>%
   filter(
     year >= 1980,
     !is.na(ratio_gouvernement_top_bot2),
@@ -1805,8 +2083,8 @@ base_graph_bias_countries_leg_1980 <- Base_all_regimes %>%
   )
 
 
-  plot_evolution_bias_by_country <- ggplot(
-    base_graph_bias_countries_leg_1980,
+plot_evolution_bias_by_country_50 <- ggplot(
+    base_graph_bias_countries_1980_50,
   aes(x = year,y = ratio_gouvernement_top_bot2,color = bias
   )
 ) +
@@ -1822,28 +2100,323 @@ base_graph_bias_countries_leg_1980 <- Base_all_regimes %>%
       "plutocracy" = "violet")
     ) +
   labs(
-    title = "Evolution dans le temps des indices par pays",
+    title = "Evolution dans le temps des indices par pays (top 50 / bot 50)",
     subtitle = "* Régime présidentiel",
-    x = "Année",y = "ratio tob/bot 50 50",color = "Indice"
+    x = "Année",y = "ratio top/bot 50 50",color = "Indice"
   ) +
   
   theme_minimal()
-print(plot_evolution_bias_by_country)
+print(plot_evolution_bias_by_country_50)
 ggsave(
-  filename = "results/figures/evolution bias by country.jpg",
-  plot = plot_evolution_bias_by_country,width = 10,height = 6,dpi = 300)
+  filename = "results/figures/evolution bias by country top50 bot50.jpg",
+  plot = plot_evolution_bias_by_country_50,width = 10,height = 6,dpi = 300)
+
+
+#Evolution 1980 10 10 ----
+base_graph_bias_countries_1980_10 <- Base_all_regimes %>%
+  filter(
+    year >= 1980,
+    !is.na(ratio_gouvernement_top_bot),
+    ratio_gouvernement_top_bot > 0
+  ) %>%
+  group_by(isoname) %>%
+  filter(n_distinct(year) >= 10) %>%
+  ungroup() %>%
+  group_by(isoname, bias) %>%
+  tidyr::complete(
+    year = full_seq(year, 1)
+  ) %>%
+  fill(regime, .direction = "downup") %>%
+  ungroup() %>%
+  mutate(
+    isoname_label = if_else(
+      regime == "présidentiel",
+      paste0(isoname, " *"),
+      isoname
+    )
+  )
+
+
+plot_evolution_bias_by_country_10 <- ggplot(
+  base_graph_bias_countries_1980_10,
+  aes(x = year,y = ratio_gouvernement_top_bot,color = bias
+  )
+) +
+  geom_line(linewidth = 1) +
+  geom_hline(yintercept = 1, linetype = "dashed", color = "grey50") +
+  facet_wrap(~ isoname_label) +
+  coord_cartesian(ylim = c(0,5)) +
+  scale_color_manual(
+    values = c(
+      "androcracy" = "red",
+      "epistocracy" = "green",
+      "gerontocracy" = "blue",
+      "plutocracy" = "violet")
+  ) +
+  labs(
+    title = "Evolution dans le temps des indices par pays (top 10 / bot 10)",
+    subtitle = "* Régime présidentiel",
+    x = "Année",y = "ratio top/bot 10 10",color = "Indice"
+  ) +
+  
+  theme_minimal()
+print(plot_evolution_bias_by_country_10)
+ggsave(
+  filename = "results/figures/evolution bias by country top10 bot10.jpg",
+  plot = plot_evolution_bias_by_country_10,width = 10,height = 6,dpi = 300)
+
 
 
 #Barres valeur moyenne des indices finaux ----
+#50 50 ----
 #Fonction 
 # Colonnes de ratios à utiliser
 getwd()
 ratios <- names(Base_all_regimes) %>%
-  str_subset("^ratio_gouvernement.*2$")
+  str_subset("^ratio_gouvernement.*2$")  %>%
+  setdiff("ratio_gouvernement_top_bot")
 
 # Libellés des ratios (facultatif)
 labels_ratios <- c(
-  ratio_gouvernement_top_bot2 = "Gouvernement"
+  ratio_gouvernement_top_bot2 = "Gouvernement - Indice top 50 / bot 50"
+)
+names(Base_all_regimes)
+plot_bias <- function(bias_value){
+  
+  base_bias <- Base_all_regimes %>%
+    filter(
+      bias == bias_value,
+      year >= 2000
+    ) %>%
+    mutate(
+      isoname_label = if_else(
+        regime == "présidentiel",
+        paste0(isoname, " *"),
+        isoname
+      )) %>%
+    group_by(isoname,isoname_label) %>%
+    filter(n_distinct(year) >= 10) %>%
+    summarise(
+      across(
+        all_of(ratios),
+        ~{
+          x <- .x[!is.na(.x) & .x > 0]
+          
+          if(length(x) == 0){
+            NA_real_
+          } else{
+            exp(mean(log(x)))
+          }
+        }
+      ),
+      .groups = "drop"
+    ) %>%
+    pivot_longer(
+      cols = all_of(ratios),
+      names_to = "ratio",
+      values_to = "moyenne_geo"
+    ) %>%
+    mutate(
+      ratio = recode(ratio, !!!labels_ratios),
+      ratio = factor(
+        ratio,
+        levels = labels_ratios
+      )
+    )
+  
+  ggplot(
+    base_bias,
+    aes(
+      x = reorder(isoname_label, moyenne_geo, mean, na.rm = TRUE),
+      y = log(moyenne_geo),
+      fill = ratio
+    )
+  ) +
+    geom_col(position = position_dodge(width = .8)) +
+    geom_hline(
+      yintercept = 0,
+      linetype = "dashed",
+      colour = "grey50"
+    ) +
+    scale_y_continuous(
+      breaks = log(c(0.25, 0.5, 1, 2, 4)),
+      labels = c("0.25", "0.5", "1", "2", "4")
+    ) +
+    labs(
+      title = paste("Bias :", bias_value, "- top 50 / bottom 50"),
+      subtitle = "* Régime présidentiel",
+      x = "Pays",
+      y = "Moyenne géométrique depuis 2000",
+      fill = "Ratio"
+    ) +
+    theme_minimal() +
+    theme(
+      axis.text.x = element_text(
+        angle = 90,
+        hjust = 1,
+        vjust = .5
+      )
+    )
+  
+}
+
+biais <- c(
+  "plutocracy",
+  "androcracy",
+  "gerontocracy",
+  "epistocracy"
+)
+
+walk(
+  biais,
+  function(b){
+    
+    p <- plot_bias(b)
+    
+    ggsave(
+      filename = paste0(
+        "results/figures/Mean_",
+        b,
+        "top50_bot50_by_country.jpg"
+      ),
+      plot = p,
+      width = 16,
+      height = 8,
+      dpi = 300
+    )
+    
+  }
+) #Les graphiques s'exportent directement dans "results/figures"
+
+#10 10 ----
+ratios <- names(Base_all_regimes) %>%
+  str_subset("ratio_gouvernement") %>%
+  setdiff("ratio_gouvernement_top_bot2")
+
+# Libellés des ratios (facultatif)
+labels_ratios <- c(
+  ratio_gouvernement_top_bot = "Gouvernement - top10 / bot 10"
+)
+ratios
+names(Base_all_regimes)
+plot_bias <- function(bias_value){
+  
+  base_bias <- Base_all_regimes %>%
+    filter(
+      bias == bias_value,
+      year >= 2000
+    ) %>%
+    mutate(
+      isoname_label = if_else(
+        regime == "présidentiel",
+        paste0(isoname, " *"),
+        isoname
+      )) %>%
+    group_by(isoname,isoname_label) %>%
+    filter(n_distinct(year) >= 10) %>%
+    summarise(
+      across(
+        all_of(ratios),
+        ~{
+          x <- .x[!is.na(.x) & .x > 0]
+          
+          if(length(x) == 0){
+            NA_real_
+          } else{
+            exp(mean(log(x)))
+          }
+        }
+      ),
+      .groups = "drop"
+    ) %>%
+    pivot_longer(
+      cols = all_of(ratios),
+      names_to = "ratio",
+      values_to = "moyenne_geo"
+    ) %>%
+    mutate(
+      ratio = recode(ratio, !!!labels_ratios),
+      ratio = factor(
+        ratio,
+        levels = labels_ratios
+      )
+    )
+  
+  ggplot(
+    base_bias,
+    aes(
+      x = reorder(isoname_label, moyenne_geo, mean, na.rm = TRUE),
+      y = log(moyenne_geo),
+      fill = ratio
+    )
+  ) +
+    geom_col(position = position_dodge(width = .8)) +
+    geom_hline(
+      yintercept = 0,
+      linetype = "dashed",
+      colour = "grey50"
+    ) +
+    scale_y_continuous(
+      breaks = log(c(0.25, 0.5, 1, 2, 4)),
+      labels = c("0.25", "0.5", "1", "2", "4")
+    ) +
+    labs(
+      title = paste("Bias :", bias_value, "- top 10 / bottom 10"),
+      subtitle = "* Régime présidentiel",
+      x = "Pays",
+      y = "Moyenne géométrique depuis 2000",
+      fill = "Ratio"
+    ) +
+    theme_minimal() +
+    theme(
+      axis.text.x = element_text(
+        angle = 90,
+        hjust = 1,
+        vjust = .5
+      )
+    )
+  
+}
+
+biais <- c(
+  "plutocracy",
+  "gerontocracy",
+  "epistocracy"
+)
+
+walk(
+  biais,
+  function(b){
+    
+    p <- plot_bias(b)
+    
+    ggsave(
+      filename = paste0(
+        "results/figures/Mean_",
+        b,
+        "top10_bot10_by_country.jpg"
+      ),
+      plot = p,
+      width = 16,
+      height = 8,
+      dpi = 300
+    )
+    
+  }
+)
+
+
+
+
+
+#Les deux mélangés ----
+ratios <- names(Base_all_regimes) %>%
+  str_subset("ratio_gouvernement")
+
+# Libellés des ratios (facultatif)
+labels_ratios <- c(
+  ratio_gouvernement_top_bot = "Gouvernement - Indice top 10 / bot 10",
+  ratio_gouvernement_top_bot2 = "Gouvernement - Indice top 50 / bot 50"
 )
 names(Base_all_regimes)
 plot_bias <- function(bias_value){
@@ -1927,7 +2500,6 @@ plot_bias <- function(bias_value){
 
 biais <- c(
   "plutocracy",
-  "androcracy",
   "gerontocracy",
   "epistocracy"
 )
@@ -1942,7 +2514,7 @@ walk(
       filename = paste0(
         "results/figures/Mean_",
         b,
-        "_by_country.jpg"
+        "10_and_50_by_country.jpg"
       ),
       plot = p,
       width = 16,
@@ -1951,14 +2523,14 @@ walk(
     )
     
   }
-) #Les graphiques s'exportent directement dans "results/figures"
-
+)
 
 
 names(Base_all_regimes)
 
 
 #EXPLORATOIRE ----
+#ANDROCRATIE ----
 base_androcracy <- Base_all_regimes %>% filter(bias == "androcracy")
 
 base_plutocracy <- Base_all_regimes %>% filter(bias == "plutocracy")
@@ -2005,6 +2577,9 @@ print(plot_evolution_androcracy_by_country)
 ggsave(
   filename = "results/figures androcracy/evolution adrocracy par pays.jpg",
   plot = plot_evolution_androcracy_by_country,width = 10,height = 6,dpi = 300)
+
+
+
 
 
 

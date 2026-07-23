@@ -36,6 +36,7 @@ parlgov <- parlgov %>% mutate(partyfacts_id = as.character(partyfacts_id))
 
 #Import de ma base avec mes clivages ----
 Base_all_clivages <- read.csv("data/intermediary/elections/dataset with all clivages and elections.csv", sep = ",")
+
 unique(Base_all_clivages$vote[Base_all_clivages$isoname == "Venezuela"& 
                                          Base_all_clivages$election_year == 1998
                                        ])
