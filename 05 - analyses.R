@@ -206,9 +206,11 @@ Base_legislative_index_age <- Base_legislative_index_age %>%
 ##Box plot plutocracy----
 # 2. Long format
 Base_income_legislative_long <- Base_legislative_global_sources %>%
-  filter(Base_legislative_global_sources$bias == "plutocracy") %>%
+  filter(bias == "plutocracy") %>%
   pivot_longer(
-    cols = starts_with("ratio_"),
+    cols = starts_with("ratio_") &
+      !ends_with("ratio_sieges_top_bot") &
+      !ends_with("ratio_sieges_top_bot2"),
     names_to = "Indice",
     values_to = "Value"
   ) 
@@ -319,16 +321,20 @@ p_10_10_legislatives <- ggplot(data_10_10_legislative, aes(x = Indice, y = Value
     size = 1.5
   ) +
   stat_summary(
-    fun = mean,
-    geom = "point",
-    color = "black",
-    size = 2.5
+    position = position_nudge(x = 0),
+    geom = "pointrange",
+    fun.data = "mean_cl_boot",
+    size = 0.3,
+    color = "black"
   ) +
   geom_hline(yintercept = 1, linetype = "dashed") +
   
   facet_wrap(~ source_recode) +
   
-  scale_y_continuous(trans = log_trans()) +
+  scale_y_continuous(
+    trans = log_trans(),
+    breaks = c(0.3, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.5, 3, 4)
+  )+
   
   coord_cartesian(ylim = c(0.3,4 )) +
   
