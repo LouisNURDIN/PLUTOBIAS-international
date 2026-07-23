@@ -2,11 +2,6 @@
 library(dplyr)
 Base_complete <-  read.csv("data/final/final dataset all countries and clivages.csv", sep = ",")
 
-unique(Base_complete$type[Base_complete$source_recode == "WVS"])
-unique(Base_complete)
-
-unique(Base_complete$year[Base_complete$isoname == "France" & Base_complete$bias == "plutocracy"])
-
 table(Base_complete$source_recode)
 pays_regimes_presidentiels <- read.csv("data/raw/Liste régimes présidentiels.csv", sep = ",")
 pays_regimes_presidentiels <- unique(pays_regimes_presidentiels$isoname)
@@ -14,49 +9,52 @@ pays_regimes_presidentiels <- unique(pays_regimes_presidentiels$isoname)
 Base_complete <- Base_complete[!is.na(Base_complete$category),]
 Base_complete <- Base_complete[!is.na(Base_complete$partyfacts_id),]
 
-unique(Base_complete$year[Base_complete$isoname == "United States"])
-
 Base_complete<- Base_complete %>% filter(Base_complete$partyfacts_id != "Other")
 Base_complete <- Base_complete %>%filter(Base_complete$year >= 1966)
 Base_complete <- Base_complete %>%filter(Base_complete$election_couverture_seats <= 100)
 Base_complete <- Base_complete %>%filter(Base_complete$election_couverture_ministers <= 100)
 
+
+unique(Base_complete$category)
+
+#Category 1 = Top 10 VS bot 10
 Base_complete$category_recode1 <- NA 
 Base_complete <- Base_complete %>%
   mutate(
     category_recode1 = case_when(
-      category == "inc-1" ~ "bot",
-      category == "inc-10" ~ "top",
+      category == "bot-income-10" ~ "bot",
+      category == "top-income-10" ~ "top",
       category == "men" ~ "top",
       category == "women" ~ "bot",
-      category == "top-educ" ~ "top",
-      category == "bot-educ" ~ "bot",
-      category == "top-age" ~ "top",
-      category == "bot-age" ~ "bot",
+      category == "top-educ-10" ~ "top",
+      category == "bot-educ-10" ~ "bot",
+      category == "top-age-10" ~ "top",
+      category == "bot-age-10" ~ "bot",
       TRUE ~ NA_character_
     )
   )
 unique(Base_complete$category_recode1)
 
+#Category 2 = Top 50 VS bot 50
 Base_complete$category_recode2 <- NA 
 Base_complete <- Base_complete %>%
   mutate(
     category_recode2 = case_when(
-      category_recode1 == "bot" ~ "bot",
-      category_recode1 == "top" ~ "top",
-      category == "inc-2" ~ "bot",
-      category == "inc-3" ~ "bot",
-      category == "inc-4" ~ "bot",
-      category == "inc-5" ~ "bot",
-      category == "inc-6" ~ "top",
-      category == "inc-7" ~ "top",
-      category == "inc-8" ~ "top",
-      category == "inc-9" ~ "top",
+      category == "bot-income-50" ~ "bot",
+      category == "top-income-50" ~ "top",
+      category == "men" ~ "top",
+      category == "women" ~ "bot",
+      category == "top-educ-50" ~ "top",
+      category == "bot-educ-50" ~ "bot",
+      category == "top-age-50" ~ "top",
+      category == "bot-age-50" ~ "bot",
       TRUE ~ NA_character_
     )
   )
+unique(Base_complete$category_recode1)
 unique(Base_complete$category_recode2)
 
+unique(Base_complete$category_recode2[Base_complete$category == "top-income-10"])
 #DINC ----
 library(dplyr)
 Base_complete <- Base_complete %>%
@@ -72,8 +70,8 @@ Base_complete <- Base_complete %>%
 
 # 3. Agrégation PROPRE au niveau décile
 
-categories_index <- Base_complete %>%
-  group_by(source,source_recode, isoname,year,type, bias, category,category_recode1,category_recode2) %>%
+categories_index_10 <- Base_complete %>%
+  group_by(source,source_recode, isoname,year,type, bias, category,category_recode1) %>%
   summarise(
     taux_participation = first(na.omit(taux_participation)),
     total_sieges = sum(votes_en_siege, na.rm = TRUE),
@@ -87,7 +85,7 @@ categories_index <- Base_complete %>%
 
 # 4. Ratios 1 vs 10
 
-first_index <- categories_index %>%
+first_index <- categories_index_10 %>%
   group_by(source,source_recode,isoname, year,bias) %>%
   summarise(
     
@@ -132,8 +130,23 @@ first_index <- categories_index %>%
     .groups = "drop"
   )
 
+
+# Agrégation PROPRE au niveau décile
+categories_index_50 <- Base_complete %>%
+  group_by(source,source_recode, isoname,year,type, bias, category,category_recode2) %>%
+  summarise(
+    taux_participation = first(na.omit(taux_participation)),
+    total_sieges = sum(votes_en_siege, na.rm = TRUE),
+    total_ministres = sum(votes_en_ministres, na.rm = TRUE),
+    votes_valides_en_sieges =
+      total_sieges / taux_participation * 100,
+    votes_valides_en_ministres =
+      total_ministres / taux_participation * 100,
+    .groups = "drop"
+  )
+
 # 5. Ratios 50 / 50
-second_index <- categories_index %>%
+second_index <- categories_index_50 %>%
   group_by(source,source_recode,isoname,year,bias) %>%
   summarise(
     

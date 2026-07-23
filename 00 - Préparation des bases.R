@@ -1394,8 +1394,7 @@ wvs_data_clean <- wvs_data_clean %>%
       dataset_party_id == "UA-3-1-V" & isoname == "Ukraine" ~ "2234", #*
       dataset_party_id == "UA-2-10-V" & isoname == "Ukraine" ~ "2228", #*
       TRUE ~ partyfacts_id
-    )
-  )
+    ))
 
 #Rattacher les répondants à la bonne élection 
 wvs_data_clean <- wvs_data_clean %>%
