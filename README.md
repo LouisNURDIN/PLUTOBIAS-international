@@ -77,6 +77,7 @@ Readme projet PLUTOBIAS International
 => A la fin du fichier, on agrège finalement toutes les bases crées avec nos fonctions en une seule base : "Base_all_clivages"
     => Son format est le suivant : une ligne = un pays, une élection (avec l'année et la date si possible de l'élection), un clivage (bias), un groupe (category), le parti dont il est question (partyfacts_id) et les informations sur le vote du groupe pour ce parti
     => Pour les informations sur le vote d'un groupe pour un parti, la variable qui compte est "pct_votes". Il s'agit du pourcentage que l'on a calculé avec nos fonctions et c'est celui qu'on utilisera pour calculer nos indices plus tard. 
+    => Normalement, au sein de chaque isoname/source/source_recode/election_year/election_date/bias/category,  pct_votes doit être égale à 100. Une commande existe pour vérifier cela. 
 
 => On exporte "Base_all_clivages". 
 
@@ -85,39 +86,70 @@ Readme projet PLUTOBIAS International
 02 - Base Parlement
 
 => Il s'agit du fichier dans lequel on va fusionner en une base les données sur les compositions des parlements après les élections avec les données sur le vote
-=> Notre principal base de données est la base "Elections Globals", qui contient des données sur les Parlements pour toutes les élections jusqu'à 2015; pour les élections post-2015, nous rajoutons les données de Parlgov
-pour les pays couverts par Parlgov. 
+
+=> Notre principal base de données est la base "Elections Globals", qui contient des données sur les Parlements pour toutes les élections jusqu'à 2015;
+    => pour les élections post-2015, nous rajoutons les données de Parlgov
+    => Cependant Parlgov ne couvre pas autant de pays que Elections_Globals, il y a donc des pays pour lesquels nous ne disposons pas de données sur les élections après 2015.  
+    
 => On commence par traiter et filtrer la base Elections Globals (renommer les variables, modifier les données erronnées, rajouter à chaque fois une ligne pour l'abstention...)
 => Le join entre les deux bases se fait avec les variables "election_date" et "election_year" 
 => La base obtenue s'appelle "base_vote_parlement_global"
 
-=> Le df "manquants", crée vers la fin du fichier, permet de lister pour chaque pays/élection, les partis qui ont eu au moins 10% des sièges au parlement, référencés dans Elections Globals mais pas dans notre base sur le*
-vote. Cela nous permet d'identifier les partis qui joinent mal entre les bases et de pouvoir les corriger, lorsque c'est possible. 
-=> On rajoute à la fin les données de la base Parline. Nous utilisons Parline uniquement pour avoir les informations sur le taux de femmes députées par parlement
+=> Le df "manquants", crée vers la fin du fichier, permet de lister pour chaque pays/élection, les partis qui ont eu au moins 10% des sièges au parlement, référencés dans Elections Globals mais pas dans notre base sur le vote. Cela nous permet d'identifier les partis qui joinent mal entre les bases et de pouvoir les corriger, lorsque c'est possible. 
+    => Les modifications se font à la fin du tout premier fichier (00 - Préparation des bases)
+
+=> On crée la variable "election_couverture_seats" qui indique pour chaque pays/élection le nombre de députés couverts par les partis dans notre base. 
+    => Concrètement, cela permet de connaître les pays/élections où notre base n'arrive pas à bien couvrir les députés.
+    => Cela peut-être liée à un problème de join des ids partyfacts entre les bases ou bien d'une absence de certains partis dans l'une de nos bases. 
+    => La variable "Other_seats" sert à lister le taux de députés appartenant aux partis référencés comme "Other" dans Elections Globals; Grâce à cette commande on peut savoir si le manque de députés couverts est lié aux données des bases (les partis référencés comme "Other" ne peuvent pas être rattachés à un autre parti donc on doit les laisser de côté), ou si le problème se situe ailleurs. 
+    
+=> On rajoute à la fin les données de la base Parline, pour les données sur le taux de femmes députées dans chaque parlement (cette partie est facultative). 
+
+=> On exporte "Base_vote_parlement_global". 
+
+
 
 03 - Base Gouvernement 
-=> Il s'agit du fichier dans lequel on fusionne les données sur les gouvernements avec notre base sur le vote et la composition des parlements
-=> Notre source de données pour les gouvernements est la base whogov. 
+
+=> Il s'agit du fichier dans lequel on fusionne les données sur les gouvernements avec notre base sur le vote et la composition des parlements. 
+
+=> Notre source de données pour les gouvernements est la base whogov. Les données de whogov commencent à partir de 1966, c'est pourquoi nous filtrons la base pour enlever les années avant 1966. 
+
 => On commence par créer une base "whogov_parties", dans laquelle on compile pour chaque pays/années le nombre de ministres par partis politiques. 
-=> On obtient une base avec 1 ligne = 1 pays, 1 année, 1 parti politique, le nombre de ministres du parti, le taux de ministres du parti au sein du gouvernement... 
-=> Avant de fusionner Whogov avec "base_vote_parlement_global", on rajoute les années manquantes dans notre base, c'est-à-dire les années où il n'y a pas eu d'élection. Pour cela, on duplique les données sur le vote
-et sur le parlement de la dernière élection, et on les répète pour les années suivantes où il n'y a pas eu d'élection 
+    => On obtient une base avec 1 ligne = 1 pays, 1 année, 1 parti politique, le nombre de ministres du parti, le taux de ministres du parti au sein du gouvernement... 
+    
+=> Avant de fusionner Whogov dans notre base, on rajoute les années manquantes dans notre base, c'est-à-dire les années où il n'y a pas eu d'élection. Pour cela, on duplique les données sur le vote
+   et sur le parlement de la dernière élection à l'aide d'une fonction, et on les répète pour les années suivantes où il n'y a pas eu d'élection.
   => exemple : pour la France, il y a eu des élections en 2002 et 2007. Avec cette commande, on va rajouter les années 2003, 2004, 2005 et 2006 dans notre base, auquel on va répliquer les données du vote et du parlement 
                de l'élection 2002. Ainsi, nous pourrons fusionner les données whogov pour ces années là dans notre base complète. 
+               
 => Pour le join de whogov avec la base vote-parlement, on crée une variable "join_year_whogov", qui permet de dire pour les années où il y a eu une élection, à quelle année les données whogov doivent être rattachées : 
-comme whogov indique la composition du gouvernement au mois de Juillet de chaque année, si l'élection a eu lieu après cette date, alors on rattache les données whogov de l'année correspondante à celles de l'élection correspondante.
-En revanche, si l'élection a eu lieu avant Juillet, on peut rattacher les données du gouvernement de cette année à cette élection-là. 
+comme whogov indique la composition du gouvernement au mois de Juillet de chaque année, si l'élection a eu lieu après cette date, alors on rattache les données de l'élection à celles de l'année whogov suivante. 
+    => En revanche, si l'élection a eu lieu avant Juillet, on peut rattacher les données du gouvernement de cette année à cette élection-là. 
+
+ => On crée la variable "election_couverture_ministers" qui indique pour chaque pays/élection le nombre de ministres couverts par les partis dans notre base. 
+    => Concrètement, cela permet de connaître les pays/élections où notre base n'arrive pas à bien couvrir les députés.
+    => Cela peut-être liée à un problème de join des ids partyfacts entre les bases ou bien d'une absence de certains partis dans l'une de nos bases. 
+    => La variable "Other_seats" sert à lister le taux de députés appartenant aux partis référencés comme "Other" dans Elections Globals; Grâce à cette commande on peut savoir si le manque de députés couverts est lié aux données des bases (les partis référencés comme "Other" ne peuvent pas être rattachés à un autre parti donc on doit les laisser de côté), ou si le problème se situe ailleurs. 
+
+=> Les variables "election_couverture_seats" et "election_couverture_ministers" nous serviront plus tard à connaître les pays/années où l'on couvre suffisament de députés/ministres pour pouvoir les inclure dans nos analyses. Le seuil fixé est actuellement de 75% de députés et 75% de ministres couverts. En-dessous de ce seuil, les pays/années concernées ne seront pas inclus dans nos analyses. 
+    => Ce seuil est modifiable. 
 
 => Nous obtenons à la fin notre df "Base_complète", qui contient les données sur le vote + parlement + gouvernement, pour chaque pays/année. 
-=> On garde bien à chaque fois la distinction entre chaque "source", "source_recode", "bias" et "category", pour ne pas les mélanger. 
+    => Une ligne = source, source_recode,isoname,year,bias,category,un parti, votes du groupe pour le parti, députées du parti au parlement, ministres du parti au gouvernement
+    => toutes les autres variables (type, election_date,election_year, survey, election_couverture_seats, election_couverture_ministers) sont aussi conservées. 
+
+
+    
 
 04 - Plutocracy index (peut-être changer le nom du fichier)
+
 => Il s'agit du fichier dans lequel nous allons calculer tous nos indices (représentation de chaque groupe au gouvernement, différence de participation, votes => sièges, sièges => ministres, votes => ministres dans le cas
 des régimes présidentiels). 
 => On commence par recréer deux variables : category_recode1 et category_recode2
-  => Pour les données sur le genre, l'éducation et l'âge, ces données sont identiques. Il s'agit simplement de renommer les "catégories" commençant par "top" en "top", et celles avec "bot" en "bot". 
-  => La seule différence se fait pour la ploutocratie. Dans catégory_recode_1, on renomme le premier en décile en "bot", et le dernier décile en "top". Les autres déciles renvoient NA. Dans category_recode2, on renomme les
-  cinq déciles les plus pauvres en "bot" et les cinq déciles les plus riches en "top". 
+  => category_recode1 s'applique uniquements aux groupes "top-10" et "bot-10", ainsi que "men" et "women"
+  => category_recode2 s'applique uniquements aux groupes "top-50" et "bot-50", ainsi que "men" et "women"
+
   
 
 
