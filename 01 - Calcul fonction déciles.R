@@ -242,7 +242,7 @@ build_votes_by_gender <- function(df){
   
   # Votes pondérés par sexe × parti
   votes <- df %>%
-    group_by(source, source_recode, isoname, election_year, gender, vote, partyfacts_id,type) %>%
+    group_by(source, source_recode, isoname, election_year, gender, vote, partyfacts_id) %>%
     summarise(
       votes = sum(weight_final, na.rm = TRUE),
       .groups = "drop"
