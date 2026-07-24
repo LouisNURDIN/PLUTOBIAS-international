@@ -6,22 +6,30 @@ library(lubridate)
 #Base avec données gouvernements
 whogov <- read.csv("data/raw/whogov/WhoGov_within_V3.1.csv", sep = ";")
 elections_legislatives_valides <- read.csv("data/intermediary/elections/valid elections.csv", sep = ",")
-elections_legislatives_valides <- elections_legislatives_valides %>%
+
+
+#Import des années d'élections couvertes par nos bases
+elections_valides <- read.csv("data/intermediary/elections/valid elections.csv", sep = ",")
+elections_valides <- elections_legislatives_valides %>%
   rename(year = election_year)
 
-elections_legislatives_valides2 <- read.csv("data/intermediary/elections/valid legislative elections.csv", sep = ",")
-elections_legislatives_valides2 <- elections_legislatives_valides2 %>%
-  rename(year = election_year)
+Base_vote_parlement_global <- read.csv("data/intermediary/parliament/Elections and parliament global dataset.csv", sep = ",")
 
-pays_gmp_legislatives <- unique(elections_legislatives_valides2$isoname)
-pays_gmp_legislatives <- unique(elections_legislatives_valides2$isoname) |>
-  recode(
-    "United States of America" = "United States"
-  )
+Base_vote_parlement_global <- Base_vote_parlement_global %>%
+  mutate(year = election_year)
+
+Base_vote_parlement_global <- Base_vote_parlement_global %>%
+  mutate(
+    isoname = case_when(
+      isoname == "United States of America" ~ "United States",
+      
+      TRUE ~ isoname))
+
+pays_couverts <- unique(Base_vote_parlement_global$isoname)
 
 
 
-annees_gmp_legislatives <- unique(elections_legislatives_valides2$year)
+annees_couvertes <- unique(elections_valides$year)
 all_elections <- read.csv ("data/intermediary/elections/all elections update.csv", sep = ";")
 all_elections <- all_elections %>%
   mutate(year = as.numeric(year))
@@ -32,17 +40,13 @@ all_elections <- all_elections %>%
       isoname == "United States of America" ~ "United States",
       TRUE ~ isoname))
 
-elections_legislatives_valides <- elections_legislatives_valides %>%
+elections_valides <- elections_valides %>%
   mutate(
     isoname = case_when(
       isoname == "United States of America" ~ "United States",
       TRUE ~ isoname))
 
-elections_legislatives_valides2 <- elections_legislatives_valides2 %>%
-  mutate(
-    isoname = case_when(
-      isoname == "United States of America" ~ "United States",
-      TRUE ~ isoname))
+
 #Calcul nombre de ministres par année
 whogov <- whogov %>%
   rename(isoname = country_name)
@@ -85,7 +89,7 @@ whogov_parties <- whogov_parties %>%
 #voir les partis présents dans ma base whogov mais pas vote-parlement
 whogov_parties_bonnes_elections <- whogov_parties %>%
   semi_join(
-    elections_legislatives_valides2 %>%
+    elections_valides %>%
       distinct(isoname, year),
     by = c("isoname", "year")
   )
@@ -102,8 +106,8 @@ whogov_parties <- whogov_parties %>%
   )
 
 whogov_parties <- whogov_parties %>%
-  filter(isoname %in% pays_gmp_legislatives) 
-print(pays_gmp_legislatives)
+  filter(isoname %in% pays_couverts) 
+print(pays_couverts)
   
  
 whogov_parties <- whogov_parties %>%
@@ -250,18 +254,6 @@ write.csv(
   row.names = FALSE)
 
 #Base vote parlement ----
-Base_vote_parlement_global <- read.csv("data/intermediary/parliament/Elections and parliament global dataset.csv", sep = ",")
-
-Base_vote_parlement_global <- Base_vote_parlement_global %>%
-  mutate(year = election_year)
-
-Base_vote_parlement_global <- Base_vote_parlement_global %>%
-  mutate(
-    isoname = case_when(
-      isoname == "United States of America" ~ "United States",
-      
-      TRUE ~ isoname))
-
 unique(Base_vote_parlement_global$partyfacts_id[Base_vote_parlement_global$isoname == "Zimbabwe" & 
                                                   Base_vote_parlement_global$year == 2013] )
 
@@ -307,6 +299,8 @@ table(Base_vote_parlement_global$survey)
 Base_vote_parlement_global <- Base_vote_parlement_global %>%
   arrange(isoname, source, source_recode, year)
 
+
+#Commande pour dupliquer les données sur le vote et sur le parlement pour les années où il n 'y a pas d'élection
 rows_to_add <- Base_vote_parlement_global %>%
   group_by(isoname, source, source_recode) %>%
   group_modify(~{

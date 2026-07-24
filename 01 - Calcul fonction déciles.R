@@ -3240,12 +3240,12 @@ Base_all_clivages <- Base_all_clivages %>%
 
 
 #Liste de toutes nos élections par années et datasets
-elections_legislatives_valides2 <- Base_all_clivages %>%
+elections_valides <- Base_all_clivages %>%
   group_by(isoname,election_year,source, source_recode) %>%
   summarise(.groups = "drop")
 
 write.csv(
-  elections_legislatives_valides2,
+  elections_valides,
   "data/intermediary/elections/valid elections.csv",
   row.names = FALSE
 )
@@ -3284,4 +3284,5 @@ write.csv(
   row.names = FALSE)
 
 
+unique(Base_all_clivages$bias[Base_all_clivages$source_recode == "WPID"])
 

@@ -425,7 +425,7 @@ write.csv(
 
 #Commande pour vérifier que nos indices 10 / 10 et 50 / 50 soient corrélées au sein des biais
 #(on peut adapter le code en fonction du biais que l'on veut vérifier)
-#=> pour androcacy cela doit être égal à 1
+#=> pour androcracy cela doit être égal à 1
 Base_complete_legislative_index %>%
   filter(
     bias == "gerontocracy",

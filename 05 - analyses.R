@@ -551,7 +551,7 @@ ggsave(
 Base_age_legislatives_long <- Base_legislative_global_sources %>%
   filter(Base_legislative_global_sources$bias == "gerontocracy") %>%
   pivot_longer(
-    cols = starts_with("ratio_") & !ends_with("top_bot"),
+    cols = starts_with("ratio_") & !ends_with("top_bot")& !ends_with("ratio_sieges_top_bot2"),
     names_to = "Indice",
     values_to = "Value"
   ) 

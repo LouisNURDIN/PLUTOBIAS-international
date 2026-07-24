@@ -4,8 +4,6 @@ library(tidyr)
 library(purrr)
 library(stringr)
 
-#Import base élections législatives
-elections_legislatives_valides <- read.csv("data/intermediary/elections/valid legislative elections.csv", sep = ",")
 
 #Import parlgov ----
 parlgov <- read.csv("data/raw/parlgov/parlgov_elections.csv", sep = ";")
@@ -49,10 +47,9 @@ Base_all_clivages <- Base_all_clivages %>%
   mutate(election_year = as.integer(election_year)) %>%
   filter(election_year <= 2022)
 
-Base_all_clivages <- Base_all_clivages %>%
-  filter(isoname != "Hong Kong")
-Base_all_clivages <- Base_all_clivages %>%
-  filter(isoname != "Taiwan")
+#Hong Kong et Taïwan pas présents dans Elections Globals
+Base_all_clivages <- Base_all_clivages %>% filter(isoname != "Hong Kong")
+Base_all_clivages <- Base_all_clivages %>%   filter(isoname != "Taiwan")
 
 #Elections global ----
 Data_elections_global <- read.csv ("data/raw/elections global/elections-global-release.csv" , sep = ";")
@@ -65,12 +62,12 @@ Data_elections_global <- Data_elections_global  %>%
       TRUE ~ seats_total))
       
       
-pays_gmp_legislatives <- unique(Base_all_clivages$isoname)
-annees_gmp_legislatives <- unique(Base_all_clivages$year)
+pays_couverts <- unique(Base_all_clivages$isoname)
+annees_couvertes <- unique(Base_all_clivages$year)
 
 #filtrer pour avoir que les pays dans WPID
 Data_elections_global_group <- Data_elections_global %>%
-  filter(country_name%in% pays_gmp_legislatives)
+  filter(country_name%in% pays_couverts)
 
 Data_elections_global_elections_valides <- Data_elections_global_group %>%
   group_by(country_name,year) %>%
@@ -420,11 +417,6 @@ write.csv(
   row.names = FALSE
 )
 
-write.csv(
-  elections_dans_elections_global2,
-  "data/intermediary/elections/valid legislative elections.csv",
-  row.names = FALSE
-)
 
 write.csv(
   elections_dans_elections_global,
