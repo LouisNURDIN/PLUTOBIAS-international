@@ -1,17 +1,46 @@
 Readme projet PLUTOBIAS International
 
 00 - Préparation des bases
-=> Il s'agit du fichier de début dans lequel on traite les données de nos bases de données avec les enquêtes d'opinion; L'objectif est de sélectionner, renommer et traiter uniquement les variables qui nous intéressent pour le 
-projet. Les variables sont les suivantes : 
-=> isoname = nom du pays ; year = année de l'enquête, si possible utiliser l'information sur la date de l'interview; dataset_party_id = parti voté à l'élection; survey = type de sondage (pré ou post-électoral)
-=> type = type d'élection; inc, educ, gender, age,
-=> Pour chaque base dans laquelle on dispose d'une date d'interview valide, une fonction existe pour raccorder chaque répondant à la bonne élection. Cette fonction prend en compte le type de sondage dont il s'agit (si pré-électoral
-on rattache à la prochaine élection, sinon on rattache à a dernière élection). La liste de toutes les élections par pays est contenue dans le df "all_elections". 
+=> ATTENTION : Ce fichier est très lourd et long à exécuter dans son entièreté. Il faut attendre longtemps avant d'arriver au bout. 
+
+=> Il s'agit du fichier de début dans lequel on traite les données de nos bases de données avec les enquêtes d'opinion;
+=> La base "all_elections" répertorie toutes les élections législatives et/ou présidentielles des pays que l'on couvre. 
+    => Pour les régimes présidentiels, la colonne "élection_présidentielle" sert à répertorier si il s'agit d'une élection présidentielle ou non. Pour ces pays-là, seules les élections présidentielles doivent être prises en compte pour le moment. 
+
+=> On commence par identifier et renommer  les variables qui nous intéressent : 
+
+        => isoname = nom du pays ; 
+        => year = année de l'enquête, si possible utiliser l'information sur la date de l'interview; 
+        => election_date = date de l'élection associée à l'enquête (pas toujours disponible)
+          => si non disponible on la calcule ultérieurement avec une fonction qui rattache chaque répondant à l'élection correspondante, en fonction de la date de l'enquête, du type de sondage et de la date des                       élections du pays du répondant
+        => interview_date = date de réalisation de l'enquête (pas toujours disponible) 
+        => dataset_party_id = parti voté à l'élection, avec l'id enregistré dans la base; 
+        => survey = type de sondage (pré ou post-électoral)
+        => source = si il s'agit d'une base avec une enquête pour chaque pays/année, alors on renomme source avec le nom de la base (exemple : source = CSES)
+          => si il existe différentes enquêtes pour un même pays/année, on garde bien le nom de l'enquête à chaque fois. Cela arrive par exemple dans WPID ou ESS, où l'on peut avoir différentes enquêtes ou vagues qui                 couvrent un même pays/année
+        => source_recode = variable que l'on crée et où l'on inscrit le nom de la source des données : WPID, CSES, ESS... Cela nous permet de savoir de quel fichier viennent exactement les données 
+        => type = type d'élection; on garde les élections présidentielles pour les régimes présidentiels (de préférence le 1er tour de l'élection)
+        => turnout = si la personne a voté ou non lors de l'élection
+        => inc, educ, gender, age,
+        => weight
+
+=> Traitement de la variable turnout : on fait attention à enlever les personnes qui ont NA ou toutes réponses invalides dans turnout, car on ne peut pas savoir si ils ont voté ou non 
+    => Bien lire les codebook de chaque source pour savoir à quoi correspondent les modalités de réponse dans Turnout
+    => Les personnes qui n'ont pas voté, ont voté blanc ou nul sont associés à "Abstention" dans dataset_party_id et partyfacts_id
+    => Ces informations sont contenues soient dans "turnout", soit dans "dataset_party_id" en fonction des bases
+    
+=> Pour chaque base dans laquelle on dispose d'une date d'interview valide, une fonction existe pour raccorder chaque répondant à la bonne élection. Cette fonction prend en compte le type de sondage dont il s'agit (si pré-électoral on rattache à la prochaine élection, sinon on rattache à a dernière élection). La liste de toutes les élections par pays est contenue dans le df "all_elections". 
+
 => Pour chaque base, on rattache dataset_party_id au Partyfacts_id correspondant. Dans Partyfacts, il faut bien sélectionner la bonne base de données pour avoir les ids correspondants à la base traitée. 
+
 => Lorsque chaque base est traitée, on doit obtenir une base avec 16 variables, organisée comme ceux-ci :
 => isoname, interview_date, source, source_recode, survey, type, inc, gender, educ, age, turnout, dataset_party_id, weight, election_date, election_year.  
-=> Quand cela est fait, on peut exporter notre base. 
-=> attention, ce premier fichier est très long à s'éxécuter en raison de la fonction qui calcule pour chaque répondant l'élection correspondante. 
+
+=> A la fin du fichier, on empile toutes nos bases avec "bind_rows" pour avoir une unique base qui les agrège toutes ensembles
+    => Cela nous donne "Base_all_sources"
+=> Enfin, un filtre avec case_when existe à la fin du fichier afin de corriger tous les id partyfacts qui se joinent mal entre nos différentes bases
+      => Lorsque l'on veut changer un id partyfacts erroné, il faut le reporter à cet endroit-là du code. 
+
 
 01 - Calcul fonction déciles
 => Il s'agit du fichier dans lequel on calcule le vote aux élections au sein de chacune de nos catégories (inc, homme/femme top/bot educ, top/bot age)
