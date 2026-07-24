@@ -150,8 +150,65 @@ des régimes présidentiels).
   => category_recode1 s'applique uniquements aux groupes "top-10" et "bot-10", ainsi que "men" et "women"
   => category_recode2 s'applique uniquements aux groupes "top-50" et "bot-50", ainsi que "men" et "women"
 
-  
+=> Pour nos catégories 10/10 on calcule des indices qui finissent par "top_bot", à partir de category_recode1
+=> Pour nos catégories 50/50 on calcule des indices qui finissent par "top_bot2", à partir de category_recode2
+
+=> Détail des ratios/indices pour les régimes parlementaires
+    => ratio_participation = différence de participation entre le groupe top et bot
+    => ratio_votes_valides_en_sieges = indice intermédiaire de la conversion des votes en sièges
+    => ratio_sieges_en_ministres = indice intermédiaire de la conversion des sièges en ministres ; n'existe pas pour les régimes présidentiels
+    => ratio_gouvernement = indice final de représentation au gouvernement
+        => ce ratio peut se calculer de deux manières :
+        => 1) ratio entre le nombre total de ministres obtenus par le groupe top et le groupe bot
+        => 2) en faisant : ratio_participation * ratio_votes_valides_en_sieges * ratio_votes_valides_en_ministres
+            => la variable "verif_ratio" effectue cette multiplication et sert à vérifier que le calcul de notre indice final est juste. La corrélation entre vérif_ratio et ratio_gouvernement doit être égal à 1
+    => ratio_sieges = indice de représentation au parlement; cette indice est facultatif; il correspond à : ratio_participation * ratio_votes_valides_en_sieges
+
+=> Détail des ratios/indices pour les régimes présidentiels
+    => ratio_participation = différence de participation entre le groupe top et bot
+    => ratio_votes_valides_en_ministres = indice intermédiaire de la conversion des votes en ministres; n'existe que pour les régimes présidentiels
+    => ratio_gouvernement = indice final de représentation au gouvernement
+        => ratio_gouvernement =  ratio_participation * ratio_votes_valides_en_ministres
+            => la variable "verif_ratio_presidentiel" effectue cette multiplication et sert à vérifier que le calcul de notre indice final est juste. La corrélation entre vérif_ratio et ratio_gouvernement doit être égal à 1
+
+=> Chacun de ces indices existe sous la forme "top_bot" (10/10) et "top_bot2 (50/50)
+
+=> On obtient la base "Base_complete_clean" avec nos ratios calculés pour chaque source/source_recode/isoname/year/bias/category/partyfacts
+=> Comme nous sommes encore au format : une ligne = une élection, un groupe, un parti, nos ratios sont dupliqués pour toutes les liges appartenant à la même combinaison de source/source_recode/isoname/year/bias
+=> Afin d'arriver à une base au format : une ligne = une source, un pays, une année, un biais + valeur des ratios, on crée les bases "Base_complete_legislative_index" et "Base_regimes_presidentiels_index", qui ramènent tout sur une ligne. 
+
+=> On exporte "Base_complete_legislative_index" et "Base_regimes_presidentiels_index"
 
 
+05 - Analyses 
+
+=> Il s'agit du fichier dans lequel on va tracer les graphiques et réaliser tous les tests/analyses que l'on souhaite
+
+=> On commence par travailler sur "Base_complete_legislative_index"
+
+=> On établit une hiérarchie des sources pour les pays/années où différentes sources existent 
+=> Pour faire cela, on attribue un score à chaque source comme suit, à partir du type de survey(type) et du type d'élection (type) : 
+    => Survey = post-électoral et type = parlementaire/présidentiel =  1  (CSES, WPID)
+    => Survey = post-électorl et type = general election = 2 (ESS)
+    => Survey = pré-électoral et type = parlementaire/présidentiel = 3 (WPID)
+    => Survey = pré-électoral et type = general election = 4 (WVS)
+
+A partir de cela, on commence par créer "Base_complete_legislative_grosses_sources"
+    => cette base calcule pour chaque pays/année la meilleure source au sein de chaque "source_recode"
+    => Si il reste plusieurs sources au sein d'un source_recode, alors on calcule une moyenne géométrique de nos ratios 
+    => Exemple : si pour un pays/année, on a deux sources de WPID, une source de CSES et une source de WVS, on garde la source de CSES et de WVS, et on calcule une moyenne géométrique des ratios de nos deux sources de WPID, pour ne garder à la fin qu'une seule ligne 
+    => Cette base va nous servir pour tracer des heatmap de corrélation de nos indices entre chaque source_recode, qui ont des données pour des pays/années en commun. 
+
+=> On crée ensuite "Base_complete_legislative_best_sources"
+    => L'objectif est de garder pour chaque pays/année une seule source et une seule valeur pour chaque ratio
+    => Grâce au score attribué à chaque source, on filtre la base pour ne garder pour chaque pays/année la source avec le score le plus bas (= la meilleure source)
+    => Si pour un pays/année plusieurs sources ont le même score et sont les meilleurs sources, alors on calcule une moyenne géométrique de nos ratios sur ces sources-là pour ce pays/année
+    => Pour un pays/année, j'ai une source de  ESS, et une de WVS ; la meilleure source est EES = on garde uniquement la ligne avec la source ESS
+    => Si j'ai plusieurs sources dans ESS pour ce même pays/année (car plusieurs vagues pour le même pays/année), alors je calcule une moyenne géométrique de mes ratios à partir de mes sources qui existent dans ESS pour ce pays/année là. 
 
 
+=> Box-plot
+
+=> Graphique évolution des indices par pays depuis 1980
+
+=> Graphique en barres moyenne géométrique des indices depuis 2000
