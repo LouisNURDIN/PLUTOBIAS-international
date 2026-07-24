@@ -34,6 +34,7 @@ parlgov <- parlgov %>% mutate(partyfacts_id = as.character(partyfacts_id))
 
 #Import de ma base avec mes clivages ----
 Base_all_clivages <- read.csv("data/intermediary/elections/dataset with all clivages and elections.csv", sep = ",")
+unique(Base_all_clivages$bias[Base_all_clivages$source_recode == "WPID"])
 
 unique(Base_all_clivages$vote[Base_all_clivages$isoname == "Venezuela"& 
                                          Base_all_clivages$election_year == 1998
@@ -207,6 +208,18 @@ Base_all_clivages <- Base_all_clivages %>%
 
 unique(Base_all_clivages$election_year[Base_all_clivages$source_recode == "ESS" & Base_all_clivages$isoname == "France"])
 
+unique(Base_all_clivages$bias[Base_all_clivages$source_recode == "WPID"])
+Base_all_clivages %>%
+  filter(source_recode == "WPID") %>%
+  count(bias)
+
+
+Base_all_clivages %>%
+  filter(
+    source_recode == "WPID",
+    bias == "androcracy"
+  ) %>%
+  count(type, is.na(election_date))
 
 # 1. Parlement + date
 Base_vote_parlement_global_date <- Base_all_clivages %>%
@@ -274,7 +287,7 @@ Base_vote_parlement_global <- bind_rows(
 ) %>%
   arrange(isoname, election_year, election_date)
 
-unique(Base_vote_parlement_global$bias[Base_vote_parlement_global$source_recode == "WVS"])
+unique(Base_vote_parlement_global$bias[Base_vote_parlement_global$source_recode == "WPID"])
 
 ###Traitement pour avoir le taux de députés par partis sur l'ensemble des députéss
 Base_vote_parlement_global <- Base_vote_parlement_global %>%
@@ -416,15 +429,12 @@ write.csv(
   "data/intermediary/parliament/Elections and parliament global dataset.csv",
   row.names = FALSE
 )
-
+unique(Base_vote_parlement_global$bias[Base_vote_parlement_global$source_recode == "WPID"])
 
 write.csv(
   elections_dans_elections_global,
   "data/intermediary/elections/list all elections.csv",
   row.names = FALSE)
 
-unique(Base_vote_parlement_global$election_year[Base_vote_parlement_global$source_recode == "ESS" & Base_vote_parlement_global$isoname == "France"])
-            
-unique(Base_vote_parlement_global$bias[Base_vote_parlement_global$source_recode == "CSES"])
-unique(Base_vote_parlement_global$isoname)
+
 

@@ -361,12 +361,6 @@ ggsave(
   filename = "results/figures/Boxplot plutocracy 50 50.jpg",
   plot = p_50_50_legislatives,width = 10,height = 6,dpi = 300)
 
-grid::grid.newpage()
-p_10_10_legislatives
-ggsave(
-  filename = "results/figures/Boxplot plutocracy 10 10.jpg",
-  plot = p_10_10_legislatives,width = 10,height = 6,dpi = 300)
-
 
 ##Androcracy 50 50 ----
 Base_gender_legislative_long_50 <- Base_legislative_global_sources %>%
@@ -1100,12 +1094,6 @@ p_50_50_presidentielles
 ggsave(
   filename = "results/figures/Boxplot plutocracy presidentielles 50 50.jpg",
   plot = p_50_50_presidentielles,width = 10,height = 6,dpi = 300)
-
-grid::grid.newpage()
-p_10_10_presidentielles
-ggsave(
-  filename = "results/figures/Boxplot plutocracy presidentielles 10 10.jpg",
-  plot = p_10_10_presidentielles,width = 10,height = 6,dpi = 300)
 
 
 
