@@ -1,6 +1,7 @@
 Readme projet PLUTOBIAS International
 
 00 - Préparation des bases
+
 => ATTENTION : Ce fichier est très lourd et long à exécuter dans son entièreté. Il faut attendre longtemps avant d'arriver au bout. 
 
 => Il s'agit du fichier de début dans lequel on traite les données de nos bases de données avec les enquêtes d'opinion;
@@ -34,7 +35,7 @@ Readme projet PLUTOBIAS International
 => Pour chaque base, on rattache dataset_party_id au Partyfacts_id correspondant. Dans Partyfacts, il faut bien sélectionner la bonne base de données pour avoir les ids correspondants à la base traitée. 
 
 => Lorsque chaque base est traitée, on doit obtenir une base avec 16 variables, organisée comme ceux-ci :
-=> isoname, interview_date, source, source_recode, survey, type, inc, gender, educ, age, turnout, dataset_party_id, weight, election_date, election_year.  
+       => isoname, interview_date, source, source_recode, survey, type, inc, gender, educ, age, turnout, dataset_party_id, weight, election_date, election_year.  
 
 => A la fin du fichier, on empile toutes nos bases avec "bind_rows" pour avoir une unique base qui les agrège toutes ensembles
     => Cela nous donne "Base_all_sources"
@@ -43,18 +44,46 @@ Readme projet PLUTOBIAS International
 
 
 01 - Calcul fonction déciles
-=> Il s'agit du fichier dans lequel on calcule le vote aux élections au sein de chacune de nos catégories (inc, homme/femme top/bot educ, top/bot age)
-=> Pour les déciles de revenu, notre fonction répartit les répondants en dix catégories de taille égale; pour les autres catégories, les répondants sont répartis en deux groupes : top 50% et bot 50%
-exemple pour l'âge : 50% plus âgés VS 50%plus jeunes
-=> Nos fonctions prennent en compte à la fois le "weight" présent dans les bases, mais également le nouveau weight crée avec la fonction, qui recalcule le poids de chaque répondant au sein des nouvelles catégories créés, 
-nous reprenons ici la méthode utilisée par Gethin. 
-=> Nous avons à chaque fois un df spécifique pour chaque catégorie au sein de chaque base : par exemple, ESS revenus, ESS âge, ESS educ...
-=> Une fois la fonction exécutée, on crée dans chaque df une variable "bias", qui indique de quel clivage il s'agit : revenu = "plutocracy" ; genre = "androcracy"; educ = "epistocracy"; âge = "gerontocracy"
 
-=> Une fois tous nos calculs du vote effectués, nous empilons toutes nos df ensemble avec la commande "bind_rows". Les variables "source", "source_recode", "bias" et "category" nous permettent de situer dans quelle base 
-nous sommes et de quel clivage il s'agit; la base finale obtenue s'apelle "Base_all_clivages"
+=> Il s'agit du fichier dans lequel on calcule le vote aux élections au sein de chacune de nos catégories en fonction de nos variables socio-démo : income, gender, educ, age. 
+
+=> Pour chacune de nos sources et de nos clivages, à l'exception du genre on a deux fonctions différentes : l'une pour calculer le vote top 10 / bottom 10 et l'autre pour calculer top 50 / bottom 50
+        => Pour le genre, on dispose d'une fonction par source. 
+        => Cela nous donne 7 fonctions pour chaque source de données (wpid, cses, ess...)
+        => par exemple : income 50, income 10, gender, educ 50, educ 10, age 50; age 10
+
+=> Avant chaque fonction, on indique la source à partir de laquelle on va travailler : 
+    => Par exemple, si il s'agit de wpid, on va filtrer en demandant de ne garder que les lignes qui ont source_recode == WPID, dans "Base_all_sources". 
+    => On filtre ensuite notre df pour ne garder que les lignes valides en fonction de la variable socio-étudiée
+        => exemple : filtrer les données de la variable "inc" lorsqu'il s'agit des fonctions income; même chose pour les fonctions gender, educ et age. 
+
+=> Nos fonctions reprennent la méthode utilisée par Gethin. Cela consiste à répartir nos répondants dans de nouvelles catégories que l'on crée artificiellement (2 pour les fonctions 50/50 ; 10 pour les fonctions 10/10)
+=> Les répondants sont répartis dans ces catégories en fonction de leur position dans la distribution initiale dans l'enquête. 
+    => Par exemple, si un répondant fait partie des 10% les plus âgés de l'enquête, il sera assigné au groupe "top 50%" et "top 10%"
+    => Une personne appartenant aux 20% les moins diplômés de l'enquête sera assignée au groupe "bot 50% income". 
+
+=> Les fonctions 10/10 ne gardent à la fin que les répondants appartenant au top 10% et au bottom 10%. 
+
+=> Après le calcul de chaque fonction, on crée les variables "bias" et "category"
+    => "category" où l'on indique à quel groupe la ligne fait référence : bot-50, top50, bot10, top10
+    => la variable "bias" pour indiquer de quel clivage il s'agit : plutocracy, androcracy, epistocratie, gerontocratie. 
+
+=> Ainsi, les variables "bias" et "category" indiquent à quel clivage et à quel groupe socio-démographique la ligne fait référence
+    => Exemple : Bias = "plutocracy" et category = "top-income-10" => la ligne fait référence aux 10% les plus riches de l'enquête
+
+=> Pour une même source/clivage, on empile les bases 50/50 et 10/10 pour les avoir dans une même base 
+    => Exemple : Base_wpid_income = bind_rows(wpid_inc_50, wpid_inc_10)
+
+=> A la fin du fichier, on agrège finalement toutes les bases crées avec nos fonctions en une seule base : "Base_all_clivages"
+    => Son format est le suivant : une ligne = un pays, une élection (avec l'année et la date si possible de l'élection), un clivage (bias), un groupe (category), le parti dont il est question (partyfacts_id) et les informations sur le vote du groupe pour ce parti
+    => Pour les informations sur le vote d'un groupe pour un parti, la variable qui compte est "pct_votes". Il s'agit du pourcentage que l'on a calculé avec nos fonctions et c'est celui qu'on utilisera pour calculer nos indices plus tard. 
+
+=> On exporte "Base_all_clivages". 
+
+    
 
 02 - Base Parlement
+
 => Il s'agit du fichier dans lequel on va fusionner en une base les données sur les compositions des parlements après les élections avec les données sur le vote
 => Notre principal base de données est la base "Elections Globals", qui contient des données sur les Parlements pour toutes les élections jusqu'à 2015; pour les élections post-2015, nous rajoutons les données de Parlgov
 pour les pays couverts par Parlgov. 
