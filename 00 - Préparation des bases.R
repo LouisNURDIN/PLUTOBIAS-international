@@ -183,27 +183,27 @@ table(Base_all_elections$partyfacts_id[Base_all_elections$isoname == "United Sta
 
 
 ## Filtre législatives dans deuxième méthode ----
-Base_elections_legislatives <- Base_all_elections %>%
+Base_wpid_clean <- Base_all_elections %>%
   filter(
     isoname %in% pays_regimes_presidentiels & type %in% c("Presidential", "Presidential, round 1") |
       (!(isoname %in% pays_regimes_presidentiels) & type == "Lower house"))
 
-table(Base_elections_legislatives$partyfacts_id[Base_elections_legislatives$isoname == "United States" & Base_elections_legislatives$year == 2000])
+table(Base_wpid_clean$partyfacts_id[Base_wpid_clean$isoname == "United States" & Base_wpid_clean$year == 2000])
 
 
-table(Base_elections_legislatives$type)
-unique(Base_elections_legislatives$isoname)
-unique(Base_elections_legislatives$isoname[Base_elections_legislatives$type == "Presidential, round 1"])
+table(Base_wpid_clean$type)
+unique(Base_wpid_clean$isoname)
+unique(Base_wpid_clean$isoname[Base_wpid_clean$type == "Presidential, round 1"])
 unique(GMP_inc$type[GMP_inc$isoname == "Chile"])
-cor(Base_elections_legislatives$age, Base_elections_legislatives$educ, use = "complete.obs")
+cor(Base_wpid_clean$age, Base_wpid_clean$educ, use = "complete.obs")
 # - 0,1678806
-cor(Base_elections_legislatives$age, Base_elections_legislatives$dinc,  use = "complete.obs")
+cor(Base_wpid_clean$age, Base_wpid_clean$dinc,  use = "complete.obs")
 # - 0,1616936
-cor(Base_elections_legislatives$educ, Base_elections_legislatives$dinc, use = "complete.obs")
+cor(Base_wpid_clean$educ, Base_wpid_clean$dinc, use = "complete.obs")
 #0,3013959
 
 #Corrections partis problématiques
-Base_elections_legislatives <- Base_elections_legislatives %>%
+Base_wpid_clean <- Base_wpid_clean %>%
   mutate(
     partyfacts_id = case_when(
       partyfacts_id == "1388" & isoname == "United Kingdom" ~ "540",
@@ -258,22 +258,19 @@ Base_elections_legislatives <- Base_elections_legislatives %>%
     )
   )
 
-Base_elections_legislatives <- Base_elections_legislatives %>%
+Base_wpid_clean <- Base_wpid_clean %>%
  dplyr::rename(election_year = year)
-names(Base_elections_legislatives)
+names(Base_wpid_clean)
 
 
 
 #Export Base globale et Base législatives
 write.csv(
-  Base_elections_legislatives,
-  "data/intermediary/elections/legislative elections dataset.csv",
+  Base_wpid_clean,
+  "data/intermediary/elections/wpid clean elections dataset.csv",
   row.names = FALSE)
 
-write.csv(
-  Base_all_elections,
-  "data/intermediary/elections/all elections dataset.csv",
-  row.names = FALSE)
+
 
 
 #Ajout de nouvelles bases ----
@@ -1248,7 +1245,108 @@ wvs_data_clean <- wvs_data_clean %>%
     )
   )
 
+
+
+#Rattacher les répondants à la bonne élection 
 wvs_data_clean <- wvs_data_clean %>%
+  group_by(isoname) %>%
+  group_modify(~{
+    
+    df <- .x
+    country <- .y$isoname[1]
+    
+    elections <- all_elections %>%
+      filter(isoname == country) %>%
+      mutate(
+        election_date = as.Date(election_date, format = "%Y.%m.%d")
+      ) %>%
+      arrange(year, election_date)
+    
+    if (nrow(elections) == 0) return(df)
+    
+    map_dfr(seq_len(nrow(df)), function(i){
+      
+      row <- df[i, ]
+      
+      ## Cas 1 : date d'interview connue + dates d'élection disponibles
+      if (!is.na(row$interview_date) &&
+          any(!is.na(elections$election_date))) {
+        
+        next_elec <- elections %>%
+          filter(!is.na(election_date),
+                 election_date > row$interview_date) %>%
+          slice_min(election_date, n = 1)
+        
+        ## Cas 2 : secours → matching par année
+      } else {
+        
+        next_elec <- elections %>%
+          filter(year >= row$year) %>%
+          arrange(year, election_date) %>%
+          slice_head(n = 1)
+        
+      }
+      
+      if (nrow(next_elec) == 0) {
+        
+        row$election_date <- as.Date(NA)
+        row$election_year <- NA_integer_
+        
+      } else {
+        
+        row$election_date <- next_elec$election_date[1]
+        row$election_year <- next_elec$year[1]
+        
+      }
+      
+      row
+      
+    })
+    
+  }) %>%
+  ungroup()
+
+wvs_data_clean <- wvs_data_clean %>%
+  select(-year)
+
+###Export Base WVS ----
+write.csv(
+  wvs_data_clean,
+  "data/intermediary/elections/wvs elections dataset.csv",
+  row.names = FALSE)
+
+
+
+
+
+
+
+#Espace pour empiler les bases votes entre elles ----
+Base_wpid_clean <- read.csv("data/intermediary/elections/wpid clean elections dataset.csv")
+cses_data_clean <- read.csv("data/intermediary/elections/cses elections dataset.csv")
+wvs_data_clean <- read.csv("data/intermediary/elections/wvs elections dataset.csv")
+ess_data_clean <- read.csv("data/intermediary/elections/ess elections dataset.csv")
+
+Base_wpid_clean <- Base_wpid_clean %>% mutate(election_year = as.integer(election_year))
+Base_wpid_clean <- Base_wpid_clean %>% mutate(interview_date = as.character(interview_date))
+cses_data_clean <- cses_data_clean %>% mutate(election_year = as.integer(election_year))
+ess_data_clean <- ess_data_clean %>% mutate(election_year = as.integer(election_year))
+ess_data_clean <- ess_data_clean %>% mutate(partyfacts_id = as.character(partyfacts_id))
+wvs_data_clean <- wvs_data_clean %>% mutate(election_year = as.integer(election_year))
+
+class(Base_wpid_clean$partyfacts_id)
+
+bases <- list(
+  Base_wpid_clean,
+  cses_data_clean,
+  ess_data_clean,
+  wvs_data_clean
+)
+
+Base_all_sources <- bind_rows(bases)
+
+#Commande pour corriger tous les partis qui joinent mal entre les bases ----
+Base_all_sources <- Base_all_sources %>%
   mutate(
     partyfacts_id = case_when(
       dataset_party_id == "12004" & isoname == "Algeria" & election_year >= 2002  ~ "5222",
@@ -1396,99 +1494,10 @@ wvs_data_clean <- wvs_data_clean %>%
       TRUE ~ partyfacts_id
     ))
 
-#Rattacher les répondants à la bonne élection 
-wvs_data_clean <- wvs_data_clean %>%
-  group_by(isoname) %>%
-  group_modify(~{
-    
-    df <- .x
-    country <- .y$isoname[1]
-    
-    elections <- all_elections %>%
-      filter(isoname == country) %>%
-      mutate(
-        election_date = as.Date(election_date, format = "%Y.%m.%d")
-      ) %>%
-      arrange(year, election_date)
-    
-    if (nrow(elections) == 0) return(df)
-    
-    map_dfr(seq_len(nrow(df)), function(i){
-      
-      row <- df[i, ]
-      
-      ## Cas 1 : date d'interview connue + dates d'élection disponibles
-      if (!is.na(row$interview_date) &&
-          any(!is.na(elections$election_date))) {
-        
-        next_elec <- elections %>%
-          filter(!is.na(election_date),
-                 election_date > row$interview_date) %>%
-          slice_min(election_date, n = 1)
-        
-        ## Cas 2 : secours → matching par année
-      } else {
-        
-        next_elec <- elections %>%
-          filter(year >= row$year) %>%
-          arrange(year, election_date) %>%
-          slice_head(n = 1)
-        
-      }
-      
-      if (nrow(next_elec) == 0) {
-        
-        row$election_date <- as.Date(NA)
-        row$election_year <- NA_integer_
-        
-      } else {
-        
-        row$election_date <- next_elec$election_date[1]
-        row$election_year <- next_elec$year[1]
-        
-      }
-      
-      row
-      
-    })
-    
-  }) %>%
-  ungroup()
-
-wvs_data_clean <- wvs_data_clean %>%
-  select(-year)
-
-###Export Base WVS ----
-write.csv(
-  wvs_data_clean,
-  "data/intermediary/elections/wvs elections dataset.csv",
-  row.names = FALSE)
-
-
-
-
-
-
-
-#Espace pour empiler les bases votes entre elles ----
-cses_data_clean <- cses_data_clean %>% mutate(year = as.integer(year))
-ess_data_clean <- ess_data_clean %>% mutate(year = as.integer(year))
-wvs_data_clean <- wvs_data_clean %>% mutate(year = as.integer(year))
-
-ess_data_clean <- ess_data_clean %>% mutate(type = "Lower House")
-cses_data_clean <- cses_data_clean %>% mutate(type = "Lower House")
-
-bases <- list(
-  cses_data_clean,
-  ess_data_clean,
-  wvs_data_clean
-)
-
-Base_cses_ess_wvs <- bind_rows(bases)
-
 ###Export Base CSES ESS WVS ----
 write.csv(
-  Base_cses_ess_wvs,
-  "data/intermediary/elections/dataset cses ess wvs.csv",
+  Base_all_sources,
+  "data/intermediary/elections/dataset all sources.csv",
   row.names = FALSE
 )
+
